@@ -1,0 +1,5 @@
+include README.rst
+include LICENSE
+include requirements.txt
+recursive-include ckanext/gdi_userportal *.html *.json *.js *.less *.css *.mo *.yml
+recursive-include ckanext/gdi_userportal/migration *.ini *.py *.mako

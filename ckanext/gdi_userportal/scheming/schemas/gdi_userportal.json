@@ -1,0 +1,721 @@
+{
+  "scheming_version": 1,
+  "dataset_type": "dataset",
+  "about": "Dataset Schema Compatible with DCAT 2.1.1 for GDI - User Portal Catalogue",
+  "about_url": "https://github.com/SEMICeu/DCAT-AP/tree/master/releases/2.1.1",
+  "dataset_fields": [
+    {
+      "field_name": "title",
+      "label": "Title",
+      "preset": "title",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:title] This property contains a name given to the Dataset."
+      }
+    },
+    {
+      "field_name": "name",
+      "label": "URL",
+      "preset": "dataset_slug",
+      "form_placeholder": ""
+    },
+    {
+      "field_name": "notes",
+      "form_snippet": "markdown.html",
+      "label": "Description",
+      "required": true,
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:description] This property contains a free-text account of the Dataset."
+      }
+    },
+    {
+      "field_name": "tag_string",
+      "label": "Tags",
+      "preset": "tag_string_autocomplete",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:keyword] This property contains a keyword or tag describing the Dataset."
+      }
+    },
+    {
+      "field_name": "license_id",
+      "label": "License",
+      "form_snippet": "license.html",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:license] This property refers to the licence under which the Dataset is made available."
+      }
+    },
+    {
+      "field_name": "owner_org",
+      "preset": "dataset_organization",
+      "label": "Organization",
+      "sorted_choices": true
+    },
+    {
+      "field_name": "url",
+      "label": "Source",
+      "form_placeholder": "http://example.com/dataset.json",
+      "display_snippet": "link.html",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:landingPage] This property refers to a web page that provides access to the Dataset, its Distributions and/or additional information. It is intended to point to a landing page at the original data provider, not to a page on a site of a third party, such as an aggregator."
+      }
+    },
+    {
+      "field_name": "version",
+      "label": "Version",
+      "validators": "ignore_missing unicode_safe package_version_validator",
+      "form_placeholder": "1.0",
+      "help_inline": true,
+      "help_text": {
+        "en": "[owl:versionInfo] This property contains a version number or other version designation of the Dataset."
+      }
+    },
+    {
+      "field_name": "author",
+      "label": "Author",
+      "form_placeholder": "Joe Bloggs",
+      "help_inline": true,
+      "help_text": {
+        "en": "[CKAN] Fallback value for [vcard:fn]"
+      }
+    },
+    {
+      "field_name": "author_email",
+      "label": "Author Email",
+      "form_placeholder": "joe@example.com",
+      "display_snippet": "email.html",
+      "display_email_name_field": "author",
+      "help_inline": true,
+      "help_text": {
+        "en": "[CKAN] Fallback value for [vcard:hasEmail]"
+      }
+    },
+    {
+      "field_name": "maintainer",
+      "label": "Maintainer",
+      "form_placeholder": "Joe Bloggs",
+      "help_inline": true,
+      "help_text": {
+        "en": "[CKAN] Fallback value for [vcard:fn]"
+      }
+    },
+    {
+      "field_name": "maintainer_email",
+      "label": "Maintainer Email",
+      "form_placeholder": "joe@example.com",
+      "display_snippet": "email.html",
+      "display_email_name_field": "maintainer",
+      "help_inline": true,
+      "help_text": {
+        "en": "[CKAN] Fallback value for [vcard:hasEmail]"
+      }
+    },
+    {
+      "field_name": "contact_uri",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:contactPoint] This property contains contact information that can be used for sending comments about the Dataset."
+      },
+      "label": {
+        "en": "Contact URI"
+      }
+    },
+    {
+      "field_name": "contact_name",
+      "label": {
+        "en": "Contact Name"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[vcard:fn] This property contains contact information that can be used for sending comments about the Dataset."
+      }
+    },
+    {
+      "field_name": "contact_email",
+      "help_inline": true,
+      "help_text": {
+        "en": "[vcard:hasEmail] This property contains contact information that can be used for sending comments about the Dataset."
+      },
+      "label": {
+        "en": "Contact Email"
+      },
+      "display_snippet": "email.html"
+    },
+    {
+      "field_name": "publisher_uri",
+      "label": {
+        "en": "Publisher"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:publisher] This property refers to an entity (organisation) responsible for making the Dataset available."
+      }
+    },
+    {
+      "field_name": "publisher_name",
+      "label": {
+        "en": "Publisher Name"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[foaf:name] This property contains a name of the agent."
+      }
+    },
+    {
+      "field_name": "publisher_email",
+      "label": {
+        "en": "Publisher Email"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[foaf:mbox] This property contains an email of the agent."
+      }
+    },
+    {
+      "field_name": "publisher_url",
+      "label": {
+        "en": "Publisher URL"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[foaf:homepage] This property refers to a web page that acts as the main page for the Catalogue."
+      }
+    },
+    {
+      "field_name": "publisher_type",
+      "label": {
+        "en": "Publisher Type"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:type] This property refers to the type of the Dataset. "
+      }
+    },
+    {
+      "field_name": "spatial_uri",
+      "label": {
+        "en": "Spatial URI"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:spatial] This property refers to a geographic region that is covered by the Dataset. "
+      }
+    },
+    {
+      "field_name": "temporal_start",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:temporal] This property refers to a temporal period that the Dataset covers."
+      },
+      "label": {
+        "en": "Temportal Start Date"
+      },
+      "preset": "date"
+    },
+    {
+      "field_name": "temporal_end",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:temporal] This property refers to a temporal period that the Dataset covers."
+      },
+      "label": {
+        "en": "Temporal end date"
+      },
+      "preset": "date"
+    },
+    {
+      "field_name": "theme",
+      "label": {
+        "en": "Theme"
+      },
+      "preset": "multiple_text",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:theme] This property refers to a category of the Dataset. A Dataset may be associated with multiple themes."
+      }
+    },
+    {
+      "field_name": "version_notes",
+      "label": {
+        "en": "Version Notes"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[adms:versionNotes] This property contains a description of the differences between this version and a previous version of the Dataset."
+      }
+    },
+    {
+      "field_name": "landing_page",
+      "label": {
+        "en": "Landing Page"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:landingPage] This property refers to a web page that provides access to the Dataset, its Distributions and/or additional information. It is intended to point to a landing page at the original data provider, not to a page on a site of a third party, such as an aggregator."
+      }
+    },
+    {
+      "field_name": "spatial_resolution_in_meters",
+      "label": {
+        "en": "Spatial Resolution in Meters"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:spatialResolutionInMeters] This property refers to the minimum spatial separation resolvable in a dataset, measured in meters."
+      }
+    },
+    {
+      "field_name": "temporal_resolution",
+      "label": {
+        "en": "Temporal Resolution"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:temporalResolution] This property refers to the minimum time period resolvable in the dataset."
+      }
+    },
+    {
+      "field_name": "qualified_relation",
+      "label": {
+        "en": "Qualified Relation"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:qualifiedRelation] This property provides a link to a description of a relationship with another resource."
+      }
+    },
+    {
+      "field_name": "access_rights",
+      "label": {
+        "en": "Access rights"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:accessRights] This property refers to information that indicates whether the Dataset is open data, has access restrictions or is not public."
+      }
+    },
+    {
+      "field_name": "frequency",
+      "label": {
+        "en": "Frequency"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:accrualPeriodicity] This property refers to the frequency at which the Dataset is updated."
+      }
+    },
+    {
+      "field_name": "conforms_to",
+      "label": {
+        "en": "Conforms to"
+      },
+      "preset": "multiple_text",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:conformsTo] This property refers to an implementing rule or other specification."
+      }
+    },
+    {
+      "field_name": "creator",
+      "label": {
+        "en": "Creator"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:creator] This property refers to the  entity responsible for producing the dataset."
+      }
+    },
+    {
+      "field_name": "is_referenced_by",
+      "label": {
+        "en": "Is referenced by"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:isReferencedBy] This property is about a related resource, such as a publication, that references, cites, or otherwise points to the dataset."
+      }
+    },
+    {
+      "field_name": "is_version_of",
+      "label": {
+        "en": "Is version of"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:isVersionOf] This property refers to a related Dataset of which the described Dataset is a version, edition, or adaptation."
+      }
+    },
+    {
+      "field_name": "identifier",
+      "label": {
+        "en": "Identifier"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:identifier] This property contains the main identifier for the Dataset, e.g. the URI or other unique identifier in the context of the Catalogue."
+      }
+    },
+    {
+      "field_name": "issued",
+      "label": {
+        "en": "Issued"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:issued] This property contains the date of formal issuance (e.g., publication) of the Dataset."
+      },
+      "preset": "date"
+    },
+    {
+      "field_name": "language",
+      "label": {
+        "en": "Language"
+      },
+      "preset": "multiple_text",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:language] This property refers to a language of the Dataset. This property can be repeated if there are multiple languages in the Dataset."
+      }
+    },
+    {
+      "field_name": "modified",
+      "label": {
+        "en": "Modification Date"
+      },
+      "preset": "date",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:modified] This property contains the most recent date on which the Dataset was changed or modified."
+      }
+    },
+    {
+      "field_name": "provenance",
+      "label": {
+        "en": "Provenance"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:provenance] This property contains a statement about the lineage of a Dataset."
+      }
+    },
+    {
+      "field_name": "relation",
+      "label": {
+        "en": "Relation"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:relation] This property refers to a related resource."
+      }
+    },
+    {
+      "field_name": "sample",
+      "label": {
+        "en": "Sample"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[adms:sample] This property refers to a sample distribution of the dataset."
+      }
+    },
+    {
+      "field_name": "source",
+      "label": {
+        "en": "Source"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:source] This property refers to a related Dataset from which the described Dataset is derived."
+      }
+    },
+    {
+      "field_name": "dcat_type",
+      "label": {
+        "en": "Type"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:type] This property refers to the type of the Dataset."
+      }
+    },
+    {
+      "field_name": "has_version",
+      "label": {
+        "en": "Has Version"
+      },
+      "preset": "multiple_text",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:hasVersion] This property refers to a related Dataset that is a version, edition, or adaptation of the described Dataset."
+      }
+    },
+    {
+      "field_name": "documentation",
+      "label": {
+        "en": "Documentation"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[foaf:page] This property refers to a page or document about this Dataset."
+      }
+    },
+    {
+      "field_name": "qualified_attribution",
+      "label": {
+        "en": "Qualified Attribution"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[prov:qualifiedAttribution ] This property refers to a link to an Agent having some form of responsibility for the resource."
+      }
+    },
+    {
+      "field_name": "was_generated_by",
+      "label": {
+        "en": "Was Generated By"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[prov:wasGeneratedBy] This property refers to an activity that generated, or provides the business context for, the creation of the dataset."
+      }
+    },
+    {
+      "field_name": "alternate_identifier",
+      "label": {
+        "en": "Alternate identifier"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[adms:identifier] This property refers to a secondary identifier of the Dataset, such as MAST/ADS , DataCite , DOI , EZID  or W3ID ."
+      }
+    }
+  ],
+  "resource_fields": [
+    {
+      "field_name": "url",
+      "label": "URL",
+      "preset": "resource_url_upload"
+    },
+    {
+      "field_name": "name",
+      "label": "Name",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:title] This property contains a name given to the Distribution."
+      },
+      "form_placeholder": "eg. January 2011 Gold Prices"
+    },
+    {
+      "field_name": "description",
+      "label": "Description",
+      "form_snippet": "markdown.html",
+      "form_placeholder": "Some useful notes about the data",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:description] This property contains a free-text account of the Distribution."
+      }
+    },
+    {
+      "field_name": "format",
+      "label": "Format",
+      "preset": "resource_format_autocomplete",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:format] This property refers to the file format of the Distribution."
+      }
+    },
+    {
+      "field_name": "access_url",
+      "label": {
+        "en": "Access URL"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:accessURL] This property contains a URL that gives access to a Distribution of the Dataset. The resource at the access URL may contain information about how to get the Dataset."
+      }
+    },
+    {
+      "field_name": "availability",
+      "label": {
+        "en": "Availability"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcatap:availability] This property indicates how long it is planned to keep the Distribution of the Dataset available. "
+      }
+    },
+    {
+      "field_name": "status",
+      "label": {
+        "en": "Status"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[adms:status] The status of the distribution in the context of maturity lifecycle."
+      }
+    },
+    {
+      "field_name": "access_services",
+      "label": {
+        "en": "Access Services"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:accessService] This property refers to a data service that gives access to the distribution of the dataset."
+      }
+    },
+    {
+      "field_name": "size",
+      "label": "Size",
+      "form_snippet": null
+    },
+    {
+      "field_name": "compress_format",
+      "label": {
+        "en": "Compress Format"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:compressFormat] This property refers to the format of the file in which the data is contained in a compressed form, e.g. to reduce the size of the downloadable file."
+      }
+    },
+    {
+      "field_name": "download_url",
+      "label": "Download URL",
+      "display_snippet": "link.html",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:downloadURL] This property contains a URL that is a direct link to a downloadable file in a given format."
+      }
+    },
+    {
+      "field_name": "mimetype",
+      "label": "Mime Type",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:mediaType] This property refers to the media type of the Distribution as defined in the official register of media types managed by IANA."
+      }
+    },
+    {
+      "field_name": "package_format",
+      "label": {
+        "en": "Package Format"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:packageFormat] This property refers to the format of the file in which one or more data files are grouped together, e.g. to enable a set of related files to be downloaded together."
+      }
+    },
+    {
+      "field_name": "spatial_resolution_in_meters",
+      "label": {
+        "en": "Spatial Resolution in Meters"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:spatialResolutionInMeters] This property refers to the minimum spatial separation resolvable in a dataset, measured in meters."
+      }
+    },
+    {
+      "field_name": "temporal_resolution",
+      "label": {
+        "en": "Temporal Resolution"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dcat:temporalResolution] This property refers to the minimum time period resolvable in the dataset."
+      }
+    },
+    {
+      "field_name": "conforms_to",
+      "label": {
+        "en": "Conforms to"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:conformsTo] This property refers to an implementing rule or other specification."
+      }
+    },
+    {
+      "field_name": "issued",
+      "label": {
+        "en": "Issued"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:issued] This property contains the date of formal issuance (e.g., publication) of the Dataset."
+      },
+      "preset": "date"
+    },
+    {
+      "field_name": "language",
+      "label": {
+        "en": "Language"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:language] This property refers to a language of the Dataset. This property can be repeated if there are multiple languages in the Dataset."
+      }
+    },
+    {
+      "field_name": "modified",
+      "label": {
+        "en": "Modification Date"
+      },
+      "preset": "date",
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:modified] This property contains the most recent date on which the Dataset was changed or modified."
+      }
+    },
+    {
+      "field_name": "rights",
+      "label": {
+        "en": "Rights"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[dct:rights] This property refers to a statement that specifies rights associated with the Distribution."
+      }
+    },
+    {
+      "field_name": "documentation",
+      "label": {
+        "en": "Documentation"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[foaf:page] This property refers to a page or document about this Distribution."
+      }
+    },
+    {
+      "field_name": "has_policy",
+      "label": {
+        "en": "Has Policy"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "[odrl:hasPolicy] This property refers to the policy expressing the rights associated with the distribution if using the ODRL vocabulary."
+      }
+    },
+    {
+      "field_name": "hash",
+      "label": "Hash",
+      "help_inline": true,
+      "help_text": {
+        "en": "[spdx:checksumValue] This property provides a lower case hexadecimal encoded digest value produced using a specific algorithm."
+      }
+    },
+    {
+      "field_name": "hash_algorithm",
+      "label": "Hash Algorithm",
+      "help_inline": true,
+      "help_text": {
+        "en": "[spdx:algorithm] This property identifies the algorithm used to produce the subject Checksum. "
+      }
+    }
+  ]
+}

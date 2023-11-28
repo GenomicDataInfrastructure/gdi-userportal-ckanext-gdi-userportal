@@ -1,0 +1,11 @@
+[
+  {
+    "dataset_type": "dataset",
+    "about": "Dataset DCAT 3.0 compatible",
+    "about_url": "https://www.w3.org/TR/vocab-dcat-3/",
+    "schemas": [
+      "ckanext.gdi-userportal:scheming/schemas/core_schema.json",
+      "ckanext.gdi-userportal:scheming/schemas/dcat_ap.json"
+    ]
+  }
+]

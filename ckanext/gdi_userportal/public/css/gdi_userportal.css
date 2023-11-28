@@ -1,0 +1,122 @@
+@font-face {
+        font-family: 'Lato';
+        src: url("../../fonts/Lato-Regular.ttf");
+    }
+
+
+body {
+  font-family: 'Lato';
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.navigation{
+  margin: 10px 0;
+  font-family: 'Lato';
+  font-weight: bold;
+  line-height: 20px;
+  color: inherit;
+  text-rendering: optimizelegibility;
+}
+
+input, button, select, textarea {
+  font-family: 'Lato';
+}
+
+article {
+    font-family: 'Lato';
+}
+/*#contacthead {*/
+/*	background-image:url("../../../images/home-banner-purple.png");*/
+/*}*/
+/* hyperlinks */
+a {
+	color: #f8af00;
+}
+a:hover, a:focus {
+	color: #f8af00;
+}
+.nav-tabs>li>a:hover, .nav-tabs>li>a:focus {
+	color: #f8af00;
+}
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary.active, .btn-primary.disabled, .btn-primary[disabled] {
+  color: #aabecc;
+  background-color: #f8af00;
+}
+
+.btn-group.open .btn-primary.dropdown-toggle {
+  background-color: #f8af00;
+}
+a.tag:hover {
+  text-decoration: none;
+  color: #fff;
+  background-color: #f8af00;
+}
+.stages li.active .highlight {
+  color: #aabecc;
+  background: #f8af00;
+}
+
+.pill {
+  background-color: #f8af00;
+  color: #aabecc;
+}
+.nav-item.active>a, .nav-aside li.active a {
+  color: #aabecc;
+  background-color: #f8af00;
+}
+.banner {
+  color: #aabecc;
+  background-color: #f8af00;
+}
+.media-view:hover,
+.media-view.hovered {
+  border-color: #f8af00;
+}
+.media-view:hover .banner,
+.media-view.hovered .banner {
+  background-color: #f8af00;
+}
+.homepage .module-search .module-content {
+	background-color: #f8af00;
+}
+.account-masthead .account ul li a:hover {
+  color: #f8af00;
+  background-color: #fff;
+}
+ .account-masthead .account .notifications a:hover span {
+  color: #aabecc;
+  color: #f8af00;
+  background-color: #fff;
+}
+.masthead .navigation .nav-pills li a:hover,
+.masthead .navigation .nav-pills li.active a {
+
+	background-color: #183d76;
+	color: #fff;
+	background: #f8af00 !important;
+}
+.homepage .module-search .tags {
+	background-color: #183d76;
+}
+.site-footer .container .row {
+    background-color: #183d76;
+    color: #fff;
+    }
+.page-heading {
+    color: #f8af00;
+}
+
+.module-heading {
+  *zoom: 1;
+  margin: 0;
+  padding: 7px 25px;
+  font-size: 14px;
+  line-height: 1.3;
+  background-color: #B6BACD;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+}

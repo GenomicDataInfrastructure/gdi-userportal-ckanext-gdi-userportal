@@ -1,0 +1,382 @@
+{
+  "scheming_version": 1,
+  "dataset_type": "dataset",
+  "about": "Dataset",
+  "about_url": "dataset",
+  "dataset_fields": [
+    {
+      "field_name": "contact_point_type",
+      "help_inline": true,
+      "help_text": {
+        "en": "This property tells whether the contect point corresponds to an Individual or an Organisation. [DCAT optional]"
+      },
+      "label": {
+        "en": "Contact point type"
+      },
+      "group": "contact"
+    },
+    {
+      "field_name": "contact_point_name",
+      "help_inline": true,
+      "help_text": {
+        "en": "Name of the contact point [DCAT mandatory]"
+      },
+      "label": {
+        "en": "Contact point name"
+      },
+      "group": "contact"
+    },
+    {
+      "field_name": "contact_point_email",
+      "help_inline": true,
+      "help_text": {
+        "en": "Email of the contact point [DCAT recommended]"
+      },
+      "label": {
+        "en": "Contact point email"
+      },
+      "display_snippet": "email.html",
+      "group": "contact"
+    },
+    {
+      "field_name": "contact_point_phone",
+      "help_inline": true,
+      "help_text": {
+        "en": "Phonenumber of the contact point [DCAT recommended]"
+      },
+      "label": {
+        "en": "Contact point phone"
+      }
+    },
+    {
+      "field_name": "publisher",
+      "label": {
+        "en": "Publisher"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "Entity responsible for maintenance and publication of the dataset  [DCAT mandatory]"
+      },
+      "group": "contact"
+    },
+    {
+      "field_name": "spatial",
+      "label": {
+        "en": "Spatial"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "The spatial value"
+      }
+    },
+    {
+      "field_name": "temporal_coverage_start_date",
+      "help_inline": true,
+      "help_text": {
+        "en": "A point in time, together with temporal_end it describes a period in time"
+      },
+      "label": {
+        "en": "Temportal Start Date"
+      },
+      "preset": "date"
+    },
+    {
+      "field_name": "temporal_coverage_end_date",
+      "help_inline": true,
+      "help_text": {
+        "en": "A point in time, together with temporal_start it describes a period in time [DCAT recommended]"
+      },
+      "label": {
+        "en": "Temporal coverage end date"
+      },
+      "preset": "date"
+    },
+    {
+      "field_name": "theme",
+      "label": {
+        "en": "Theme (Category)"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "One or more themes that describe the dataset [DCAT mandatory]"
+      },
+      "group": "language_theme"
+    },
+    {
+      "field_name": "version_notes",
+      "label": "Version Notes"
+    },
+    {
+      "field_name": "landing_page",
+      "label": "Landing Page"
+    },
+    {
+      "field_name": "spatial_resolution_in_meters",
+      "label": "Spatial Resolution in Meters"
+    },
+    {
+      "field_name": "temporal_resolution",
+      "label": "Temporal Resolution"
+    },
+    {
+      "field_name": "qualified_relation",
+      "label": "Qualified Relation"
+    },
+    {
+      "field_name": "access_rights",
+      "label": {
+        "en": "Access rights"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "The level of openness of the dataset [DCAT recommended]"
+      },
+      "group": "version"
+    },
+    {
+      "field_name": "frequency",
+      "label": {
+        "en": "Frequency (accrualPeriodicity) ?"
+      }
+    },
+    {
+      "field_name": "conforms_to",
+      "label": {
+        "en": "Conforms to"
+      }
+    },
+    {
+      "field_name": "creator",
+      "help_inline": true,
+      "label": {
+        "en": "Creator"
+      }
+    },
+    {
+      "field_name": "is_referenced_by",
+      "label": {
+        "en": "Is referenced by"
+      }
+    },
+    {
+      "field_name": "is_version_of",
+      "label": {
+        "en": "Is version of"
+      }
+    },
+    {
+      "field_name": "identifier",
+      "label": {
+        "en": "Identifier"
+      }
+    },
+    {
+      "field_name": "issued",
+      "label": {
+        "en": "Release Date (Issued)"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "Date on which the dataset was published"
+      },
+      "preset": "date",
+      "group": "version"
+    },
+    {
+      "field_name": "language",
+      "help_inline": true,
+      "help_text": {
+        "en": "Language of the data."
+      },
+      "label": {
+        "en": "Language"
+      },
+      "group": "language_theme"
+    },
+    {
+      "field_name": "modified",
+      "label": {
+        "en": "Update/Modification Date"
+      },
+      "preset": "date",
+      "group": "version"
+    },
+    {
+      "field_name": "provenance",
+      "label": {
+        "en": "Provenance"
+      }
+    },
+    {
+      "field_name": "relation",
+      "label": {
+        "en": "Relation"
+      }
+    },
+    {
+      "field_name": "source",
+      "label": {
+        "en": "Source"
+      }
+    },
+    {
+      "field_name": "dcat_type",
+      "label": {
+        "en": "Type"
+      }
+    },
+    {
+      "field_name": "documentation",
+      "label": {
+        "en": "Documentation (Page)"
+      }
+    },
+    {
+      "field_name": "version_info",
+      "label": {
+        "en": "Version Info"
+      }
+    },
+    {
+      "field_name": "qualified_attribution",
+      "label": {
+        "en": "Qualified Attribution"
+      }
+    },
+    {
+      "field_name": "was_generated_by",
+      "label": {
+        "en": "Was Generated By"
+      }
+    },
+    {
+      "field_name": "other_identifier",
+      "label": {
+        "en": "Other Identifier??"
+      },
+      "group": "version"
+    },
+    {
+      "field_name": "legal_foundation",
+      "label": {
+        "en": "Legal Foundation??"
+      }
+    },
+    {
+      "field_name": "rights",
+      "label": {
+        "en": "Rights ??"
+      }
+    }
+  ],
+  "resource_fields": [
+    {
+      "field_name": "access_url",
+      "label": "Access URL"
+    },
+    {
+      "field_name": "availability",
+      "label": "Availability"
+    },
+    {
+      "field_name": "status",
+      "label": "Status"
+    },
+    {
+      "field_name": "access_service",
+      "label": "Access Service"
+    },
+    {
+      "field_name": "size",
+      "label": "Size (byteSize)"
+    },
+    {
+      "field_name": "compress_format",
+      "label": "Compress Format"
+    },
+    {
+      "field_name": "download_url",
+      "label": "Download URL",
+      "display_snippet": "link.html"
+    },
+    {
+      "field_name": "mimetype",
+      "label": "Mime Type (Media Type)"
+    },
+    {
+      "field_name": "package_format",
+      "label": "Package Format"
+    },
+    {
+      "field_name": "spatial_resolution_in_meters",
+      "label": "Spatial Resolution in Meters"
+    },
+    {
+      "field_name": "temporal_resolution",
+      "label": "Temporal Resolution"
+    },
+    {
+      "field_name": "conforms_to",
+      "label": {
+        "en": "Conforms to"
+      }
+    },
+    {
+      "field_name": "issued",
+      "label": {
+        "en": "Issued"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "Date on which the dataset was published"
+      },
+      "preset": "date"
+    },
+    {
+      "field_name": "language",
+      "help_inline": true,
+      "help_text": {
+        "en": "The language used in the data [DCAT mandatory]"
+      },
+      "label": {
+        "en": "Language"
+      }
+    },
+    {
+      "field_name": "modified",
+      "label": {
+        "en": "Update/Modification Date"
+      },
+      "preset": "date",
+      "group": "version"
+    },
+    {
+      "field_name": "rights",
+      "label": {
+        "en": "Rights"
+      }
+    },
+    {
+      "field_name": "documentation",
+      "label": {
+        "en": "Documentation (Page)"
+      }
+    },
+    {
+      "field_name": "has_policy",
+      "label": "Has Policy"
+    },
+    {
+      "field_name": "hash",
+      "label": "Hash (checksum value)"
+    },
+    {
+      "field_name": "Hash algorithm",
+      "label": "Hash Algorithm(checksum algorithm)"
+    },
+    {
+      "field_name": "supporting_role",
+      "label": "Supporting Role???"
+    }
+  ]
+}

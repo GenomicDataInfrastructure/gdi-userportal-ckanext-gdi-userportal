@@ -1,3 +1,18 @@
+Metadata-Version: 2.1
+Name: ckanext-gdi-userportal
+Version: 0.0.1
+Summary: Extension for GDI - User Portal Customizations
+Home-page: https://github.com/GenomicDataInfrastructure/ckanext-gdi-userportal
+Author: GenomicDataInfrastructure
+Author-email: help@fixme.eu
+License: Apache-2.0
+Keywords: CKAN
+Classifier: Development Status :: 4 - Beta
+Classifier: License :: OSI Approved :: Apache License, Version 2.0
+Classifier: Programming Language :: Python :: 3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
 [![Tests](https://github.com/GenomicDataInfrastructure/ckanext-gdi-userportal/workflows/Tests/badge.svg?branch=main)](https://github.com/GenomicDataInfrastructure/ckanext-gdi-userportal/actions)
 
 # ckanext-gdi-userportal

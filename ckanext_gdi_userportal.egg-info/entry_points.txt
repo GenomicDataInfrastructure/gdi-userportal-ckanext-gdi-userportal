@@ -1,0 +1,5 @@
+[babel.extractors]
+ckan = ckan.lib.extract:extract_ckan
+
+[ckan.plugins]
+gdi_userportal = ckanext.gdi_userportal.plugin:GdiUserPortalPlugin

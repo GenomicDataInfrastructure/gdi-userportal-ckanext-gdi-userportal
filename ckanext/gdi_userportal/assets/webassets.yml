@@ -1,0 +1,4 @@
+gdi-userportal_css:
+  output: ckanext-gdi-userportal/%(version)s_gdi-userportal_css.css
+  contents:
+    - styles/gdi_userportal.css
