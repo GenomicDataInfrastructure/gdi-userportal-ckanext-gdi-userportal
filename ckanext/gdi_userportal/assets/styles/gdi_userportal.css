@@ -1,4 +1,52 @@
-/*
-  UPDATE ME 
-  static files must go to public folder, and must be relative to root (e.g. '/my-public-font-file.ttf').
-*/
+body {
+  font-family: "Raleway", sans-serif;
+  background-color: #ffffff;
+}
+h1 {
+  font-family: "Titillium Web", sans-serif;
+  background: #ffffff;
+  font-weight: 400;
+}
+
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Share Tech Mono", monospace;
+}
+
+.account-masthead {
+  background-color: #7b1c58;
+}
+
+.masthead {
+  background-color: #ffffff;
+}
+
+.masthead .main-navbar ul li a {
+  padding: 0.6rem 0.9rem;
+  font-family: "Share Tech Mono", monospace;
+  color: #333333;
+  text-decoration: none;
+}
+.masthead .main-navbar ul li:hover a,
+.masthead .main-navbar ul li:focus a,
+.masthead .main-navbar ul li.active a {
+  background-color: #ffffff;
+  color: #7b1c58;
+}
+
+.masthead .navbar .logo {
+  display: inline-block;
+  border-radius: 0px;
+  border: 0px;
+}
+.masthead .navbar .logo img {
+  max-height: 60px;
+}
+
+.site-footer {
+  background-color: #7b1c58;
+  padding: 20px 0;
+}
