@@ -16,6 +16,9 @@ h5,
 h6 {
   font-family: "Share Tech Mono", monospace;
 }
+.btn {
+  background-color: #7276b1;
+}
 
 .account-masthead {
   background-color: #7b1c58;
@@ -49,14 +52,12 @@ h6 {
   max-height: 60px;
 }
 
+.site-search button {
+  background: transparent;
+}
 
-.site-footer p,
-.site-footer a,
-.site-footer label,
-.site-footer small,
-.site-footer strong {
-  color: #7a7a7a;
-  font-weight: 400;
+.module-content.search-form {
+  padding:0 !important;
 }
 
 .homepage .module-search {
@@ -147,25 +148,6 @@ a.tag:hover {
 
 .tag:hover {
   background-color: #7276b1;
-}
-
-/* Homepage Totals */
-.totals {
-  padding: 40px 0 35px 0;
-  background: #7276b1;
-  color: #fff;
-}
-
-.totals p,
-.totals h4 {
-  padding: 0;
-  margin: 0;
-}
-
-.totals h4 {
-  font-size: 2.6em;
-  font-weight: 300 !important;
-  line-height: 0.9;
 }
 
 /* Groups */
@@ -331,80 +313,7 @@ a.tag:hover {
   font-weight: 600;
 }
 
-/* Sub footer */
-.subfooter {
-  padding: 30px 0;
-  background-color: #7276b1;
-}
 
-.subfooter h3 {
-  color: #fff;
-  font-size: 2.1em;
-  font-weight: 300;
-  margin: 0;
-  padding: 8px 0 0 0;
-}
-
-@media only screen and (max-width: 768px) {
-  .subfooter h3 {
-    font-size: 1.8em;
-  }
-}
-
-.subfooter .btn {
-  background-color: #fff;
-  color: #000;
-  padding: 10px 28px;
-  font-size: 16px;
-  border-radius: 0;
-  font-weight: 300;
-  margin-top: 10px;
-}
-
-@media only screen and (max-width: 768px) {
-  .subfooter .btn {
-    padding: 6px 12px;
-    font-size: 14px;
-  }
-}
-
-.subfooter .btn:hover {
-  background-color: #f5f5f5;
-}
-
-@media only screen and (max-width: 768px) {
-  .subfooter .text-right {
-    text-align: left !important;
-  }
-}
-
-/* footer */
-.site-footer {
-  padding: 60px 0;
-  color: #fff;
-}
-
-.site-footer .logo {
-  margin-bottom: 40px;
-}
-
-.site-footer label,
-.site-footer small,
-.site-footer strong {
-  color: #fff;
-  font-size: 18px;
-  margin-bottom: 10px;
-}
-
-.site-footer p,
-.site-footer a {
-  font-size: 15px;
-  color: #fff;
-}
-
-.site-footer .footer-links ul li {
-  margin-bottom: 15px;
-}
 
 /* Selector drop-down */
 .select2-container .select2-choice .select2-arrow {
@@ -753,7 +662,7 @@ button.active {
 }
 
 .site-footer {
-  margin-top: 30%;
+  margin-top:600px;
   background: #f7f7f7;
 }
 
@@ -830,10 +739,86 @@ button.active {
   background: #fff;
 }
 
-.btn {
+/* footer */
+.site-footer {
+  padding: 60px 0;
+  color: #fff;
+}
+
+.site-footer .logo {
+  margin-bottom: 40px;
+}
+
+.site-footer label,
+.site-footer small,
+.site-footer strong {
+  color: #fff;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.site-footer p,
+.site-footer a {
+  font-size: 15px;
+  color: #fff;
+}
+
+.site-footer .footer-links ul li {
+  margin-bottom: 15px;
+}
+
+.site-footer p,
+.site-footer a,
+.site-footer label,
+.site-footer small,
+.site-footer strong {
+  color: #7a7a7a;
+  font-weight: 400;
+}
+
+/* Sub footer */
+.subfooter {
+  padding: 30px 0;
   background-color: #7276b1;
 }
 
-.site-search button {
-  background: transparent;
+.subfooter h3 {
+  color: #fff;
+  font-size: 2.1em;
+  font-weight: 300;
+  margin: 0;
+  padding: 8px 0 0 0;
+}
+
+@media only screen and (max-width: 768px) {
+  .subfooter h3 {
+    font-size: 1.8em;
+  }
+}
+
+.subfooter .btn {
+  background-color: #fff;
+  color: #000;
+  padding: 10px 28px;
+  font-size: 16px;
+  border-radius: 0;
+  font-weight: 300;
+  margin-top: 10px;
+}
+
+@media only screen and (max-width: 768px) {
+  .subfooter .btn {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}
+
+.subfooter .btn:hover {
+  background-color: #f5f5f5;
+}
+
+@media only screen and (max-width: 768px) {
+  .subfooter .text-right {
+    text-align: left !important;
+  }
 }
