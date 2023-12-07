@@ -28,7 +28,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 This project and everyone participating in it is governed by the
 [GDI User Portal Code Of Conduct](./CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable behavior
-to <bruno.pacheco@lnds.lu>.
+to <tech@lnds.lu>.
 
 ## I Have a Question
 
@@ -85,7 +85,7 @@ Depending on how large the project is, you may want to outsource the questioning
 
 #### How Do I Submit a Good Bug Report?
 
-> You must never report security related issues, vulnerabilities or bugs including sensitive information to the issue tracker, or elsewhere in public. Instead sensitive bugs must be sent by email to <bruno.pacheco@lnds.lu>.
+> You must never report security related issues, vulnerabilities or bugs including sensitive information to the issue tracker, or elsewhere in public. Instead sensitive bugs must be sent by email to <tech@lnds.lu>.
 
 <!-- You may add a PGP key to allow the messages to be sent encrypted as well. -->
 
