@@ -1,4 +1,4 @@
-[![Tests](https://github.com/GenomicDataInfrastructure/ckanext-gdi-userportal/workflows/Tests/badge.svg?branch=main)](https://github.com/GenomicDataInfrastructure/ckanext-gdi-userportal/actions)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
 
 # ckanext-gdi-userportal
 
