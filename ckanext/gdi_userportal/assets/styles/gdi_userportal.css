@@ -607,7 +607,7 @@ button.active {
 }
 /* Admin */
 .account-masthead .account.authed .image {
-  padding: 3px 15px;
+  padding: 0px 15px;
 }
 .btn-warning {
   background-color: #c9a926;
