@@ -1,11 +1,15 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+import ckanext.gdi_userportal.logic.auth.get as auth_get
+import ckanext.gdi_userportal.logic.action.get as action_get
 
 
 class GdiUserPortalPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IFacets, inherit=True)
-
+    plugins.implements(plugins.IAuthFunctions)
+    plugins.implements(plugins.IActions)
+    
     # IConfigurer
 
     def update_config(self, config_):
@@ -27,3 +31,14 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
     def organization_facets(self, facets_dict, organization_type, package_type):
         return self._update_facets(facets_dict)
+
+        # IAuthFunctions
+    def get_auth_functions(self):
+        return {
+            'config_option_show': auth_get.config_option_show
+        }
+
+    def get_actions(self):
+        return {
+            'scheming_package_show': action_get.scheming_package_show
+        }
