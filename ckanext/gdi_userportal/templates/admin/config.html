@@ -1,0 +1,13 @@
+{% ckan_extends %}
+
+{% block admin_form %}
+    {{ super () }}
+    {{ form.markdown('ckanext.gdi_userportal.intro_text', id='field-ckanext-portal-intro-text', label=_('Portal Intro Text'), value=data['ckanext.gdi_userportal.intro_text'], error=error, placeholder=_('Text to show in the Home page of the Portal')) }}
+{% endblock %}
+
+{% block admin_form_help %}
+    {{ super() }}
+    <p><strong>{{ _('Portal Intro Text:') }}</strong>
+        {{ _('This text will be loaded in the Home Page of the Portal linked to this CKAN instance.') }}
+    </p>
+{% endblock %}

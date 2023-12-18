@@ -16,6 +16,15 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         toolkit.add_template_directory(config_, "templates")
         toolkit.add_public_directory(config_, "public")
         toolkit.add_resource("assets", "ckanext-gdi-userportal")
+    
+        # IConfigurer
+    def update_config_schema(self, schema):
+        ignore_missing = toolkit.get_validator('ignore_missing')
+        unicode_safe = toolkit.get_validator('unicode_safe')
+        schema.update({
+            'ckanext.gdi_userportal.intro_text': [ignore_missing, unicode_safe]
+        })
+        return schema
 
     # IFacets
 
