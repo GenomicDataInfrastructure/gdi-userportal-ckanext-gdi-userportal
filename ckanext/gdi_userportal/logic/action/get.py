@@ -34,7 +34,7 @@ def scheming_package_show(context, data_dict):
         {"name": "organization", "label": {"en": "Organization", "nl": "Organisatie", "sv": "Organization"}},
         {"name": "license_title", "label": {"en": "License", "nl": "Licentie", "sv": "Licens"}},
     ]
-    fields_in_schema_that_should_not_be_visible = ["license_id", "notes", "owner_org", "title"]
+    fields_in_schema_that_should_not_be_visible = ["owner_org"]
 
     for field in dataset_fields:
         field_name = field['field_name']
