@@ -9,7 +9,7 @@ class PropFetcher(ABC):
         self._batch_size = batch_size
 
     def get_prop_list(self) -> dict[str, int | list[str]]:
-        nb_datasets = self._get_dataset_number()
+        nb_datasets = self._get_dataset_count()
         prop_values = []
 
         for i in range((nb_datasets // self._batch_size) + 1):
@@ -21,7 +21,7 @@ class PropFetcher(ABC):
 
         return {"count": len(prop_values), "values": prop_values}
 
-    def _get_dataset_number(self) -> int:
+    def _get_dataset_count(self) -> int:
         return toolkit.get_action("package_search")(
             self._context, {"include_private": False}
         )["count"]
@@ -34,5 +34,5 @@ class PropFetcher(ABC):
         return datasets
 
     @abstractmethod
-    def _get_batched_prop_values(self, batched_datasets) -> list[str]:
+    def _get_batched_prop_values(self, batched_datasets: list[dict]) -> list[str]:
         pass
