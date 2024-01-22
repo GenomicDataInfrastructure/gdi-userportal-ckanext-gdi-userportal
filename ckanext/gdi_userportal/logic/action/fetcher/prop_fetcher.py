@@ -19,7 +19,7 @@ class PropFetcher(ABC):
             batched_prop_values = self._get_batched_prop_values(batched_datasets)
             prop_values.extend(batched_prop_values)
 
-        return {"count": len(prop_values), "values": prop_values}
+        return {"count": len(prop_values), "results": prop_values}
 
     def _get_dataset_count(self) -> int:
         return toolkit.get_action("package_search")(

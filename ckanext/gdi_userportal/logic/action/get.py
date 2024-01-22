@@ -129,7 +129,7 @@ def scheming_package_show(context, data_dict):
 @toolkit.side_effect_free
 def get_keyword_list(context, data_dict) -> dict[str, int | list[str]]:
     keywords = list(set(toolkit.get_action("tag_list")(context, data_dict)))
-    return {"count": len(keywords), "values": keywords}
+    return {"count": len(keywords), "results": keywords}
 
 
 @toolkit.side_effect_free
@@ -141,7 +141,7 @@ def get_catalogue_list(context, data_dict) -> dict[str, int | list[str]]:
             )
         )
     )
-    return {"count": len(organizations), "values": organizations}
+    return {"count": len(organizations), "results": organizations}
 
 
 @toolkit.side_effect_free
