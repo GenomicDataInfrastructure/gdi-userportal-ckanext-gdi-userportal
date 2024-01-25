@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractproperty
 
 from ckan.plugins import toolkit
 
@@ -33,6 +33,13 @@ class PropFetcher(ABC):
         )["results"]
         return datasets
 
-    @abstractmethod
     def _get_batched_prop_values(self, batched_datasets: list[dict]) -> list[str]:
+        return [
+            dataset[self._prop_name]
+            for dataset in batched_datasets
+            if self._prop_name in dataset
+        ]
+
+    @abstractproperty
+    def _prop_name() -> str:
         pass
