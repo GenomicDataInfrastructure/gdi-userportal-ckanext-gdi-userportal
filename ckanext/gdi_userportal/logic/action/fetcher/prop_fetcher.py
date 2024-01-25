@@ -41,5 +41,5 @@ class PropFetcher(ABC):
         ]
 
     @abstractproperty
-    def _prop_name() -> str:
+    def _prop_name(self) -> str:
         pass

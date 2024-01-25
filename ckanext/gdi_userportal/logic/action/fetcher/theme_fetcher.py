@@ -10,5 +10,5 @@ class ThemeFetcher(PropFetcher):
         return themes
 
     @property
-    def _prop_name() -> str:
+    def _prop_name(self) -> str:
         return "theme"
