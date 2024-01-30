@@ -113,9 +113,9 @@ If ckanext-gdi-userportal should be available on PyPI you can follow these steps
 
 6. Tag the new release of the project on GitHub with the version number from
    the `setup.py` file. For example if the version number in `setup.py` is
-   0.0.1 then do:
+   1.0.0 then do:
 
-       git tag 0.0.1
+       git tag 1.0.0
        git push --tags
 
 ## License
