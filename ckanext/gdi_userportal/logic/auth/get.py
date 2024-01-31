@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import ckan.plugins.toolkit as toolkit
 
 

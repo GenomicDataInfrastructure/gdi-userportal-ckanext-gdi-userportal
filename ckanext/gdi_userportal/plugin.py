@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+# SPDX-FileContributor: Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.gdi_userportal.logic.action.get import (

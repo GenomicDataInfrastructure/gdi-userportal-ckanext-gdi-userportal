@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from functools import reduce
 
 from ckanext.gdi_userportal.logic.action.fetcher.prop_fetcher import PropFetcher

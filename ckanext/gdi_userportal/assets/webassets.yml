@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 gdi-userportal_css:
   output: ckanext-gdi-userportal/%(version)s_gdi-userportal_css.css
   contents:

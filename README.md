@@ -1,5 +1,13 @@
+<!--
+SPDX-FileCopyrightText: 2024 PNED G.I.E.
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
+[![REUSE status](https://api.reuse.software/badge/github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal)](https://api.reuse.software/info/github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal)
 ![example workflow](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/actions/workflows/main.yml/badge.svg)
 ![example workflow](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/actions/workflows/release.yml/badge.svg)
+![example workflow](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/actions/workflows/test.yml/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=GenomicDataInfrastructure_gdi-userportal-ckanext-gdi-userportal&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=GenomicDataInfrastructure_gdi-userportal-ckanext-gdi-userportal)
 [![GitHub contributors](https://img.shields.io/github/contributors/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal)](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/graphs/contributors)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
@@ -122,4 +130,9 @@ If ckanext-gdi-userportal should be available on PyPI you can follow these steps
 
 ## License
 
-[Apache-2.0](https://spdx.org/licenses/Apache-2.0.html)
+This work is licensed under multiple licences. Because keeping this section up-to-date is challenging, here is a brief summary as of January 2024:
+
+- All original source code is licensed under [Apache-2.0](./LICENSES/Apache-2.0.txt).
+- All documentation is licensed under [CC-BY-4.0](./LICENSES/CC-BY-4.0.txt).
+- Some configuration and data files are licensed under [CC-BY-4.0](./LICENSES/CC-BY-4.0.txt).
+- For more accurate information, check the individual files.
