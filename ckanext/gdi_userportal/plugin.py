@@ -12,6 +12,7 @@ from ckanext.gdi_userportal.logic.action.get import (
     get_publisher_list,
     get_theme_list,
     scheming_package_show,
+    get_with_url_labels
 )
 from ckanext.gdi_userportal.logic.auth.get import config_option_show
 
@@ -67,4 +68,5 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "keyword_list": get_keyword_list,
             "catalogue_list": get_catalogue_list,
             "dataset_list": get_dataset_list,
+            "with_url_labels": get_with_url_labels
         }

@@ -14,6 +14,9 @@ from ckanext.gdi_userportal.logic.action.fetcher import (
     PublisherFetcher,
     ThemeFetcher,
 )
+from ckanext.gdi_userportal.logic.action.translation_utils import (nested_replace, collect_values_to_translate,
+                                                                   get_translations)
+from typing import List, Dict, Union
 
 log = logging.getLogger(__name__)
 
@@ -132,13 +135,13 @@ def scheming_package_show(context, data_dict):
 
 
 @toolkit.side_effect_free
-def get_keyword_list(context, data_dict) -> dict[str, int | list[str]]:
+def get_keyword_list(context, data_dict) -> Dict[str, Union[int, list[str]]]:
     keywords = list(set(toolkit.get_action("tag_list")(context, data_dict)))
     return {"count": len(keywords), "results": keywords}
 
 
 @toolkit.side_effect_free
-def get_catalogue_list(context, data_dict) -> dict[str, int | list[str]]:
+def get_catalogue_list(context, data_dict) -> Dict[str, Union[int, list[str]]]:
     organizations = list(
         set(
             toolkit.get_action("organization_list")(
@@ -150,15 +153,37 @@ def get_catalogue_list(context, data_dict) -> dict[str, int | list[str]]:
 
 
 @toolkit.side_effect_free
-def get_publisher_list(context, data_dict) -> dict[str, int | list[str]]:
+def get_publisher_list(context, data_dict) -> Dict[str, Union[int, List[str]]]:
     return PublisherFetcher(context, batch_size=256).get_prop_list()
 
 
 @toolkit.side_effect_free
-def get_theme_list(context, data_dict) -> dict[str, int | list[str]]:
+def get_theme_list(context, data_dict) -> Dict[str, Union[int, List[str]]]:
     return ThemeFetcher(context, batch_size=256).get_prop_list()
 
 
 @toolkit.side_effect_free
-def get_dataset_list(context, data_dict) -> dict[str, int | list[str]]:
+def get_dataset_list(context, data_dict) -> Dict[str, Union[int, List[str]]]:
     return DatasetFetcher(context, batch_size=256).get_prop_list()
+
+
+@toolkit.side_effect_free
+def get_with_url_labels(context, data_dict) -> Dict:
+    """
+    A wrapper for an action function: calls the function and replaces all starting with http string values with
+    value-label object
+    "action_name" should be a valid name of an action function returning a dictionary
+    """
+    try:
+        action_name = data_dict["action_name"]
+    except KeyError:
+        raise KeyError(f"'action_name' parameter should be provided")
+    del data_dict["action_name"]
+    result = toolkit.get_action(action_name)(context, data_dict)
+    values_to_translate = []
+    for key, value in result.items():
+        collect_values_to_translate(value, values_to_translate)
+    values_to_translate = list(set(values_to_translate))
+    translations = get_translations(values_to_translate)
+    result = nested_replace(result, translations)
+    return result

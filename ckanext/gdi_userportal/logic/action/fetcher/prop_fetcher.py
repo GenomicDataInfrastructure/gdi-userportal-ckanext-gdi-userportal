@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod
+from typing import Dict, List, Union
 
 from ckan.plugins import toolkit
 
@@ -12,7 +13,7 @@ class PropFetcher(ABC):
         self._context = context
         self._batch_size = batch_size
 
-    def get_prop_list(self) -> dict[str, int | list[str]]:
+    def get_prop_list(self) -> Dict[str, Union[int, List[str]]]:
         nb_datasets = self._get_dataset_count()
         prop_values = []
 
@@ -30,20 +31,21 @@ class PropFetcher(ABC):
             self._context, {"include_private": False}
         )["count"]
 
-    def _fetch_batched_datasets(self, start_row: int, nb_rows: int) -> list[dict]:
+    def _fetch_batched_datasets(self, start_row: int, nb_rows: int) -> List[Dict]:
         datasets = toolkit.get_action("package_search")(
             self._context,
             {"include_private": False, "start": start_row, "rows": nb_rows},
         )["results"]
         return datasets
 
-    def _get_batched_prop_values(self, batched_datasets: list[dict]) -> list[str]:
+    def _get_batched_prop_values(self, batched_datasets: List[Dict]) -> List[Dict]:
         return [
             dataset[self._prop_name]
             for dataset in batched_datasets
             if self._prop_name in dataset
         ]
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def _prop_name(self) -> str:
         pass
