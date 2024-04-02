@@ -12,9 +12,10 @@ from ckanext.gdi_userportal.logic.action.get import (
     get_publisher_list,
     get_theme_list,
     scheming_package_show,
-    get_with_url_labels
+    get_with_url_labels,
 )
 from ckanext.gdi_userportal.logic.auth.get import config_option_show
+import json
 
 
 class GdiUserPortalPlugin(plugins.SingletonPlugin):
@@ -22,6 +23,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IFacets, inherit=True)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IActions)
+    plugins.implements(plugins.IPackageController)
 
     # IConfigurer
 
@@ -68,5 +70,78 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "keyword_list": get_keyword_list,
             "catalogue_list": get_catalogue_list,
             "dataset_list": get_dataset_list,
-            "with_url_labels": get_with_url_labels
+            "with_url_labels": get_with_url_labels,
         }
+
+    def read(self, entity):
+        pass
+
+    def create(self, entity):
+        pass
+
+    def edit(self, entity):
+        pass
+
+    def authz_add_role(self, object_role):
+        pass
+
+    def authz_remove_role(self, object_role):
+        pass
+
+    def delete(self, entity):
+        pass
+
+    def before_search(self, search_params):
+        return search_params
+
+    def after_search(self, search_results, search_params):
+        return search_results
+
+    def _parse_to_array(self, data_dict, field):
+        extras_field = f"extras_{field}"
+        if data_dict.get(extras_field):
+            try:
+                data_dict[field] = json.loads(data_dict[extras_field])
+            except json.JSONDecodeError:
+                data_dict[field] = data_dict[extras_field]
+            del data_dict[extras_field]
+        return data_dict
+
+    def before_index(self, data_dict):
+        fields = [
+            "access_rights",
+            "conforms_to",
+            "has_version",
+            "identifier",
+            "language",
+            "provenance",
+            "publisher_name",
+            "spatial_uri",
+            "theme",
+            "uri",
+        ]
+        for field in fields:
+            data_dict = self._parse_to_array(data_dict, field)
+
+        if data_dict.get("res_format"):
+            data_dict["res_format"] = list(dict.fromkeys(data_dict.get("res_format")))
+
+        return data_dict
+
+    def before_view(self, pkg_dict):
+        return pkg_dict
+
+    def after_create(self, context, data_dict):
+        return data_dict
+
+    def after_update(self, context, data_dict):
+        return data_dict
+
+    def after_delete(self, context, data_dict):
+        return data_dict
+
+    def after_show(self, context, data_dict):
+        return data_dict
+
+    def update_facet_titles(self, facet_titles):
+        return facet_titles
