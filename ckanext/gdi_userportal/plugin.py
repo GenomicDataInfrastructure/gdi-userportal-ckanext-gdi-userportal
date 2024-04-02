@@ -25,6 +25,19 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IPackageController)
 
+    _dcatap_fields_to_normalize = [
+        "access_rights",
+        "conforms_to",
+        "has_version",
+        "identifier",
+        "language",
+        "provenance",
+        "publisher_name",
+        "spatial_uri",
+        "theme",
+        "uri",
+    ]
+
     # IConfigurer
 
     def update_config(self, config_):
@@ -108,19 +121,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         return data_dict
 
     def before_index(self, data_dict):
-        fields = [
-            "access_rights",
-            "conforms_to",
-            "has_version",
-            "identifier",
-            "language",
-            "provenance",
-            "publisher_name",
-            "spatial_uri",
-            "theme",
-            "uri",
-        ]
-        for field in fields:
+        for field in self._dcatap_fields_to_normalize:
             data_dict = self._parse_to_array(data_dict, field)
 
         if data_dict.get("res_format"):
