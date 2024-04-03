@@ -130,7 +130,7 @@ If ckanext-gdi-userportal should be available on PyPI you can follow these steps
 
 ## License
 
-This work is licensed under multiple licences. Because keeping this section up-to-date is challenging, here is a brief summary as of January 2024:
+This work is licensed under multiple licenses. Because keeping this section up-to-date is challenging, here is a brief summary as of January 2024:
 
 - All original source code is licensed under [Apache-2.0](./LICENSES/Apache-2.0.txt).
 - All documentation is licensed under [CC-BY-4.0](./LICENSES/CC-BY-4.0.txt).

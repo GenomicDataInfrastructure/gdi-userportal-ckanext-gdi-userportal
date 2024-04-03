@@ -44,7 +44,7 @@
       "form_snippet": "license.html",
       "help_inline": true,
       "help_text": {
-        "en": "[dct:license] This property refers to the licence under which the Dataset is made available."
+        "en": "[dct:license] This property refers to the license under which the Dataset is made available."
       }
     },
     {
