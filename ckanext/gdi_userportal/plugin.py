@@ -6,11 +6,6 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.gdi_userportal.logic.action.get import (
-    get_catalogue_list,
-    get_dataset_list,
-    get_keyword_list,
-    get_publisher_list,
-    get_theme_list,
     scheming_package_show,
     get_with_url_labels,
 )
@@ -78,11 +73,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     def get_actions(self):
         return {
             "scheming_package_show": scheming_package_show,
-            "theme_list": get_theme_list,
-            "publisher_list": get_publisher_list,
-            "keyword_list": get_keyword_list,
-            "catalogue_list": get_catalogue_list,
-            "dataset_list": get_dataset_list,
             "with_url_labels": get_with_url_labels,
         }
 

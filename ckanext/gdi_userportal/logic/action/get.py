@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # SPDX-FileCopyrightText: 2024 Stichting Health-RI
+# SPDX-FileContributor: PNED G.I.E.
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -9,14 +10,12 @@
 import logging
 
 from ckan.plugins import toolkit
-from ckanext.gdi_userportal.logic.action.fetcher import (
-    DatasetFetcher,
-    PublisherFetcher,
-    ThemeFetcher,
+from ckanext.gdi_userportal.logic.action.translation_utils import (
+    nested_replace,
+    collect_values_to_translate,
+    get_translations,
 )
-from ckanext.gdi_userportal.logic.action.translation_utils import (nested_replace, collect_values_to_translate,
-                                                                   get_translations)
-from typing import List, Dict, Union
+from typing import Dict
 
 log = logging.getLogger(__name__)
 
@@ -132,39 +131,6 @@ def scheming_package_show(context, data_dict):
         new_pkg_dict[fieldname] = default_field_dict
 
     return new_pkg_dict
-
-
-@toolkit.side_effect_free
-def get_keyword_list(context, data_dict) -> Dict[str, Union[int, list[str]]]:
-    keywords = list(set(toolkit.get_action("tag_list")(context, data_dict)))
-    return {"count": len(keywords), "results": keywords}
-
-
-@toolkit.side_effect_free
-def get_catalogue_list(context, data_dict) -> Dict[str, Union[int, list[str]]]:
-    organizations = list(
-        set(
-            toolkit.get_action("organization_list")(
-                context, {"permission_list": "read"}
-            )
-        )
-    )
-    return {"count": len(organizations), "results": organizations}
-
-
-@toolkit.side_effect_free
-def get_publisher_list(context, data_dict) -> Dict[str, Union[int, List[str]]]:
-    return PublisherFetcher(context, batch_size=256).get_prop_list()
-
-
-@toolkit.side_effect_free
-def get_theme_list(context, data_dict) -> Dict[str, Union[int, List[str]]]:
-    return ThemeFetcher(context, batch_size=256).get_prop_list()
-
-
-@toolkit.side_effect_free
-def get_dataset_list(context, data_dict) -> Dict[str, Union[int, List[str]]]:
-    return DatasetFetcher(context, batch_size=256).get_prop_list()
 
 
 @toolkit.side_effect_free
