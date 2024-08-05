@@ -42,3 +42,17 @@ def enhanced_package_show(context, data_dict) -> Dict:
     values_to_translate = collect_values_to_translate(result)
     translations = get_translations(values_to_translate)
     return replace_package(result, translations)
+
+
+@toolkit.side_effect_free
+def enhanced_organization_list(context, data_dict) -> Dict:
+    names = toolkit.get_action("organization_list")(context, data_dict)
+
+    results = []
+    for name in names:
+        organization_show_response = toolkit.get_action("organization_show")(
+            context, {"id": name}
+        )
+        results.append(organization_show_response.result)
+
+    return {"count": len(results), "results": results}

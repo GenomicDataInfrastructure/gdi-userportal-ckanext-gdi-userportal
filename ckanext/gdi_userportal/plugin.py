@@ -9,6 +9,7 @@ import ckan.plugins.toolkit as toolkit
 from ckanext.gdi_userportal.logic.action.get import (
     enhanced_package_search,
     enhanced_package_show,
+    enhanced_organization_list,
 )
 from ckanext.gdi_userportal.logic.auth.get import config_option_show
 import json
@@ -75,6 +76,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         return {
             "enhanced_package_search": enhanced_package_search,
             "enhanced_package_show": enhanced_package_show,
+            "enhanced_organization_list": enhanced_organization_list,
         }
 
     def read(self, entity):
@@ -118,9 +120,15 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         # Gets the full Schema definition of the correct dataset
         context = {"model": model, "session": model.Session}
         dataset_dict = {"type": "dataset"}
-        schema = toolkit.get_action("scheming_dataset_schema_show")(context, dataset_dict)
+        schema = toolkit.get_action("scheming_dataset_schema_show")(
+            context, dataset_dict
+        )
 
-        repeating_fields = [x.get("field_name") for x in schema.get("dataset_fields", []) if "repeating_subfields" in x]
+        repeating_fields = [
+            x.get("field_name")
+            for x in schema.get("dataset_fields", [])
+            if "repeating_subfields" in x
+        ]
         for field in repeating_fields:
             try:
                 data_dict[field] = [json.dumps(x) for x in data_dict[field]]
