@@ -159,21 +159,26 @@ attribute with the form `ckan-X.Y` -->
         <field name="uri" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="provenance" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="spatial_uri" type="string" indexed="true" stored="true" multiValued="false" />
-        <field name="contact_point" type="string" indexed="true" stored="true" multiValued="true" />
-        <field name="contact_email" type="text_general" indexed="true" stored="true" />
-        <field name="contact_uri" type="string" indexed="true" stored="true" />
-        <field name="contact_name" type="text_general" indexed="true" stored="true" />
-        <field name="creator" type="string" indexed="true" stored="true" multiValued="true" />
-        <field name="creator_name" type="text_general" indexed="true" stored="true" />
-        <field name="creator_identifier" type="string" indexed="true" stored="true" />
-
         <field name="resources_formats" type="string" indexed="true" stored="true"
-            multiValued="true" />
-        <field name="publisher_name" type="string" indexed="true" stored="true" multiValued="false" />
-        <field name="publisher_uri" type="string" indexed="true" stored="true" />
-        <field name="publisher_email" type="text_general" indexed="true" stored="true" />
-        <field name="publisher_url" type="string" indexed="true" stored="true" />
-        <field name="publisher_type" type="string" indexed="true" stored="true" />
+        multiValued="true" />
+        
+        <field name="contact_point_uri" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="contact_point_name" type="text_general" indexed="true" stored="true" multiValued="true" />
+        <field name="contact_point_email" type="text_general" indexed="true" stored="true" multiValued="true" />
+
+        <field name="creator_uri" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="creator_name" type="text_general" indexed="true" stored="true" multiValued="true" />
+        <field name="creator_email" type="text_general" indexed="true" stored="true" multiValued="true" />
+        <field name="creator_url" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="creator_type" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="creator_identifier" type="string" indexed="true" stored="true" multiValued="true" />
+
+        <field name="publisher_uri" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="publisher_name" type="text_general" indexed="true" stored="true" multiValued="true" />
+        <field name="publisher_email" type="text_general" indexed="true" stored="true" multiValued="true" />
+        <field name="publisher_url" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="publisher_type" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="publisher_identifier" type="string" indexed="true" stored="true" multiValued="true" />            
 
         <field name="capacity" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="permission_labels" type="string" indexed="true" stored="false"
