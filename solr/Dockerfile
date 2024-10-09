@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM solr:9
+FROM solr:9.7.0-slim
 
 EXPOSE 8983
 
