@@ -16,9 +16,6 @@ from ckanext.gdi_userportal.validation import scheming_isodatetime_flex
 
 from ckan import model
 
-log = logging.getLogger(__name__)
-
-
 class GdiUserPortalPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IFacets, inherit=True)
