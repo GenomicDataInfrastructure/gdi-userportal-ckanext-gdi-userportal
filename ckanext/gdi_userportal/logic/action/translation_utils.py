@@ -4,12 +4,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from dataclasses import dataclass
+from typing import Any, Dict, List
+
+from ckan.common import config, request
+
 # -*- coding: utf-8 -*-
 from ckan.plugins import toolkit
-from typing import Any, List, Dict
-from ckan.common import request, config
-from dataclasses import dataclass
-
 
 PACKAGE_REPLACE_FIELDS = [
     "access_rights",
@@ -20,6 +21,7 @@ PACKAGE_REPLACE_FIELDS = [
     "theme",
 ]
 RESOURCE_REPLACE_FIELDS = ["format"]
+DEFAULT_FALLBACK_LANG = "en"
 
 
 @dataclass
@@ -31,15 +33,29 @@ class ValueLabel:
 
 def get_translations(values_to_translate: List) -> Dict[str, str]:
     """Calls term_translation_show action with a list of values to translate"""
-    language = _get_language()
-    translations = toolkit.get_action("term_translation_show")(
-        {}, {"terms": values_to_translate, "lang_codes": language}
+    pref_language = _get_language()
+    fallback_language = config.get("ckan.locale_default", DEFAULT_FALLBACK_LANG)
+
+    translation_table = toolkit.get_action("term_translation_show")(
+        {},
+        {
+            "terms": values_to_translate,
+            "lang_codes": (pref_language, fallback_language),
+        },
     )
 
+    # First fill the dictionary with the fallback language
     translations = {
         transl_item["term"]: transl_item["term_translation"]
-        for transl_item in translations
+        for transl_item in translation_table
+        if (transl_item["lang_code"] == fallback_language)
     }
+
+    # Override with preferred language
+    for transl_item in translation_table:
+        if transl_item["lang_code"] == pref_language:
+            translations[transl_item["term"]] = transl_item["term_translation"]
+
     return translations
 
 
@@ -47,7 +63,7 @@ def _get_language() -> str:
     """
     Tries to get default language from environment variables/ckan config, defaults to English
     """
-    language = "en"
+    language = DEFAULT_FALLBACK_LANG
     try:
         language = request.environ["CKAN_LANG"]
     except (TypeError, KeyError):
