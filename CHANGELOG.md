@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
+
+## [v1.3.4] - 2024-10-26
+
+### Fixed
+* fix(translations): populate translations with a fallback language by @Markus92 in https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/pull/107
+
+### Security
+* chore(deps): update aquasecurity/trivy-action action to v0.28.0 by @LNDS-Sysadmins in https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/pull/108
+
 ## [v1.3.3] - 2024-10-14
 
 ### Changed
