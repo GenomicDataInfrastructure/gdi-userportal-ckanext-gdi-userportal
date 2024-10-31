@@ -13,7 +13,34 @@ from ckanext.gdi_userportal.logic.action.get import (
 from ckanext.gdi_userportal.logic.auth.get import config_option_show
 from ckanext.gdi_userportal.validation import scheming_isodatetime_flex
 
-from ckan import model
+from opentelemetry import metrics
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+import logging
+
+log = logging.getLogger(__name__)
+
+
+def setup_opentelemetry():
+    resource = Resource(attributes={SERVICE_NAME: "ckan"})
+
+    traceProvider = TracerProvider(resource=resource)
+    processor = BatchSpanProcessor(OTLPSpanExporter())
+    traceProvider.add_span_processor(processor)
+    trace.set_tracer_provider(traceProvider)
+
+    reader = PeriodicExportingMetricReader(OTLPMetricExporter())
+    provider = MeterProvider(resource=resource, metric_readers=[reader])
+    metrics.set_meter_provider(provider)
 
 
 class GdiUserPortalPlugin(plugins.SingletonPlugin):
@@ -23,6 +50,8 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IPackageController)
     plugins.implements(plugins.IValidators)
+    plugins.implements(plugins.IMiddleware, inherit=True)
+    plugins.implements(plugins.IConfigurable, inherit=True)
 
     _dcatap_fields_to_normalize = [
         "access_rights",
@@ -147,3 +176,12 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
     def get_validators(self):
         return {"scheming_isodatetime_flex": scheming_isodatetime_flex}
+
+    # IConfigurable
+    def configure(self, config):
+        setup_opentelemetry()
+
+    # IMiddleware
+    def make_middleware(self, app, config):
+        FlaskInstrumentor().instrument_app(app)
+        return app
