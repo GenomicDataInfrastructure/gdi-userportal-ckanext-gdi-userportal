@@ -20,7 +20,7 @@ PACKAGE_REPLACE_FIELDS = [
     "spatial_uri",
     "theme",
 ]
-RESOURCE_REPLACE_FIELDS = ["format"]
+RESOURCE_REPLACE_FIELDS = ["format", "language"]
 DEFAULT_FALLBACK_LANG = "en"
 
 
