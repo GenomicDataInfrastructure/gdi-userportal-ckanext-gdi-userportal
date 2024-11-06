@@ -6,7 +6,7 @@ python-dateutil==2.9.0.post0
 pytz==2024.2
 opentelemetry-api==1.28.0
 opentelemetry-sdk==1.28.0
-opentelemetry-instrumentation==0.48b0
-opentelemetry-instrumentation-flask==0.48b0
+opentelemetry-instrumentation==0.49b0
+opentelemetry-instrumentation-flask==0.49b0
 opentelemetry-exporter-otlp-proto-http==1.28.0
 ckantoolkit==0.0.7
