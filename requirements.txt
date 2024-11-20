@@ -9,5 +9,5 @@ opentelemetry-sdk==1.28.1
 
 opentelemetry-instrumentation==0.49b2
 opentelemetry-instrumentation-flask==0.49b2
-opentelemetry-exporter-otlp-proto-http==1.28.1
+opentelemetry-exporter-otlp-proto-http==1.28.2
 ckantoolkit==0.0.7
