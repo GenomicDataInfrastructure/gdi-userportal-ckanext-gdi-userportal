@@ -7,6 +7,6 @@ pytz==2024.2
 opentelemetry-api==1.28.2
 opentelemetry-sdk==1.28.2
 opentelemetry-instrumentation==0.49b2
-opentelemetry-instrumentation-flask==0.49b1
+opentelemetry-instrumentation-flask==0.49b2
 opentelemetry-exporter-otlp-proto-http==1.28.2
 ckantoolkit==0.0.7
