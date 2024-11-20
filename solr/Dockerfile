@@ -16,7 +16,7 @@ USER root
 RUN cp -R $SOLR_CONFIG_DIR/_default $SOLR_CONFIG_DIR/ckan
 
 # Update the schema
-ADD ./schema.xml $SOLR_SCHEMA_FILE
+COPY ./schema.xml $SOLR_SCHEMA_FILE
 RUN chmod 644 $SOLR_SCHEMA_FILE 
 
 USER solr
