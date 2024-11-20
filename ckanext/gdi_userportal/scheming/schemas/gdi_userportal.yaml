@@ -56,35 +56,6 @@ dataset_fields:
     nl: "[dct:temporal] Deze eigenschap verwijst naar een tijdsperiode die door de Dataset wordt gedekt."
   preset: datetime_flex
 
-- field_name: creator
-  label: Creator
-  repeating_subfields:
-    - field_name: uri
-      label: Creator URI
-
-    - field_name: name
-      label: Creator Name
-
-    - field_name: email
-      label: Creator Email
-      display_snippet: email.html
-
-    - field_name: url
-      label: Creator URL
-      display_snippet: link.html
-
-    - field_name: type
-      label: Creator Type
-
-    - field_name: identifier
-      label: Creator Identifier
-      help_text:
-        en: Unique identifier for the creator, such as a ROR ID.
-        nl: Unieke identificatie voor de maker, zoals een ROR-ID.
-  help_text:
-    en: Entity responsible for producing the dataset.
-    nl: Entiteit die verantwoordelijk is voor het produceren van de dataset.
-
 resource_fields:
 - field_name: issued
   label:
