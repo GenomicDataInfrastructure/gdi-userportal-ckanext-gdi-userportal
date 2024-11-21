@@ -140,11 +140,41 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
     def _parse_agent_name(self, data_dict, field):
         if data_dict.get(field):
-            values = data_dict[field]
-            data_dict[f"{field}_name"] = [value["name"] for value in values]
+            values = data_dict[field]            
+            if isinstance(values, str):
+                try:
+                    values = json.loads(values)
+                except json.JSONDecodeError:
+                    values = [{"name": values}]            
+            if isinstance(values, dict):
+                values = [values]
+            
+            names = list(set(value.get("name") for value in values if value.get("name")))
+            data_dict[f"{field}_name"] = names
         return data_dict
 
     def before_dataset_index(self, data_dict):
+        publisher_name = data_dict.get('extras_publisher__name')
+        creator_name = data_dict.get('extras_creator__name')
+        
+        if publisher_name:
+            try:
+                publisher_names = json.loads(publisher_name)
+                if isinstance(publisher_names, str):
+                    publisher_names = [publisher_names]
+            except json.JSONDecodeError:
+                publisher_names = [publisher_name]
+            data_dict['publisher_name'] = publisher_names
+        
+        if creator_name:
+            try:
+                creator_names = json.loads(creator_name)
+                if isinstance(creator_names, str):
+                    creator_names = [creator_names]
+            except json.JSONDecodeError:
+                creator_names = [creator_name]
+            data_dict['creator_name'] = creator_names
+
         for field in self._dcatap_fields_to_normalize:
             data_dict = self._parse_to_array(data_dict, field)
 
