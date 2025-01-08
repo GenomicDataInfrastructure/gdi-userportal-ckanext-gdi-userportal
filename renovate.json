@@ -2,6 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "packageRules": [
     {
+      "matchPackageNames": ["opentelemetry**"],
+      "groupName": "opentelemetry monorepo"
+    },
+    {
       "depTypeList": ["devDependencies", "require-dev"],
       "updateTypes": ["patch", "minor", "major"],
       "groupName": "devDependencies"
