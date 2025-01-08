@@ -39,32 +39,32 @@ jobs:
       packages: write
 
     steps:
-      - - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Install requirements
-      - run: |
-      - pip install -r requirements.txt
-      - pip install -r dev-requirements.txt
-      - pip install --upgrade pytest-rerunfailures
-      - pip install -e 'git+https://github.com/CivityNL/ckanext-scheming.git@release-3.0.0-civity#egg=ckanext-scheming[requirements]'
-      - pip install -e 'git+https://github.com/ckan/ckanext-harvest.git@v1.6.0#egg=ckanext-harvest[requirements]'
-      - pip install -e 'git+https://github.com/ckan/ckanext-dcat.git@v2.1.0#egg=ckanext-dcat[requirements]'
-      - pip install -r https://raw.githubusercontent.com/ckan/ckanext-dcat/v2.1.0/requirements.txt
-      - python3 setup.py develop
+        run: |
+          pip install -r requirements.txt
+          pip install -r dev-requirements.txt
+          pip install --upgrade pytest-rerunfailures
+          pip install -e 'git+https://github.com/CivityNL/ckanext-scheming.git@release-3.0.0-civity#egg=ckanext-scheming[requirements]'
+          pip install -e 'git+https://github.com/ckan/ckanext-harvest.git@v1.6.0#egg=ckanext-harvest[requirements]'
+          pip install -e 'git+https://github.com/ckan/ckanext-dcat.git@v2.1.0#egg=ckanext-dcat[requirements]'
+          pip install -r https://raw.githubusercontent.com/ckan/ckanext-dcat/v2.1.0/requirements.txt
+          python3 setup.py develop
       - name: Setup extension
-      - run: |
-      - sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
-      - ckan -c test.ini db init
+        run: |
+          sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
+          ckan -c test.ini db init
       - name: Run tests
-      - run: |
-      - pytest --ckan-ini=test.ini --cov=ckanext.gdi_userportal --disable-warnings ckanext/gdi_userportal
+        run: |
+          pytest --ckan-ini=test.ini --cov=ckanext.gdi_userportal --disable-warnings ckanext/gdi_userportal
       - name: Generate coverage report
-      - run: |
-      - coverage xml -o coverage.xml
+        run: |
+          coverage xml -o coverage.xml
       - name: SonarCloud Scan
-      - uses: sonarsource/sonarcloud-github-action@v3
-      - env:
-      - GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        uses: sonarsource/sonarcloud-github-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       - uses: actions/checkout@v4
       - name: REUSE Compliance Check
         uses: fsfe/reuse-action@v5
