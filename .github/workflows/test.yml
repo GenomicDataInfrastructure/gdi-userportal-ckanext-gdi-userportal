@@ -15,8 +15,6 @@ jobs:
       # You can switch this base image with a custom image tailored to your project
       image: openknowledge/ckan-dev:2.10
     services:
-      solr:
-        image: ckan/ckan-solr:2.10-solr9
       postgres:
         image: ckan/ckan-postgres-dev:2.11
         env:
@@ -24,8 +22,6 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-      redis:
-        image: redis:7
 
     env:
       CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@postgres/ckan_test
