@@ -19,6 +19,7 @@ PACKAGE_REPLACE_FIELDS = [
     "language",
     "spatial_uri",
     "theme",
+    "dcat_type",
 ]
 RESOURCE_REPLACE_FIELDS = ["format", "language"]
 DEFAULT_FALLBACK_LANG = "en"
