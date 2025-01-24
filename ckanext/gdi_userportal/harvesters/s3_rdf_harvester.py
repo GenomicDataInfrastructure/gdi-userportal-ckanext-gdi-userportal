@@ -7,6 +7,7 @@ import json
 import logging
 from urllib.parse import urlparse
 
+import botocore
 import ckan.model as model
 from ckanext.harvest.model import HarvestObject, HarvestSource
 from ckan.plugins.toolkit import config
