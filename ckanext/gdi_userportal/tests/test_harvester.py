@@ -1,10 +1,13 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import json
 import pytest
 from unittest.mock import patch, MagicMock
 from botocore.exceptions import ClientError, BotoCoreError
 from ckan.plugins.toolkit import config
 from ckanext.dcat.processors import RDFParserException
-from ckanext.harvest.model import HarvestObject, HarvestJob, HarvestSource
 
 from ckanext.gdi_userportal.harvesters import S3RDFHarvester
 
