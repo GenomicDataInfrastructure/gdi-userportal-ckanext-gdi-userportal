@@ -88,7 +88,51 @@ do:
     python setup.py develop
     pip install -r dev-requirements.txt
 
+Add needed docker images:
+    
+Postgres:
 
+    docker run -d \                                                      
+      --name ckan-postgres \
+      -e POSTGRES_USER=ckan_default \
+      -e POSTGRES_PASSWORD=password \
+      -e POSTGRES_DB=ckan_default \
+      -v /path/to/your/data:/var/lib/postgresql/data \
+      -p 5432:5432 \
+      postgres
+
+Solr:
+
+     docker run --name ckan-solr -p 8983:8983 -d ckan/ckan-solr:2.10-solr9
+
+Redis:
+
+     docker run --name ckan-redis -p 6379:6379 -d redis:7
+
+Add a new ckan.ini in your local repository and add the below values:
+
+     sqlalchemy.url = postgresql://ckan_default:password@localhost:5432/ckan_default
+     ckanext.dcat.rdf.profiles = euro_dcat_ap
+     ckan.harvest.s3_rdf.aws_access_key = changeme
+     ckan.harvest.s3_rdf.aws_secret_key = changeme
+
+## Configure User login
+
+     ckan sysadmin add <username> 
+
+## DB Set UP
+
+To initialize local db:
+
+     ckan db init
+
+To initialize db with harvester tables:
+
+     ckan db upgrade -p harvest
+
+To clean the db:
+
+     ckan db clean
 ## Tests
 
 To run the tests, do:
