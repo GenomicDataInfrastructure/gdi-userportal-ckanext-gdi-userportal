@@ -53,6 +53,7 @@ jobs:
           pip install -e 'git+https://github.com/ckan/ckanext-harvest.git@v1.6.0#egg=ckanext-harvest[requirements]'
           pip install -e 'git+https://github.com/ckan/ckanext-dcat.git@v2.1.0#egg=ckanext-dcat[requirements]'
           pip install -r https://raw.githubusercontent.com/ckan/ckanext-dcat/v2.1.0/requirements.txt
+          pip install -r https://raw.githubusercontent.com/ckan/ckanext-harvest/v1.6.0/requirements.txt
           python3 setup.py develop
       - name: Setup extension
         run: |
