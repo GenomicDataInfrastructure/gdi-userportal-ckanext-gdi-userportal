@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2025 PNED G.I.E.
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
 #
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: Apache-2.0
 
 from ckanext.gdi_userportal.harvesters.s3rdfharvester import S3RDFHarvester

@@ -118,7 +118,7 @@ Add a new ckan.ini in your local repository and add the below values:
 
 ## Configure User login
 
-     ckan sysadmin add <username> 
+     ckan sysadmin add <username>    # Replace <username> with the actual username you want to create
 
 ## DB Set UP
 

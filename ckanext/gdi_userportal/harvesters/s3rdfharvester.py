@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2025 PNED G.I.E.
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
 #
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: Apache-2.0
 
 import boto3
 import json
@@ -19,9 +19,9 @@ class S3RDFHarvester(DCATRDFHarvester):
 
     def info(self):
         return {
-            'name': 's3_rdf',
-            'title': 'S3 RDF Harvester',
-            'description': 'Harvests RDF files from an S3 bucket.'
+            'name': 's3_dcat_rdf',
+            'title': 'S3 DCAT RDF Harvester',
+            'description': 'Harvests RDF files with DCAT datasets from an S3 bucket.'
         }
 
     def gather_stage(self, harvest_job):
@@ -89,8 +89,25 @@ class S3RDFHarvester(DCATRDFHarvester):
 
             return object_ids
 
+        except botocore.exceptions.ClientError as e:
+            error_code = e.response['Error']['Code']
+            error_message = e.response['Error']['Message']
+            self._save_gather_error(
+                f'AWS Client Error accessing S3 bucket: {error_code} - {error_message}',
+                harvest_job
+            )
+            return []
+        except botocore.exceptions.BotoCoreError as e:
+            self._save_gather_error(
+                f'AWS BotoCore Error accessing S3 bucket: {str(e)}',
+                harvest_job
+            )
+            return []
         except Exception as e:
-            self._save_gather_error(f'Error accessing S3 bucket: {e}', harvest_job)
+            self._save_gather_error(
+                f'Unexpected error accessing S3 bucket: {str(e)}',
+                harvest_job
+            )
             return []
 
     def _get_s3_client_info(self, harvest_job):
