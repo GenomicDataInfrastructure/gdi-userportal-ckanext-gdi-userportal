@@ -88,6 +88,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points='''
         [ckan.plugins]
+        gdi_userportalharvester=ckanext.gdi_userportal.harvesters:S3RDFHarvester
         gdi_userportal=ckanext.gdi_userportal.plugin:GdiUserPortalPlugin
 
         [babel.extractors]
