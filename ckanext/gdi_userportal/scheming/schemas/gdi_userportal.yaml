@@ -26,16 +26,6 @@ dataset_fields:
     en: "[dct:modified] This property contains the most recent date on which the Dataset was changed or modified."
     nl: "[dct:modified] Deze eigenschap bevat de meest recente datum waarop de Dataset is gewijzigd of gewijzigd."
 
-- field_name: has_version
-  label:
-    en: Has Version
-    nl: Bevat Versie
-  preset: multiple_text
-  help_inline: true
-  help_text:
-    en: "[dct:hasVersion] This property refers to a related Dataset that is a version, edition, or adaptation of the described Dataset."
-    nl: "[dct:hasVersion] Deze eigenschap verwijst naar een gerelateerde Dataset die een versie, editie of aanpassing is van de beschreven Dataset."
-
 - field_name: temporal_start
   label:
     en: Temporal Start Date
@@ -55,6 +45,11 @@ dataset_fields:
     en: "[dct:temporal] This property refers to a temporal period that the Dataset covers."
     nl: "[dct:temporal] Deze eigenschap verwijst naar een tijdsperiode die door de Dataset wordt gedekt."
   preset: datetime_flex
+
+  # Series fields
+- field_name: in_series
+  label: In Series
+  preset: multiple_text
 
 resource_fields:
 - field_name: issued
