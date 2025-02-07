@@ -59,6 +59,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         "has_version",
         "language",
         "theme",
+        "dcat_type",
     ]
 
     # IConfigurer
