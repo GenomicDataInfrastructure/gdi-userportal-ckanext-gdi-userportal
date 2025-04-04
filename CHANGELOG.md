@@ -11,14 +11,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
 
-### Added
+## [v1.3.4] - 2025-04-04
+
 ### Changed
-### Deprecated
-### Removed
+- Update translation_utils.py by @Hans-Christian in 43e482f
+- chore(deps): update aquasecurity/trivy-action action to v0.28.0 by @Renovate Bot in 0d28b0c
+- chore: update CHANGELOG.md by @Bruno Pacheco in dc0ca52
+
+
 ### Fixed
-### Security
+- fix(translations): populate translations with a fallback language by @Mark Janse in 3c36a98
+
+
+
 
 ## [v1.3.3] - 2024-10-14
 
