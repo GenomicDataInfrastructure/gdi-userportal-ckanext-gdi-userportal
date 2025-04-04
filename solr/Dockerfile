@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM docker.io/solr:9.8.0-slim
+FROM docker.io/solr:9.8.1-slim
 
 EXPOSE 8983
 
