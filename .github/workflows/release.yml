@@ -74,6 +74,7 @@ jobs:
           echo "New tag pushed: $NEW_TAG"
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
+
   generate-changelog:
     runs-on: ubuntu-latest
     needs: versioning
@@ -81,6 +82,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
+          token: '${{ secrets.LNDS_SYSADMINS_TOKEN }}'
           fetch-depth: 0
 
       - name: Set Git User Identity
@@ -98,16 +100,16 @@ jobs:
           CHANGELOG_FILE="CHANGELOG.md"
           LATEST_TAG=$(git tag --sort=-creatordate | sed -n '1p')
           PREVIOUS_TAG=$(git tag --sort=-creatordate | sed -n '2p')
-  
+          
           echo "📢 Generating changelog for $LATEST_TAG (since $PREVIOUS_TAG)..."
-  
+          
           COMMITS=$(git log "$PREVIOUS_TAG".."$LATEST_TAG" --no-merges --pretty=format:"%s by @%an in %h")
           
           if [[ -z "$COMMITS" ]]; then
             echo "⚠️ No commits found between $PREVIOUS_TAG and $LATEST_TAG"
             exit 0
           fi
-  
+          
           ADDED=""; CHANGED=""; FIXED=""; REMOVED=""; SECURITY=""
           while IFS= read -r line; do
             case "$line" in
@@ -128,19 +130,17 @@ jobs:
             [[ -n "$REMOVED" ]] && echo -e "### Removed\n$REMOVED\n"
             [[ -n "$SECURITY" ]] && echo -e "### Security\n$SECURITY\n"
           } > temp_changelog.md
-  
+          
           if [[ ! -f "$CHANGELOG_FILE" ]]; then
             echo -e "# Changelog\n\nAll notable changes to this project will be documented here.\n" > "$CHANGELOG_FILE"
           fi
           
           sed -i '14r temp_changelog.md' "$CHANGELOG_FILE"
           rm temp_changelog.md
-  
+          
           git add "$CHANGELOG_FILE"
-          git commit -m "📜 Update CHANGELOG.md for $LATEST_TAG" || echo "No changes to commit"
+          git commit -m "doc: Update CHANGELOG.md for $LATEST_TAG" || echo "No changes to commit"
           git push origin main
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-release:
     runs-on: ubuntu-latest
