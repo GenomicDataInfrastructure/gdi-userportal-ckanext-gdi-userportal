@@ -11,14 +11,142 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+
+## [v1.3.12] - 2025-04-04
+
+### Changed
+- chore(deps): update dependency botocore to v1.37.23 by @Renovate Bot in 10deef7
+- chore(deps): update dependency pytz to v2025.2 (#159) by @LNDS-Sysadmins in 594334c
+- chore(deps): update dependency botocore to v1.37.22 (#158) by @LNDS-Sysadmins in 293312a
+- chore(deps): update dependency botocore to v1.37.18 (#157) by @LNDS-Sysadmins in eb735b8
+- chore(deps): update dependency boto3 to v1.37.17 (#154) by @LNDS-Sysadmins in 579509f
+- chore(deps): update dependency botocore to v1.37.17 (#155) by @LNDS-Sysadmins in bbf5f3c
+- chore(deps): update opentelemetry monorepo (#153) by @LNDS-Sysadmins in 535fb50
+- chore(deps): update opentelemetry monorepo to v1.31.0 (#138) by @LNDS-Sysadmins in 7351863
+- chore(deps): update docker.io/solr docker tag to v9.8.1 (#151) by @LNDS-Sysadmins in f5a8676
+- chore(deps): update aquasecurity/trivy-action action to v0.30.0 (#152) by @LNDS-Sysadmins in adee04a
+- chore(deps): update dependency pytz to v2025 (#145) by @LNDS-Sysadmins in fcd009b
+- chore(deps): update dependency boto3 to v1.36.26 (#143) by @LNDS-Sysadmins in 99d41d5
+
+
+
+## [v1.3.11] - 2025-04-04
+
+### Fixed
+- fix(ART-12367): fix dcat version by @jadz94 in 74010b8
+
+
+
+## [v1.3.10] - 2025-04-04
 
 ### Added
+- feat(ART-11313): add unit test by @jadz94 in c929c6c
+- feat(ART-11313): add unit test by @jadz94 in 9631e58
+- feat(ART-11313): update requirements by @jadz94 in 34f3a0f
+- feat(ART-11313): update requirements by @jadz94 in 07edb39
+- feat(ART-11313): update error handling by @jadz94 in 668a7b6
+- feat(ART-11313): update license by @jadz94 in 27b14e1
+- feat(ART-11313): add s3 harvester by @jadz94 in 580253e
+
+
 ### Changed
-### Deprecated
-### Removed
+- chore(deps): update docker.io/solr docker tag to v9.8.0 (#141) by @LNDS-Sysadmins in 169737a
+
+
+
+## [v1.3.9] - 2025-04-04
+
+### Added
+- feat(ART-11336): add dcat_type to normalized fields by @Antoine Dorard in ed9df99
+- feat(ART-7222): reorg to fail first for faster processes by @jadz94 in 4b9d351
+- feat(ART-7222): add sonar config for coverage collection by @jadz94 in ba53213
+- feat(ART-7222): test without unused images to because of memory issue by @jadz94 in 889f79a
+- feat(ART-7222): add sonar config for coverage collection by @jadz94 in f229a42
+- feat(ART-7222): add sonar config for coverage collection by @jadz94 in 2b60bda
+- feat(ART-7222): add sonar config for coverage collection by @jadz94 in 2ef40bb
+
+
+### Changed
+- chore(deps): group opentelemetry PRs (#136) by @Bruno Pacheco in 2efe99a
+
+
 ### Fixed
-### Security
+- fix(ART-11336): reference of dcat_type missing in PACKAGE_REPLACE_FIELDS by @Antoine Dorard in 2a3578b
+
+
+
+## [v1.3.8] - 2025-04-04
+
+### Changed
+- chore(deps): decrease trivy severity by @Bruno Pacheco in 354e02e
+
+
+### Fixed
+- fix: ART-10739/missing publishers by @Kacem Bechka in c03a58f
+
+
+
+## [v1.3.7] - 2025-04-04
+
+### Added
+- feat: Update and adopt CKAN DCAT 2.1.0 changes (#127) by @Hans-Christian in 8056579
+
+
+### Changed
+- chore(deps): update dependency opentelemetry-instrumentation-flask to v0.49b2 (#124) by @LNDS-Sysadmins in dc82305
+- chore(deps): update dependency opentelemetry-sdk to v1.28.2 (#125) by @LNDS-Sysadmins in 4f9069e
+- chore(deps): update aquasecurity/trivy-action action to v0.29.0 by @Renovate Bot in 194a937
+- chore(deps): update dependency opentelemetry-instrumentation to v0.49b2 by @Renovate Bot in f3af957
+- chore(deps): update dependency opentelemetry-exporter-otlp-proto-http to v1.28.2 by @Renovate Bot in f214ec0
+- chore(deps): update dependency opentelemetry-api to v1.28.2 by @Renovate Bot in 4adb500
+- chore(deps): update fsfe/reuse-action action to v5 (#120) by @LNDS-Sysadmins in 982c23c
+- chore(deps): update dependency opentelemetry-instrumentation-flask to v0.49b1 (#118) by @LNDS-Sysadmins in 45e0e58
+- chore(deps): update dependency opentelemetry-sdk to v1.28.1 (#119) by @LNDS-Sysadmins in ffff335
+- chore(deps): update dependency opentelemetry-instrumentation to v0.49b1 (#117) by @LNDS-Sysadmins in ab486c6
+- chore(deps): update dependency opentelemetry-exporter-otlp-proto-http to v1.28.1 (#116) by @LNDS-Sysadmins in 4eb693c
+- chore(deps): update dependency opentelemetry-api to v1.28.1 (#115) by @LNDS-Sysadmins in ec079ea
+
+
+### Fixed
+- fix(Dockerfile): use COPY instead of ADD for secure file handling (#130) by @Hans-Christian in 5aa3ae1
+
+
+
+## [v1.3.6] - 2025-04-04
+
+### Changed
+- chore(deps): upgrade opentelemetry components by @Bruno Pacheco in de2774d
+- chore(deps): update dependency opentelemetry-api to v1.28.0 (#112) by @LNDS-Sysadmins in f4d4074
+- chore(deps): update dependency opentelemetry-sdk to v1.28.0 (#114) by @LNDS-Sysadmins in 0c4b3a7
+- chore(deps): update dependency opentelemetry-exporter-otlp-proto-http to v1.28.0 (#113) by @LNDS-Sysadmins in cb3411f
+
+
+
+## [v1.3.5] - 2025-04-04
+
+### Added
+- feat: add language to ckan resource (#110) by @Bruno Pacheco in 202273e
+
+
+### Changed
+- chore(deps): add docker.io to solr base image (#111) by @Bruno Pacheco in dff7113
+- chore: add OTEL (#109) by @Bruno Pacheco in a87d022
+- chore: use cached trivy db by @Bruno Pacheco in 26ed4a4
+- chore: cache trivy db by @Bruno Pacheco in 9a015a7
+
+
+
+## [v1.3.4] - 2025-04-04
+
+### Changed
+- Update translation_utils.py by @Hans-Christian in 43e482f
+- chore(deps): update aquasecurity/trivy-action action to v0.28.0 by @Renovate Bot in 0d28b0c
+- chore: update CHANGELOG.md by @Bruno Pacheco in dc0ca52
+
+
+### Fixed
+- fix(translations): populate translations with a fallback language by @Mark Janse in 3c36a98
+
 
 ## [v1.3.3] - 2024-10-14
 
