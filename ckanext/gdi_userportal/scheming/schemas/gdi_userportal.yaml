@@ -9,51 +9,31 @@ about_url: http://github.com/ckan/ckanext-dcat
 
 dataset_fields:
 - field_name: issued
-  label:
-    en: Issued Date
-    nl: Uitgegeven Datum
+  label: Issued Date
   preset: datetime_flex
-  help_text:
-    en: "[dct:issued] This property contains the date of formal issuance (e.g., publication) of the Dataset."
-    nl: "[dct:issued] Deze eigenschap bevat de datum van formele uitgave (bijv. publicatie) van de Dataset."
+  help_text: "[dct:issued] This property contains the date of formal issuance (e.g., publication) of the Dataset."
 
 - field_name: modified
-  label:
-    en: Modification Date
-    nl: Datum Wijziging
+  label: Modification Date
   preset: datetime_flex
-  help_text:
-    en: "[dct:modified] This property contains the most recent date on which the Dataset was changed or modified."
-    nl: "[dct:modified] Deze eigenschap bevat de meest recente datum waarop de Dataset is gewijzigd of gewijzigd."
+  help_text: "[dct:modified] This property contains the most recent date on which the Dataset was changed or modified."
 
 - field_name: has_version
-  label:
-    en: Has Version
-    nl: Bevat Versie
+  label: Has Version
   preset: multiple_text
   help_inline: true
-  help_text:
-    en: "[dct:hasVersion] This property refers to a related Dataset that is a version, edition, or adaptation of the described Dataset."
-    nl: "[dct:hasVersion] Deze eigenschap verwijst naar een gerelateerde Dataset die een versie, editie of aanpassing is van de beschreven Dataset."
+  help_text: "[dct:hasVersion] This property refers to a related Dataset that is a version, edition, or adaptation of the described Dataset."
 
 - field_name: temporal_start
-  label:
-    en: Temporal Start Date
-    nl: Begindatum tijdsperiode
+  label: Temporal Start Date
   help_inline: true
-  help_text:
-    en: "[dct:temporal] This property refers to a temporal period that the Dataset covers."
-    nl: "[dct:temporal] Deze eigenschap verwijst naar een tijdsperiode die door de Dataset wordt gedekt."
+  help_text: "[dct:temporal] This property refers to a temporal period that the Dataset covers."
   preset: datetime_flex
 
 - field_name: temporal_end
-  label:
-    en: Temporal End Date
-    nl: Einddatum tijdsperiode
+  label: Temporal End Date
   help_inline: true
-  help_text:
-    en: "[dct:temporal] This property refers to a temporal period that the Dataset covers."
-    nl: "[dct:temporal] Deze eigenschap verwijst naar een tijdsperiode die door de Dataset wordt gedekt."
+  help_text: "[dct:temporal] This property refers to a temporal period that the Dataset covers."
   preset: datetime_flex
 
 - field_name: retention_period
@@ -66,12 +46,11 @@ dataset_fields:
     - field_name: end
       label: End
       preset: datetime_flex
-  help_text:  A temporal period which the dataset is available for secondary use.
+  help_text:  "A temporal period which the dataset is available for secondary use."
 
 - field_name: temporal_coverage
   label: Temporal coverage
   repeating_subfields:
-
     - field_name: start
       label: Start
       preset: datetime_flex
@@ -79,23 +58,15 @@ dataset_fields:
     - field_name: end
       label: End
       preset: datetime_flex
-  help_text: The temporal period or periods the dataset covers.
+  help_text: "The temporal period or periods the dataset covers."
 
 resource_fields:
 - field_name: issued
-  label:
-    en: Issued Date
-    nl: Uitgegeven Datum
+  label: Issued Date
   preset: datetime_flex
-  help_text:
-    en: "[dct:issued] This property contains the date of formal issuance (e.g., publication) of the Resource."
-    nl: "[dct:issued] Deze eigenschap bevat de datum van formele uitgave (bijv. publicatie) van de Resource."
+  help_text: "[dct:issued] This property contains the date of formal issuance (e.g., publication) of the Resource."
 
 - field_name: modified
-  label:
-      en: Modification Date
-      nl: Datum Wijziging
+  label: Modification Date
   preset: datetime_flex
-  help_text:
-      en: "[dct:modified] This property contains the most recent date on which the Resource was changed or modified."
-      nl: "[dct:modified] Deze eigenschap bevat de meest recente datum waarop de Resource is gewijzigd of gewijzigd."
+  help_text: "[dct:modified] This property contains the most recent date on which the Resource was changed or modified."
