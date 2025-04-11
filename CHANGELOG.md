@@ -12,6 +12,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.3.13] - 2025-04-11
+
+### Added
+- feat(ART-14066): fix release process by @jadzlnds in 0c947b2
+- feat(ART-14066): fix release process by @jadzlnds in efb98ff
+- feat(ART-14066): fix release process by @jadzlnds in 0fc0a80
+- feat(ART-14066): fix release process by @jadzlnds in caff023
+- feat(time) Use date-time flex instead of dcat time by @Hans-Chrstian in 5130fee
+
+
+### Changed
+- chore(deps): update dependency botocore to v1.37.31 by @Renovate Bot in 87ea9bc
+- Update gdi_userportal.yaml by @Hans-Christian in fb3dda0
+- 📜 Update CHANGELOG.md for v1.3.4 by @jadzlnds in 6388f80
+- chore(deps): update dependency boto3 to v1.37.18 by @Renovate Bot in 6e94752
+
+
+### Fixed
+- fix(release) Remove obsolete depency by @Hans-Chrstian in 8a91eba
+
+
 ## [v1.3.12] - 2025-04-04
 
 ### Changed
