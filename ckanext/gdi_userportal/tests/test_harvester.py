@@ -35,6 +35,17 @@ def s3_rdf_harvester():
     return S3RDFHarvester()
 
 
+@pytest.fixture(autouse=True)
+def mock_harvest_gather_error_create():
+    with patch("ckanext.harvest.model.HarvestGatherError.create") as mock_create:
+        yield mock_create
+        
+@pytest.fixture(autouse=True)
+def mock_save_gather_error():
+    with patch.object(S3RDFHarvester, "_save_gather_error") as mock_save:
+        yield mock_save
+
+
 @pytest.fixture
 def mock_harvestobject_patch():
 

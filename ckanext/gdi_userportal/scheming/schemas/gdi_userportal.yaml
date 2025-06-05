@@ -18,12 +18,6 @@ dataset_fields:
   preset: datetime_flex
   help_text: "[dct:modified] This property contains the most recent date on which the Dataset was changed or modified."
 
-- field_name: has_version
-  label: Has Version
-  preset: multiple_text
-  help_inline: true
-  help_text: "[dct:hasVersion] This property refers to a related Dataset that is a version, edition, or adaptation of the described Dataset."
-
 - field_name: temporal_start
   label: Temporal Start Date
   help_inline: true
