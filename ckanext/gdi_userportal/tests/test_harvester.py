@@ -32,8 +32,9 @@ def mock_harvest_job(mock_harvest_source):
 
 @pytest.fixture
 def s3_rdf_harvester():
-    return S3RDFHarvester()
-
+    harvester = S3RDFHarvester()
+    print(f"DEBUG: harvester class is {type(harvester)}")
+    return harvester
 
 @pytest.fixture
 def mock_harvestobject_patch():
@@ -77,7 +78,6 @@ def mock_mark_deletion_patch():
 def mock_save_gather_error_patch():
     with patch.object(S3RDFHarvester, "_save_gather_error") as mock_save:
         yield mock_save
-
 
 class TestS3RDFHarvesterGatherStage:
 
