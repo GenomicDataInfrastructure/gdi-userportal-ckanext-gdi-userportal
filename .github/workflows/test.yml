@@ -73,7 +73,7 @@ jobs:
         run: |
           coverage xml -o coverage.xml
       - name: Install unzip
-        run: sudo apt-get update && sudo apt-get install -y unzip
+        run: apt-get update && sudo apt-get install -y unzip
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@v5
         env:
