@@ -72,8 +72,10 @@ jobs:
       - name: Generate coverage report
         run: |
           coverage xml -o coverage.xml
+      - name: Install unzip
+        run: apt-get update && apt-get install -y unzip
       - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@v3
+        uses: sonarsource/sonarcloud-github-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
