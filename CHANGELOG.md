@@ -12,6 +12,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.4.0] - 2025-07-02
+
+### Added
+- feat(dataseries) Dataseries support by @Hans-christian in acff709
+- fix(ckan) Correct permissions for CKAN container feat(config) Cleanup test.yaml feat(update) Update all packages to conform ckan 2.11 fix(release) Remove obsolete configuration and update DCAT by @Hans-Christian van der Werf in 9bf3a18
+
+
+### Changed
+- Update requirements.txt by @Hans-Christian in 7bb28d8
+- chore(deps): update dependency boto3 to v1.38.34 by @Renovate Bot in 7c007ff
+- chore(deps): update opentelemetry monorepo to v1.34.1 by @Renovate Bot in a2c3b7b
+- chore(deps): update dependency botocore to v1.38.33 by @Renovate Bot in b81fa54
+- chore(deps): update dependency boto3 to v1.38.33 by @Renovate Bot in 3a2fcc4
+- chore(deps): update sonarsource/sonarcloud-github-action action to v5 by @Renovate Bot in f771185
+- chore(deps): update redis docker tag to v8 by @Renovate Bot in 75032c5
+- chore(deps): update aquasecurity/trivy-action action to v0.31.0 by @Renovate Bot in 356d05c
+- chore(deps): update dependency botocore to v1.37.38 by @Renovate Bot in 99ac210
+- doc: update CHANGELOG.md for v1.3.13 by @LNDS-Sysadmins in 801e3c6
+
+
+### Fixed
+- fix requirements by @Hans-christian in 22daaee
+- fix(sonarcloud) fix missing sonarcloud by @Hans-christian in a60aaf1
+
+
+### Removed
+- remove sudo 2 by @Hans-christian in eacbaed
+- remove sudo by @Hans-christian in 47414d4
+- remove unused methods by @Hans-christian in 6ffedb7
+
+
 ## [v1.3.13] - 2025-04-11
 
 ### Added
