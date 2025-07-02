@@ -54,6 +54,10 @@ dataset_fields:
       preset: datetime_flex
   help_text: "The temporal period or periods the dataset covers."
 
+# Series fields
+- field_name: in_series
+  preset: dataset_series_in_series
+
 resource_fields:
 - field_name: issued
   label: Issued Date

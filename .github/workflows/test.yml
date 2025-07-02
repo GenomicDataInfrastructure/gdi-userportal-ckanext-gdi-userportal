@@ -50,7 +50,7 @@ jobs:
           pip install -e .
       - name: Setup CKAN extensions (harvest, scheming, dcat)
         run: |
-          # Harvest v2.4.1 from GitHub
+          # Harvest v1.6.1 from GitHub
           git clone https://github.com/ckan/ckanext-harvest
           cd ckanext-harvest
           git checkout tags/v1.6.1
@@ -60,7 +60,7 @@ jobs:
           # Scheming (Civity fork)
           pip install -e 'git+https://github.com/CivityNL/ckanext-scheming.git@3.0.0-civity-1#egg=ckanext-scheming[requirements]'
       
-          # DCAT v2.3.0 from PyPI
+          # DCAT v2.4.0 from PyPI
           pip install ckanext-dcat==2.4.0
       - name: Setup extension
         run: |
