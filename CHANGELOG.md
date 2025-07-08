@@ -12,6 +12,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.5.0] - 2025-07-08
+
+### Changed
+- chore(deps): update dependency boto3 to v1.39.3 (#178) by @LNDS-Sysadmins in d3b2c37
+- chore(deps): update aquasecurity/trivy-action action to v0.32.0 (#181) by @LNDS-Sysadmins in b6dc157
+- doc: update CHANGELOG.md for v1.4.0 by @LNDS-Sysadmins in ddde64f
+
+
 ## [v1.4.0] - 2025-07-02
 
 ### Added
