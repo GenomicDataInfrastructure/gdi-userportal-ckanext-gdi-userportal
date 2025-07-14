@@ -68,3 +68,14 @@ resource_fields:
   label: Modification Date
   preset: datetime_flex
   help_text: "[dct:modified] This property contains the most recent date on which the Resource was changed or modified."
+
+- field_name: retention_period
+  label: Retention period
+  repeating_subfields:
+    - field_name: start
+      label: Start
+      preset: datetime_flex
+
+    - field_name: end
+      label: End
+      preset: datetime_flex
