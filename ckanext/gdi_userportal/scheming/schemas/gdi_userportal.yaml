@@ -79,3 +79,13 @@ resource_fields:
     - field_name: end
       label: End
       preset: datetime_flex
+
+- field_name: access_services
+  label: Access services
+  repeating_label: Access service
+  repeating_subfields:
+    - field_name: modified
+      label: Modification date
+      preset: datetime_flex
+      help_text: Most recent date on which the dataset was changed, updated or modified.
+
