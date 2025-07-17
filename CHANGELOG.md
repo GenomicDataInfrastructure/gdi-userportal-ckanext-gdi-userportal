@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.6.0] - 2025-07-17
+
+### Added
+- feat(retention) add missing retention period by @Hans-christian in 9da16ef
+
+
+### Changed
+- Correct datetime flex by @Hans-christian in adc6cce
+- chore(deps): update dependency botocore to v1.39.4 by @Renovate Bot in cb8a74d
+- doc: update CHANGELOG.md for v1.5.0 (#182) by @github-actions[bot] in c35e22b
+
+
 ## [v1.5.0] - 2025-07-08
 
 ### Changed
