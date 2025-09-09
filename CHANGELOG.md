@@ -12,6 +12,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.8.0] - 2025-09-09
+
+### Changed
+- Update requirements.txt by @Hans-Christian in 1b4f1d9
+- Update requirements.txt by @Hans-Christian in bb21040
+- chore(deps): update dependency botocore to v1.40.26 by @Renovate Bot in 26fc0d2
+- chore(deps): update opentelemetry monorepo to v1.36.0 by @Renovate Bot in 2f6eaaa
+- chore(deps): update aquasecurity/trivy-action action to v0.33.1 by @Renovate Bot in deb1be5
+- doc: update CHANGELOG.md for v1.7.0 by @LNDS-Sysadmins in 067c65d
+
+
+### Fixed
+- fix(accesservic) remove override of accesservice by @Hans-christian in 79a3de4
+
+
 ## [v1.7.0] - 2025-09-03
 
 ### Changed
