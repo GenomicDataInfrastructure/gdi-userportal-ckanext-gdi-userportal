@@ -32,16 +32,15 @@ class ValueLabel:
     count: int = None
 
 
-def get_translations(values_to_translate: List) -> Dict[str, str]:
+def get_translations(values_to_translate: List, lang: str = DEFAULT_FALLBACK_LANG) -> Dict[str, str]:
     """Calls term_translation_show action with a list of values to translate"""
-    pref_language = _get_language()
-    fallback_language = config.get("ckan.locale_default", DEFAULT_FALLBACK_LANG)
+    pref_language = _get_language(lang)
 
     translation_table = toolkit.get_action("term_translation_show")(
         {},
         {
             "terms": values_to_translate,
-            "lang_codes": (pref_language, fallback_language),
+            "lang_codes": (pref_language, DEFAULT_FALLBACK_LANG),
         },
     )
 
@@ -49,7 +48,7 @@ def get_translations(values_to_translate: List) -> Dict[str, str]:
     translations = {
         transl_item["term"]: transl_item["term_translation"]
         for transl_item in translation_table
-        if (transl_item["lang_code"] == fallback_language)
+        if (transl_item["lang_code"] == DEFAULT_FALLBACK_LANG)
     }
 
     # Override with preferred language
@@ -60,13 +59,13 @@ def get_translations(values_to_translate: List) -> Dict[str, str]:
     return translations
 
 
-def _get_language() -> str:
+def _get_language(lang: str) -> str:
     """
     Tries to get default language from environment variables/ckan config, defaults to English
     """
     language = DEFAULT_FALLBACK_LANG
     try:
-        language = request.environ["CKAN_LANG"]
+        language = lang
     except (TypeError, KeyError):
         try:
             language = config["ckan.locale_default"]

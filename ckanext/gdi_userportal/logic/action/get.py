@@ -25,7 +25,8 @@ log = logging.getLogger(__name__)
 def enhanced_package_search(context, data_dict) -> Dict:
     result = toolkit.get_action("package_search")(context, data_dict)
     values_to_translate = collect_values_to_translate(result)
-    translations = get_translations(values_to_translate)
+    lang = toolkit.request.headers.get("Accept-Language")
+    translations = get_translations(values_to_translate, lang=lang)
     result["results"] = [
         replace_package(package, translations) for package in result["results"]
     ]
@@ -40,5 +41,6 @@ def enhanced_package_search(context, data_dict) -> Dict:
 def enhanced_package_show(context, data_dict) -> Dict:
     result = toolkit.get_action("package_show")(context, data_dict)
     values_to_translate = collect_values_to_translate(result)
+    lang = toolkit.request.headers.get("Accept-Language")
     translations = get_translations(values_to_translate)
     return replace_package(result, translations)
