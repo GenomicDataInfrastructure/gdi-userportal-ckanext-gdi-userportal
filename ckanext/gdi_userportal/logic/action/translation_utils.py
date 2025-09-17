@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from dataclasses import dataclass
+import logging
 from typing import Any, Dict, List
 
 from ckan.common import config, request
@@ -25,6 +26,7 @@ RESOURCE_REPLACE_FIELDS = ["format", "language"]
 DEFAULT_FALLBACK_LANG = "en"
 SUPPORTED_LANGUAGES = {DEFAULT_FALLBACK_LANG, "nl"}
 
+log = logging.getLogger(__name__)
 
 @dataclass
 class ValueLabel:
@@ -80,6 +82,9 @@ def _get_language(lang: str) -> str:
     language = _normalize_language(lang)
 
     if not language:
+        log.warning(
+            "Could not determine preferred language from request headers, falling back to CKAN config"
+        )
         language = _normalize_language(config.get("ckan.locale_default"))
 
     if language not in SUPPORTED_LANGUAGES:
