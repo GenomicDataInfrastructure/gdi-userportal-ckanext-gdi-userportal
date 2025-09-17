@@ -93,7 +93,7 @@ def validate_datetime_flex_inputs(
         try:
             tz = ZoneInfo(tz_value)
         except ZoneInfoNotFoundError:
-            errors[tz_key].append("Invalid timezone")
+            errors[tz_key].append(f"Invalid timezone: {tz_value}")
         else:
             if isinstance(date, datetime):
                 # If date is naive, treat it as local time in the provided zone
