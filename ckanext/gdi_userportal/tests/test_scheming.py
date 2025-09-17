@@ -23,8 +23,8 @@ def time_nye():
     [
         # No timezone defined
         datetime(2020, 1, 1),
-        # Time ahead (CET is equivalent to Europe/Paris/Amsterdam; use a canonical tz)
-        datetime(2020, 1, 1, 1, 0).replace(tzinfo=ZoneInfo("CET")),
+        # Time ahead (using canonical IANA timezone 'Europe/Amsterdam' instead of 'CET')
+        datetime(2020, 1, 1, 1, 0).replace(tzinfo=ZoneInfo("Europe/Amsterdam")),
         # Time behind
         datetime(2019, 12, 31, 18, 0, 0).replace(tzinfo=ZoneInfo("America/Chicago")),
         # Timezone with half hour offset and microseconds
