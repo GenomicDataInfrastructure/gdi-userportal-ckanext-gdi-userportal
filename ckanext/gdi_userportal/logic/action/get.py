@@ -32,7 +32,7 @@ def enhanced_package_search(context, data_dict) -> Dict:
     ]
     if "search_facets" in result.keys():
         result["search_facets"] = replace_search_facets(
-            result["search_facets"], translations
+            result["search_facets"], translations, lang=lang
         )
     return result
 
