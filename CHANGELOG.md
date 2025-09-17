@@ -12,6 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.0] - 2025-09-17
+
+### Changed
+- Update CHANGELOG.md by @Hans-Christian in 2cc50ff
+- doc: update CHANGELOG.md for v1.10.0 by @LNDS-Sysadmins in 84d68b3
+
+
+### Fixed
+- fix(language) Also parse language to facet translations by @Hans-christian in 101e0c8
+
+
 ## [v1.10.0] - 2025-09-17
 
 ### Added
