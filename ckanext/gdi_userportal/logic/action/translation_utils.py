@@ -155,11 +155,11 @@ def _change_facet(facet, translation_dict):
     return facet
 
 
-def replace_search_facets(data, translation_dict):
+def replace_search_facets(data, translation_dict, lang):
     new_facets = {}
     for key, facet in data.items():
         title = facet["title"]
-        new_facets[key] = {"title": get_translations([title]).get(title, title)}
+        new_facets[key] = {"title": get_translations([title], lang=lang).get(title, title)}
         new_facets[key]["items"] = [
             _change_facet(item, translation_dict) for item in facet["items"]
         ]
