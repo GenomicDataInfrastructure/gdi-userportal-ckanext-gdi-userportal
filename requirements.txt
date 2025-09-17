@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 python-dateutil==2.9.0.post0
-pytz==2025.2
 opentelemetry-api==1.36.0
 opentelemetry-sdk==1.36.0
 opentelemetry-instrumentation==0.57b0

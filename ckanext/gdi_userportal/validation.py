@@ -3,9 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-from datetime import datetime
-
-import pytz
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from ckanext.scheming.validation import register_validator, scheming_validator
 from ckantoolkit import Invalid, _, get_validator
 from dateutil.parser import isoparse
@@ -32,10 +31,11 @@ def enforce_utc_time(dt: datetime) -> datetime:
     # Cut off microseconds, we don't need that much accuracy
     dt = dt.replace(microsecond=0)
 
-    if not dt.tzinfo:
-        out_date = dt.replace(tzinfo=pytz.UTC)
+    # If datetime is naive, assume UTC
+    if dt.tzinfo is None:
+        out_date = dt.replace(tzinfo=timezone.utc)
     else:
-        out_date = dt.astimezone(pytz.UTC)
+        out_date = dt.astimezone(timezone.utc)
 
     return out_date
 
@@ -90,11 +90,17 @@ def validate_datetime_flex_inputs(
 
     tz_key, tz_value = get_input("tz")
     if tz_value:
-        if tz_value not in pytz.all_timezones:
+        try:
+            tz = ZoneInfo(tz_value)
+        except ZoneInfoNotFoundError:
             errors[tz_key].append("Invalid timezone")
         else:
             if isinstance(date, datetime):
-                date = pytz.timezone(tz_value).localize(date)
+                # If date is naive, treat it as local time in the provided zone
+                if date.tzinfo is None:
+                    date = date.replace(tzinfo=tz)
+                else:
+                    date = date.astimezone(tz)
 
     return date
 
