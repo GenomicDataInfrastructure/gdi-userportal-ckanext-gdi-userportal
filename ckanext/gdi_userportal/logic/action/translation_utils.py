@@ -23,6 +23,7 @@ PACKAGE_REPLACE_FIELDS = [
 ]
 RESOURCE_REPLACE_FIELDS = ["format", "language"]
 DEFAULT_FALLBACK_LANG = "en"
+SUPPORTED_LANGUAGES = {DEFAULT_FALLBACK_LANG, "nl"}
 
 
 @dataclass
@@ -59,18 +60,31 @@ def get_translations(values_to_translate: List, lang: str = DEFAULT_FALLBACK_LAN
     return translations
 
 
+def _normalize_language(lang_value: Any) -> str:
+    if not isinstance(lang_value, str) or not lang_value.strip():
+        return ""
+
+    primary = lang_value.split(",", 1)[0]
+    primary = primary.split(";", 1)[0].strip()
+    if not primary:
+        return ""
+
+    primary = primary.replace("_", "-").split("-", 1)[0]
+    return primary.lower()
+
+
 def _get_language(lang: str) -> str:
     """
     Tries to get default language from environment variables/ckan config, defaults to English
     """
-    language = DEFAULT_FALLBACK_LANG
-    try:
-        language = lang
-    except (TypeError, KeyError):
-        try:
-            language = config["ckan.locale_default"]
-        except KeyError:
-            pass
+    language = _normalize_language(lang)
+
+    if not language:
+        language = _normalize_language(config.get("ckan.locale_default"))
+
+    if language not in SUPPORTED_LANGUAGES:
+        language = DEFAULT_FALLBACK_LANG
+
     return language
 
 
