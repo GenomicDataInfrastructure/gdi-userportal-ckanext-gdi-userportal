@@ -19,11 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Changed
-- Update ckanext/gdi_userportal/tests/test_scheming.py by @Quinten in 0126d2e
-- Update ckanext/gdi_userportal/validation.py by @Quinten in acbf657
 - Replace pytz with zoneinfo for timezone handling by @Quinten in 8a3fb32
-- Update requirements.txt by @Hans-Christian in 5a53243
-- normalise accept language by @Hans-christian in d6bf866
 - chore(deps): update dependency botocore to v1.40.32 by @Renovate Bot in 5a8f2fd
 - doc: update CHANGELOG.md for v1.9.0 by @LNDS-Sysadmins in 4d3808f
 
