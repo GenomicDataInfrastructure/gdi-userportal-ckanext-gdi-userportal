@@ -42,5 +42,5 @@ def enhanced_package_show(context, data_dict) -> Dict:
     result = toolkit.get_action("package_show")(context, data_dict)
     values_to_translate = collect_values_to_translate(result)
     lang = toolkit.request.headers.get("Accept-Language")
-    translations = get_translations(values_to_translate)
+    translations = get_translations(values_to_translate, lang=lang)
     return replace_package(result, translations)
