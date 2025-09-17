@@ -11,5 +11,5 @@ opentelemetry-instrumentation-flask==0.57b0
 opentelemetry-exporter-otlp-proto-http==1.36.0
 ckantoolkit==0.0.7
 boto3==1.40.26
-botocore==1.40.26
+botocore==1.40.32
 
