@@ -28,7 +28,6 @@ PACKAGE_REPLACE_FIELDS = [
     "publisher_type",
     "frequency",
     "qualified_relation",
-    "spatial_uri",
     "type",
     "quality_annotation",
     "legal_basis",
