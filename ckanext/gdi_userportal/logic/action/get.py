@@ -28,7 +28,8 @@ def enhanced_package_search(context, data_dict) -> Dict:
     lang = toolkit.request.headers.get("Accept-Language")
     translations = get_translations(values_to_translate, lang=lang)
     result["results"] = [
-        replace_package(package, translations) for package in result["results"]
+        replace_package(package, translations, lang=lang)
+        for package in result["results"]
     ]
     if "search_facets" in result.keys():
         result["search_facets"] = replace_search_facets(
@@ -43,4 +44,4 @@ def enhanced_package_show(context, data_dict) -> Dict:
     values_to_translate = collect_values_to_translate(result)
     lang = toolkit.request.headers.get("Accept-Language")
     translations = get_translations(values_to_translate, lang=lang)
-    return replace_package(result, translations)
+    return replace_package(result, translations, lang=lang)

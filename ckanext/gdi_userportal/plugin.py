@@ -6,6 +6,7 @@
 import json
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
 from ckanext.gdi_userportal.logic.action.get import (
     enhanced_package_search,
     enhanced_package_show,
@@ -50,6 +51,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IPackageController)
     plugins.implements(plugins.IValidators)
+    plugins.implements(plugins.ITemplateHelpers, inherit=True)
     plugins.implements(plugins.IMiddleware, inherit=True)
     plugins.implements(plugins.IConfigurable, inherit=True)
 
@@ -104,6 +106,9 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "enhanced_package_search": enhanced_package_search,
             "enhanced_package_show": enhanced_package_show,
         }
+
+    def get_helpers(self):
+        return get_portal_helpers()
 
     def read(self, entity):
         pass
