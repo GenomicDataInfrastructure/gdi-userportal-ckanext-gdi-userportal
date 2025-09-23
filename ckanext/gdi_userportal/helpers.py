@@ -1,4 +1,7 @@
-"""Template helpers for ckanext-gdi-userportal."""
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+# SPDX-FileContributor: Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
