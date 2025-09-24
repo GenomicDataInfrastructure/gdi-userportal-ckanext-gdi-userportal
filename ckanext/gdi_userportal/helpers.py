@@ -21,15 +21,15 @@ def _ensure_data_dict(data: dict[str, Any] | None, package_id: str | None) -> di
     if data is not None:
         return data
 
-    if not package_id:
-        return {}
+    if package_id:
+        try:
+            return tk.get_action("package_show")(
+                {"ignore_auth": True}, {"id": package_id}
+            )
+        except (tk.ObjectNotFound, tk.NotAuthorized):
+            pass
 
-    try:
-        return tk.get_action("package_show")(
-            {"ignore_auth": True}, {"id": package_id}
-        )
-    except (tk.ObjectNotFound, tk.NotAuthorized):
-        return {}
+    return {}
 
 
 def _value_from_extras(data_dict: dict[str, Any], field_name: str) -> Any:
@@ -64,14 +64,10 @@ def _is_missing_value(value: Any) -> bool:
         return value.strip() == ""
 
     if isinstance(value, dict):
-        if not value:
-            return True
-        return all(_is_missing_value(v) for v in value.values())
+        return not value or all(_is_missing_value(v) for v in value.values())
 
     if isinstance(value, (list, tuple, set)):
-        if not value:
-            return True
-        return all(_is_missing_value(v) for v in value)
+        return not value or all(_is_missing_value(v) for v in value)
 
     return False
 

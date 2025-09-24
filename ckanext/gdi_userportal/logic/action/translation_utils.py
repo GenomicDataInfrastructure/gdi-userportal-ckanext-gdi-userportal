@@ -182,24 +182,7 @@ def replace_search_facets(data, translation_dict, lang):
 
 
 def _apply_translated_properties(data: Any, preferred_lang: str, fallback_lang: str = DEFAULT_FALLBACK_LANG):
-    if isinstance(data, dict):
-        for key, value in list(data.items()):
-            if isinstance(value, dict):
-                _apply_translated_properties(value, preferred_lang, fallback_lang)
-            elif isinstance(value, list):
-                data[key] = [
-                    _apply_translated_properties(item, preferred_lang, fallback_lang)
-                    if isinstance(item, (dict, list))
-                    else item
-                    for item in value
-                ]
-
-        for key, value in list(data.items()):
-            if key.endswith(TRANSLATED_SUFFIX) and isinstance(value, dict):
-                base_key = key[:-len(TRANSLATED_SUFFIX)]
-                data[base_key] = _select_translated_value(value, preferred_lang, fallback_lang)
-            elif key in LANGUAGE_VALUE_FIELDS and isinstance(value, dict):
-                data[key] = _select_translated_value(value, preferred_lang, fallback_lang)
+    if not isinstance(data, (dict, list)):
         return data
 
     if isinstance(data, list):
@@ -209,6 +192,24 @@ def _apply_translated_properties(data: Any, preferred_lang: str, fallback_lang: 
             else item
             for item in data
         ]
+
+    for key, value in list(data.items()):
+        if isinstance(value, dict):
+            _apply_translated_properties(value, preferred_lang, fallback_lang)
+        elif isinstance(value, list):
+            data[key] = [
+                _apply_translated_properties(item, preferred_lang, fallback_lang)
+                if isinstance(item, (dict, list))
+                else item
+                for item in value
+            ]
+
+    for key, value in list(data.items()):
+        if key.endswith(TRANSLATED_SUFFIX) and isinstance(value, dict):
+            base_key = key[:-len(TRANSLATED_SUFFIX)]
+            data[base_key] = _select_translated_value(value, preferred_lang, fallback_lang)
+        elif key in LANGUAGE_VALUE_FIELDS and isinstance(value, dict):
+            data[key] = _select_translated_value(value, preferred_lang, fallback_lang)
 
     return data
 
