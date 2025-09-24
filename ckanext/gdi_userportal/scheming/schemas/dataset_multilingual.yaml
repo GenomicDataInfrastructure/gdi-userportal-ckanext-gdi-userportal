@@ -14,7 +14,6 @@ dataset_fields:
 - field_name: title_translated
   label: Title
   preset: fluent_core_translated
-  required: true
   help_text: A descriptive title for the dataset.
 
 - field_name: name
@@ -24,7 +23,6 @@ dataset_fields:
 
 - field_name: notes_translated
   label: Description
-  required: true
   preset: fluent_core_translated
   form_snippet: fluent_markdown.html
   display_snippet: fluent_markdown.html
@@ -173,7 +171,17 @@ dataset_fields:
   help_text: End of the time period that the dataset covers.
 
 - field_name: in_series
-  preset: dataset_series_in_series
+  label: In series
+  form_snippet: multiple_select.html
+  display_snippet: multiple_choice.html
+  validators: ignore_missing series_validator
+  output_validators: scheming_multiple_choice_output
+  convert: convert_to_extras
+  choices_helper: in_series_choices
+  form_select_attrs:
+    data-module: autocomplete
+    class: ~
+  help_text: Link this dataset to one or more dataset series.
 
 - field_name: version
   label: Version

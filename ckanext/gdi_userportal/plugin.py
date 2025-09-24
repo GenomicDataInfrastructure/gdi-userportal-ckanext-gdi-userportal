@@ -76,8 +76,14 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     def update_config_schema(self, schema):
         ignore_missing = toolkit.get_validator("ignore_missing")
         unicode_safe = toolkit.get_validator("unicode_safe")
+        int_validator = toolkit.get_validator("int_validator")
         schema.update(
-            {"ckanext.gdi_userportal.intro_text": [ignore_missing, unicode_safe]}
+            {
+                "ckanext.gdi_userportal.intro_text": [ignore_missing, unicode_safe],
+                "ckan.harvest.timeout": [ignore_missing, int_validator],
+                "ckan.harvest.mq.type": [ignore_missing, unicode_safe],
+                "ckan.harvest.mq.hostname": [ignore_missing, unicode_safe],
+            }
         )
         return schema
 

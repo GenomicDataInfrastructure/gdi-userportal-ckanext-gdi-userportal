@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import logging
 from typing import Any, Dict, List, Optional
 
-from ckan.common import config, request
+from ckan.common import config
 
 # -*- coding: utf-8 -*-
 from ckan.plugins import toolkit
