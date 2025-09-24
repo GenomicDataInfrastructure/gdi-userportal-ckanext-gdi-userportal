@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Health-ri
+#
+# SPDX-License-Identifier: Apache-2.0
+
 scheming_version: 2
 dataset_type: dataset_series
 about: Multilingual DCAT-AP Dataset Series schema with Fluent support
