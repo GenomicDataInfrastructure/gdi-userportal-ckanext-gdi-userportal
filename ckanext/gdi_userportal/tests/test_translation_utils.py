@@ -84,6 +84,38 @@ def test_replace_package_prefers_requested_language():
     assert attribution_agent["name"] == "Nederlandse agent"
 
 
+def test_replace_package_requested_language_empty_or_none():
+    package = deepcopy(_base_package())
+
+    # Set the requested language values to empty string and None
+    package["title"] = {"en": "English title", "nl": ""}
+    package["notes"] = {"en": "English notes", "nl": None}
+    package["provenance"] = {"en": "English provenance", "nl": ""}
+    package["population_coverage"] = {"en": "English coverage", "nl": None}
+    package["publisher_note"] = {"en": "English publisher note", "nl": ""}
+
+    package["resources"][0]["name"] = {"en": "English resource", "nl": ""}
+    package["resources"][0]["rights"] = {"en": "English rights", "nl": None}
+
+    package["qualified_attribution"][0]["agent"][0]["name"] = {"en": "English agent", "nl": ""}
+
+    result = replace_package(package, translation_dict={}, lang="nl")
+
+    # Should fallback to English when nl is empty or None
+    assert result["title"] == "English title"
+    assert result["notes"] == "English notes"
+    assert result["provenance"] == "English provenance"
+    assert result["population_coverage"] == "English coverage"
+    assert result["publisher_note"] == "English publisher note"
+
+    resource = result["resources"][0]
+    assert resource["name"] == "English resource"
+    assert resource["rights"] == "English rights"
+
+    attribution_agent = result["qualified_attribution"][0]["agent"][0]
+    assert attribution_agent["name"] == "English agent"
+
+
 def test_replace_package_falls_back_to_default_language():
     package = deepcopy(_base_package())
 

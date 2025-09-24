@@ -109,8 +109,7 @@ def scheming_missing_required_fields(
             elif not _is_missing_value(value):
                 continue
 
-            field_name = field.get("field_name")
-            if field_name:
+            if field_name := field.get("field_name"):
                 page_missing.append(field_name)
 
         missing_per_page.append(page_missing)

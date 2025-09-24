@@ -234,6 +234,4 @@ def _has_content(value: Any) -> bool:
         return False
     if isinstance(value, str):
         return bool(value.strip())
-    if isinstance(value, (list, dict)):
-        return bool(value)
-    return True
+    return bool(value) if isinstance(value, (list, dict)) else True
