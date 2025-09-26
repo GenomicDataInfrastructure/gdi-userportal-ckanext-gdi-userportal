@@ -14,7 +14,12 @@ for path in (ROOT_DIR, SRC_DIR):
     if path_str not in sys.path:
         sys.path.append(path_str)
 
-from ckanext.gdi_userportal.logic.action.translation_utils import replace_package
+from unittest.mock import patch
+
+from ckanext.gdi_userportal.logic.action.translation_utils import (
+    replace_package,
+    replace_search_facets,
+)
 
 
 def _base_package():
@@ -114,6 +119,50 @@ def test_replace_package_requested_language_empty_or_none():
 
     attribution_agent = result["qualified_attribution"][0]["agent"][0]
     assert attribution_agent["name"] == "English agent"
+
+
+def test_replace_search_facets_translates_titles():
+    facets = {
+        "theme": {
+            "title": "Theme",
+            "items": [{"name": "health"}, {"name": "science"}],
+        }
+    }
+
+    translation_dict = {"science": "Wetenschap"}
+
+    with patch(
+        "ckanext.gdi_userportal.logic.action.translation_utils.get_translations",
+        return_value={"Theme": "Thema"},
+    ) as mocked_get_translations:
+        result = replace_search_facets(facets, translation_dict, lang="nl")
+
+    mocked_get_translations.assert_called_once_with(["Theme"], lang="nl")
+    theme_facet = result["theme"]
+    assert theme_facet["title"] == "Thema"
+    assert theme_facet["items"][0]["display_name"] == "health"
+    assert theme_facet["items"][1]["display_name"] == "Wetenschap"
+
+
+def test_replace_search_facets_falls_back_to_term_name():
+    facets = {
+        "format": {
+            "title": "Format",
+            "items": [{"name": "csv"}],
+        }
+    }
+
+    translation_dict = {}
+
+    with patch(
+        "ckanext.gdi_userportal.logic.action.translation_utils.get_translations",
+        return_value={},
+    ):
+        result = replace_search_facets(facets, translation_dict, lang="en")
+
+    format_facet = result["format"]
+    assert format_facet["title"] == "Format"
+    assert format_facet["items"][0]["display_name"] == "csv"
 
 
 def test_replace_package_falls_back_to_default_language():
