@@ -207,7 +207,13 @@ def _apply_translated_properties(data: Any, preferred_lang: str, fallback_lang: 
     for key, value in list(data.items()):
         if key.endswith(TRANSLATED_SUFFIX) and isinstance(value, dict):
             base_key = key[:-len(TRANSLATED_SUFFIX)]
-            data[base_key] = _select_translated_value(value, preferred_lang, fallback_lang)
+            merged_values = value.copy()
+            existing_value = data.get(base_key)
+            if isinstance(existing_value, dict):
+                merged_values.update(existing_value)
+            data[base_key] = _select_translated_value(
+                merged_values, preferred_lang, fallback_lang
+            )
         elif key in LANGUAGE_VALUE_FIELDS and isinstance(value, dict):
             data[key] = _select_translated_value(value, preferred_lang, fallback_lang)
 
