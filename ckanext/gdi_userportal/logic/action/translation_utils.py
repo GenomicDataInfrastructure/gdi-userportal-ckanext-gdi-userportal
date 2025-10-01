@@ -6,9 +6,9 @@
 
 from dataclasses import dataclass
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from ckan.common import config, request
+from ckan.common import config
 
 # -*- coding: utf-8 -*-
 from ckan.plugins import toolkit
@@ -23,6 +23,13 @@ PACKAGE_REPLACE_FIELDS = [
     "dcat_type",
 ]
 RESOURCE_REPLACE_FIELDS = ["format", "language"]
+TRANSLATED_SUFFIX = "_translated"
+LANGUAGE_VALUE_FIELDS = {
+    "population_coverage",
+    "publisher_note",
+    "provenance",
+    "rights",
+}
 DEFAULT_FALLBACK_LANG = "en"
 SUPPORTED_LANGUAGES = {DEFAULT_FALLBACK_LANG, "nl"}
 
@@ -121,13 +128,18 @@ def collect_values_to_translate(data: Any) -> List:
     return list(set(values_to_translate))
 
 
-def replace_package(data, translation_dict):
+def replace_package(data, translation_dict, lang: Optional[str] = None):
+    preferred_lang = _get_language(lang)
+
+    _apply_translated_properties(data, preferred_lang)
+
     data = _translate_fields(data, PACKAGE_REPLACE_FIELDS, translation_dict)
     resources = data.get("resources", [])
     data["resources"] = [
         _translate_fields(item, RESOURCE_REPLACE_FIELDS, translation_dict)
         for item in resources
     ]
+
     return data
 
 
@@ -156,11 +168,77 @@ def _change_facet(facet, translation_dict):
 
 
 def replace_search_facets(data, translation_dict, lang):
+    preferred_lang = _get_language(lang)
     new_facets = {}
     for key, facet in data.items():
         title = facet["title"]
-        new_facets[key] = {"title": get_translations([title], lang=lang).get(title, title)}
+        new_facets[key] = {
+            "title": get_translations([title], lang=preferred_lang).get(title, title)
+        }
         new_facets[key]["items"] = [
             _change_facet(item, translation_dict) for item in facet["items"]
         ]
     return new_facets
+
+
+def _apply_translated_properties(data: Any, preferred_lang: str, fallback_lang: str = DEFAULT_FALLBACK_LANG):
+    if not isinstance(data, (dict, list)):
+        return data
+
+    if isinstance(data, list):
+        return [
+            _apply_translated_properties(item, preferred_lang, fallback_lang)
+            if isinstance(item, (dict, list))
+            else item
+            for item in data
+        ]
+
+    for key, value in list(data.items()):
+        if isinstance(value, dict):
+            _apply_translated_properties(value, preferred_lang, fallback_lang)
+        elif isinstance(value, list):
+            data[key] = [
+                _apply_translated_properties(item, preferred_lang, fallback_lang)
+                if isinstance(item, (dict, list))
+                else item
+                for item in value
+            ]
+
+    for key, value in list(data.items()):
+        if key.endswith(TRANSLATED_SUFFIX) and isinstance(value, dict):
+            base_key = key[:-len(TRANSLATED_SUFFIX)]
+            merged_values = value.copy()
+            existing_value = data.get(base_key)
+            if isinstance(existing_value, dict):
+                merged_values.update(existing_value)
+            data[base_key] = _select_translated_value(
+                merged_values, preferred_lang, fallback_lang
+            )
+        elif key in LANGUAGE_VALUE_FIELDS and isinstance(value, dict):
+            data[key] = _select_translated_value(value, preferred_lang, fallback_lang)
+
+    return data
+
+
+def _select_translated_value(values: Dict[str, Any], preferred_lang: str, fallback_lang: str) -> Any:
+    if not isinstance(values, dict):
+        return values
+
+    for lang in (preferred_lang, fallback_lang):
+        translated = values.get(lang)
+        if _has_content(translated):
+            return translated
+
+    for translated in values.values():
+        if _has_content(translated):
+            return translated
+
+    return next(iter(values.values()), "")
+
+
+def _has_content(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    return bool(value) if isinstance(value, (list, dict)) else True
