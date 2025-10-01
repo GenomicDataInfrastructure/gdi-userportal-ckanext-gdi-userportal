@@ -62,7 +62,7 @@ jobs:
           pip install -e 'git+https://github.com/ckan/ckanext-scheming.git@release-3.1.0#egg=ckanext-scheming[requirements]'
 
           # DCAT extension maintained for the GDI user portal
-          pip install -e 'git+https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-dcat.git@v2.3.3#egg=ckanext-dcat'
+          pip install -e 'git+https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-dcat.git@v2.3.4#egg=ckanext-dcat'
           if [ -f "${PIP_SRC}/ckanext-dcat/requirements.txt" ]; then
             pip install -r "${PIP_SRC}/ckanext-dcat/requirements.txt"
           fi
