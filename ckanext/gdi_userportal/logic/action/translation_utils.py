@@ -21,8 +21,34 @@ PACKAGE_REPLACE_FIELDS = [
     "spatial_uri",
     "theme",
     "dcat_type",
+    "code_values",
+    "coding_system",
+    "health_category",
+    "health_theme",
+    "publisher_type",
+    "frequency",
+    "qualified_relation",
+    "type",
+    "quality_annotation",
+    "legal_basis",
+    "personal_data",
+    "purpose",
+    "status",
 ]
-RESOURCE_REPLACE_FIELDS = ["format", "language"]
+RESOURCE_REPLACE_FIELDS = [
+    "format", 
+    "language",
+    "access_rights",
+    "conforms_to",
+]
+ACCESS_SERVICES_REPLACE_FIELDS = [
+    "access_rights",
+    "conforms_to",
+    "format", 
+    "language",
+    "keyword"
+]
+
 TRANSLATED_SUFFIX = "_translated"
 LANGUAGE_VALUE_FIELDS = {
     "population_coverage",
@@ -30,6 +56,7 @@ LANGUAGE_VALUE_FIELDS = {
     "provenance",
     "rights",
 }
+
 DEFAULT_FALLBACK_LANG = "en"
 SUPPORTED_LANGUAGES = {DEFAULT_FALLBACK_LANG, "nl"}
 
@@ -125,6 +152,11 @@ def collect_values_to_translate(data: Any) -> List:
             values_to_translate = _select_and_append_values(
                 resource, RESOURCE_REPLACE_FIELDS, values_to_translate
             )
+            access_services = resource.get("access_services", [])
+            for access_service in access_services:
+                values_to_translate = _select_and_append_values(
+                    access_service, ACCESS_SERVICES_REPLACE_FIELDS, values_to_translate
+                )
     return list(set(values_to_translate))
 
 
@@ -135,10 +167,15 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
 
     data = _translate_fields(data, PACKAGE_REPLACE_FIELDS, translation_dict)
     resources = data.get("resources", [])
-    data["resources"] = [
-        _translate_fields(item, RESOURCE_REPLACE_FIELDS, translation_dict)
-        for item in resources
-    ]
+
+    for resource in resources:
+        resource = _translate_fields(resource, RESOURCE_REPLACE_FIELDS, translation_dict)
+        access_services = resource.get("access_services", [])
+        resource["access_services"] = [
+            _translate_fields(access_service, ACCESS_SERVICES_REPLACE_FIELDS, translation_dict)
+            for access_service in access_services
+        ]
+    data["resources"] = resources
 
     return data
 
