@@ -23,29 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore(deps): update dependency botocore to v1.40.46 by @Renovate Bot in c6509cc
 - chore(deps): update dependency boto3 to v1.40.46 by @Renovate Bot in 003ec84
 - chore(deps): update fsfe/reuse-action action to v6 by @Renovate Bot in 1e71a9a
-- Revert dataseries adjustments by @Hans-christian in f70bd99
-- Update test.yml by @Hans-Christian in 82344cd
-- Update .gitignore by @Hans-Christian in 23deba3
-- added tests by @Hans-christian in 3c771db
-- Update requirements.txt by @Hans-Christian in ac46d53
-- update extension in test.yaml by @Hans-christian in 9b33e38
-- chore(deps): update dependency botocore to v1.40.39 by @Renovate Bot in 32fe3d5
-- apply sourcery comments by @Hans-christian in b905a22
-- Apply suggestions from code review by @Hans-Christian in 88ceaf2
-- Update requirements.txt by @Hans-Christian in 1f77a87
-- added license header by @Hans-christian in 4210002
-- chore(deps): update dependency botocore to v1.40.37 by @Renovate Bot in 52cd665
-- add missing copyright by @Hans-christian in d51ddab
 - Remove duplicate 'spatial_uri' from PACKAGE_REPLACE_FIELDS by @Quinten in f4dd187
 - Add translation support for access_services fields by @Quinten in e80d6e3
 - doc: update CHANGELOG.md for v1.11.0 by @LNDS-Sysadmins in a9d814d
 
 
 ### Fixed
-- fix UT by @Hans-christian in 9c3ed1c
 - fix(facets) correct display of facets in dropdowns by @Hans-christian in 05ccf9c
 - fix(versioning) fix versioning by @Hans-christian in 08c2b28
-- fix UT by @Hans-christian in 914e8a1
 
 
 ## [v1.11.0] - 2025-09-17
