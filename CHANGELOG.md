@@ -12,6 +12,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.1] - 2025-10-07
+
+### Added
+- feat(multilingual) Add multi lingual support for english and dutch by @Hans-christian in b630983
+- feat(gdi_userportal): honor accept-language for enhanced package responses by @Hans-christian in 653c3cc
+
+
+### Changed
+- chore(deps): update dependency botocore to v1.40.46 by @Renovate Bot in c6509cc
+- chore(deps): update dependency boto3 to v1.40.46 by @Renovate Bot in 003ec84
+- chore(deps): update fsfe/reuse-action action to v6 by @Renovate Bot in 1e71a9a
+- Remove duplicate 'spatial_uri' from PACKAGE_REPLACE_FIELDS by @Quinten in f4dd187
+- Add translation support for access_services fields by @Quinten in e80d6e3
+- doc: update CHANGELOG.md for v1.11.0 by @LNDS-Sysadmins in a9d814d
+
+
+### Fixed
+- fix(facets) correct display of facets in dropdowns by @Hans-christian in 05ccf9c
+- fix(versioning) fix versioning by @Hans-christian in 08c2b28
+
+
 ## [v1.11.0] - 2025-09-17
 
 ### Changed
