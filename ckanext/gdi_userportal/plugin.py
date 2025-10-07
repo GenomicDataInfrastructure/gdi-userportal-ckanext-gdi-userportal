@@ -62,6 +62,19 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         "language",
         "theme",
         "dcat_type",
+        "code_values",
+        "alternate_identifier",
+        "documentation",
+        "is_referenced_by",
+        "analytics",
+        "applicable_legislation",
+        "coding_system",
+        "purpose",
+        "health_category",
+        "health_theme",
+        "legal_basis",
+        "personal_data",
+        "publisher_type",
     ]
 
     # IConfigurer
@@ -80,9 +93,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         schema.update(
             {
                 "ckanext.gdi_userportal.intro_text": [ignore_missing, unicode_safe],
-                "ckan.harvest.timeout": [ignore_missing, int_validator],
-                "ckan.harvest.mq.type": [ignore_missing, unicode_safe],
-                "ckan.harvest.mq.hostname": [ignore_missing, unicode_safe],
+                "ckan.harvest.timeout": [ignore_missing, int_validator]
             }
         )
         return schema

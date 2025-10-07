@@ -29,7 +29,7 @@ PACKAGE_REPLACE_FIELDS = [
     "frequency",
     "qualified_relation",
     "type",
-    "quality_annotation",
+    "qualified_attribution",
     "legal_basis",
     "personal_data",
     "purpose",
@@ -49,6 +49,11 @@ ACCESS_SERVICES_REPLACE_FIELDS = [
     "keyword"
 ]
 
+NESTED_FIELD_TRANSLATIONS = {
+    "qualified_relation": {"role"},
+    "qualified_attribution": {"role"},
+}
+
 TRANSLATED_SUFFIX = "_translated"
 LANGUAGE_VALUE_FIELDS = {
     "population_coverage",
@@ -59,6 +64,8 @@ LANGUAGE_VALUE_FIELDS = {
 
 DEFAULT_FALLBACK_LANG = "en"
 SUPPORTED_LANGUAGES = {DEFAULT_FALLBACK_LANG, "nl"}
+
+
 
 log = logging.getLogger(__name__)
 
@@ -132,10 +139,52 @@ def _select_and_append_values(
 ) -> List:
     for key, value in data_item.items():
         if key in fields_list:
-            if isinstance(value, list):
-                target_list.extend(value)
+            target_list = _collect_values_for_field(key, value, target_list)
+    return target_list
+
+
+def _collect_values_for_field(field: str, value: Any, target_list: List) -> List:
+    if value is None:
+        return target_list
+
+    nested_fields = NESTED_FIELD_TRANSLATIONS.get(field)
+
+    if isinstance(value, list):
+        for item in value:
+            if nested_fields and isinstance(item, dict):
+                for nested_field in nested_fields:
+                    if nested_field in item:
+                        target_list = _collect_values_for_field(
+                            nested_field, item[nested_field], target_list
+                        )
             else:
-                target_list.append(value)
+                target_list = _append_atomic_value(item, target_list)
+        return target_list
+
+    if isinstance(value, dict):
+        if nested_fields:
+            for nested_field in nested_fields:
+                if nested_field in value:
+                    target_list = _collect_values_for_field(
+                        nested_field, value[nested_field], target_list
+                    )
+        return target_list
+
+    return _append_atomic_value(value, target_list)
+
+
+def _append_atomic_value(value: Any, target_list: List) -> List:
+    if isinstance(value, list):
+        for item in value:
+            target_list = _append_atomic_value(item, target_list)
+        return target_list
+
+    if isinstance(value, str):
+        if value:
+            target_list.append(value)
+    elif isinstance(value, (int, float)):
+        target_list.append(value)
+
     return target_list
 
 
@@ -185,7 +234,11 @@ def _translate_fields(data, fields_list, translation_dict):
         value = data.get(field)
         new_value = None
         if value:
-            if isinstance(value, List):
+            if field in NESTED_FIELD_TRANSLATIONS:
+                new_value = _translate_nested_field(
+                    field, value, translation_dict
+                )
+            elif isinstance(value, List):
                 new_value = [
                     ValueLabel(name=x, display_name=translation_dict.get(x, x)).__dict__
                     for x in value
@@ -196,6 +249,66 @@ def _translate_fields(data, fields_list, translation_dict):
                 ).__dict__
         data[field] = new_value
     return data
+
+
+def _translate_nested_field(field: str, value: Any, translation_dict: Dict[str, str]) -> Any:
+    nested_fields = NESTED_FIELD_TRANSLATIONS.get(field, set())
+
+    if isinstance(value, list):
+        return [
+            _translate_nested_field(field, item, translation_dict)
+            if isinstance(item, (list, dict))
+            else _translate_atomic_value(item, translation_dict)
+            for item in value
+        ]
+
+    if isinstance(value, dict):
+        if _is_value_label_dict(value):
+            return value
+        translated = value.copy()
+        for nested_field in nested_fields:
+            if nested_field in translated:
+                translated[nested_field] = _translate_atomic_or_collection(
+                    translated[nested_field], translation_dict
+                )
+        return translated
+
+    return _translate_atomic_value(value, translation_dict)
+
+
+def _translate_atomic_or_collection(value: Any, translation_dict: Dict[str, str]) -> Any:
+    if isinstance(value, list):
+        return [
+            _translate_atomic_value(item, translation_dict)
+            if isinstance(item, (str, int, float))
+            else item
+            for item in value
+        ]
+    if isinstance(value, dict):
+        if _is_value_label_dict(value):
+            return value
+        return {
+            key: _translate_atomic_or_collection(val, translation_dict)
+            for key, val in value.items()
+        }
+    return _translate_atomic_value(value, translation_dict)
+
+
+def _translate_atomic_value(value: Any, translation_dict: Dict[str, str]) -> Any:
+    if isinstance(value, str) and value:
+        return ValueLabel(
+            name=value, display_name=translation_dict.get(value, value)
+        ).__dict__
+    return value
+
+
+def _is_value_label_dict(value: Dict[str, Any]) -> bool:
+    if not isinstance(value, dict):
+        return False
+    if "name" not in value or "display_name" not in value:
+        return False
+    name_value = value.get("name")
+    return isinstance(name_value, str) and name_value is not None
 
 
 def _change_facet(facet, translation_dict):
