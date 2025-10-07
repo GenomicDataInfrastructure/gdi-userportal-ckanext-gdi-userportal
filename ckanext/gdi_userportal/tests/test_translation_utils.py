@@ -17,6 +17,7 @@ for path in (ROOT_DIR, SRC_DIR):
 from unittest.mock import patch
 
 from ckanext.gdi_userportal.logic.action.translation_utils import (
+    collect_values_to_translate,
     replace_package,
     replace_search_facets,
 )
@@ -67,6 +68,19 @@ def _base_package():
                 ],
             }
         ],
+        "qualified_relation": [
+            {
+                "relation": "http://example.com/related-dataset",
+                "role": "http://www.iana.org/assignments/relation/related",
+            }
+        ],
+        "quality_annotation": [
+            {
+                "motivated_by": "http://www.w3.org/ns/dqv#qualityAssessment",
+                "body": "https://acertificateserver.eu/mycertificate",
+                "target": "https://fair.healthdata.be/dataset/123",
+            }
+        ],
     }
 
 
@@ -87,6 +101,20 @@ def test_replace_package_prefers_requested_language():
 
     attribution_agent = result["qualified_attribution"][0]["agent"][0]
     assert attribution_agent["name"] == "Nederlandse agent"
+
+    qualified_relation_role = result["qualified_relation"][0]["role"]
+    assert qualified_relation_role == {
+        "name": "http://www.iana.org/assignments/relation/related",
+        "display_name": "http://www.iana.org/assignments/relation/related",
+        "count": None,
+    }
+
+    quality_annotation_motivation = result["quality_annotation"][0]["motivated_by"]
+    assert quality_annotation_motivation == {
+        "name": "http://www.w3.org/ns/dqv#qualityAssessment",
+        "display_name": "http://www.w3.org/ns/dqv#qualityAssessment",
+        "count": None,
+    }
 
 
 def test_replace_package_requested_language_empty_or_none():
@@ -119,6 +147,20 @@ def test_replace_package_requested_language_empty_or_none():
 
     attribution_agent = result["qualified_attribution"][0]["agent"][0]
     assert attribution_agent["name"] == "English agent"
+
+    qualified_relation_role = result["qualified_relation"][0]["role"]
+    assert qualified_relation_role == {
+        "name": "http://www.iana.org/assignments/relation/related",
+        "display_name": "http://www.iana.org/assignments/relation/related",
+        "count": None,
+    }
+
+    quality_annotation_motivation = result["quality_annotation"][0]["motivated_by"]
+    assert quality_annotation_motivation == {
+        "name": "http://www.w3.org/ns/dqv#qualityAssessment",
+        "display_name": "http://www.w3.org/ns/dqv#qualityAssessment",
+        "count": None,
+    }
 
 
 def test_replace_search_facets_translates_titles():
@@ -182,3 +224,51 @@ def test_replace_package_falls_back_to_default_language():
 
     attribution_agent = result["qualified_attribution"][0]["agent"][0]
     assert attribution_agent["name"] == "English agent"
+
+    qualified_relation_role = result["qualified_relation"][0]["role"]
+    assert qualified_relation_role == {
+        "name": "http://www.iana.org/assignments/relation/related",
+        "display_name": "http://www.iana.org/assignments/relation/related",
+        "count": None,
+    }
+
+    quality_annotation_motivation = result["quality_annotation"][0]["motivated_by"]
+    assert quality_annotation_motivation == {
+        "name": "http://www.w3.org/ns/dqv#qualityAssessment",
+        "display_name": "http://www.w3.org/ns/dqv#qualityAssessment",
+        "count": None,
+    }
+
+
+def test_replace_package_translates_nested_values():
+    package = deepcopy(_base_package())
+
+    translation_dict = {
+        "http://www.iana.org/assignments/relation/related": "Related Resource",
+        "http://www.w3.org/ns/dqv#qualityAssessment": "Quality Assessment",
+    }
+
+    result = replace_package(package, translation_dict, lang="en")
+
+    qualified_relation_role = result["qualified_relation"][0]["role"]
+    assert qualified_relation_role == {
+        "name": "http://www.iana.org/assignments/relation/related",
+        "display_name": "Related Resource",
+        "count": None,
+    }
+
+    quality_annotation_motivation = result["quality_annotation"][0]["motivated_by"]
+    assert quality_annotation_motivation == {
+        "name": "http://www.w3.org/ns/dqv#qualityAssessment",
+        "display_name": "Quality Assessment",
+        "count": None,
+    }
+
+
+def test_collect_values_to_translate_includes_nested_fields():
+    package = _base_package()
+
+    values = collect_values_to_translate(package)
+
+    assert "http://www.iana.org/assignments/relation/related" in values
+    assert "http://www.w3.org/ns/dqv#qualityAssessment" in values

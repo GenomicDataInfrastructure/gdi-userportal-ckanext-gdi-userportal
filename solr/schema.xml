@@ -151,6 +151,16 @@ attribute with the form `ckan-X.Y` -->
         <field name="groups" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="organization" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="theme" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="code_values" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="coding_system" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="health_theme" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="health_category" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="is_referenced_by" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="legal_basis" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="alternate_identifier" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="personal_data" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="population_coverage" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="frequency" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="access_rights" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="conforms_to" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="has_version" type="string" indexed="true" stored="true" multiValued="true" />

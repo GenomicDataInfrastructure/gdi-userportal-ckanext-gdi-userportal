@@ -51,7 +51,28 @@ To temporary patch the CKAN configuration for the duration of a test you can use
     def test_some_action():
         pass
 """
+import json
+
+import pytest
+
 import ckanext.gdi_userportal.plugin as plugin
 
-def test_plugin():
-    pass
+
+@pytest.mark.parametrize(
+    "field, values",
+    [
+        ("code_values", ["http://www.wikidata.org/entity/Q12125"]),
+        ("coding_system", ["https://www.wikidata.org/entity/P494"]),
+        ("health_category", ["http://example.org/health-category/1"]),
+        ("alternate_identifier", ["urn:uuid:example"]),
+    ],
+)
+def test_before_dataset_index_normalizes_multi_value_fields(field, values):
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    json_payload = json.dumps(values)
+    input_data = {f"extras_{field}": json_payload}
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result[field] == values
+    assert f"extras_{field}" not in result

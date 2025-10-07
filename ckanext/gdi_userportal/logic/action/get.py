@@ -7,8 +7,6 @@
 
 # -*- coding: utf-8 -*-
 
-import logging
-
 from ckan.plugins import toolkit
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     collect_values_to_translate,
@@ -17,8 +15,6 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
     replace_search_facets,
 )
 from typing import Dict
-
-log = logging.getLogger(__name__)
 
 
 @toolkit.side_effect_free
