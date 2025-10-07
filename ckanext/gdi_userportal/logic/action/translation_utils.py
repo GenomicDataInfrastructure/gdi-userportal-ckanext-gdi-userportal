@@ -28,6 +28,7 @@ PACKAGE_REPLACE_FIELDS = [
     "publisher_type",
     "frequency",
     "qualified_relation",
+    "quality_annotation",
     "type",
     "qualified_attribution",
     "legal_basis",
@@ -52,6 +53,7 @@ ACCESS_SERVICES_REPLACE_FIELDS = [
 NESTED_FIELD_TRANSLATIONS = {
     "qualified_relation": {"role"},
     "qualified_attribution": {"role"},
+    "quality_annotation": {"motivated_by"},
 }
 
 TRANSLATED_SUFFIX = "_translated"
