@@ -46,8 +46,7 @@ ACCESS_SERVICES_REPLACE_FIELDS = [
     "access_rights",
     "conforms_to",
     "format", 
-    "language",
-    "keyword"
+    "language"
 ]
 
 NESTED_FIELD_TRANSLATIONS = {
@@ -62,6 +61,7 @@ LANGUAGE_VALUE_FIELDS = {
     "publisher_note",
     "provenance",
     "rights",
+    "version_notes"
 }
 
 DEFAULT_FALLBACK_LANG = "en"
