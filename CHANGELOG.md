@@ -17,8 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - chore(deps): update dependency botocore to v1.40.47 by @Renovate Bot in c2e95ad
 - chore(deps): update dependency boto3 to v1.40.47 by @Renovate Bot in 4cdae49
-- Update CHANGELOG.md by @Hans-Christian in 498a244
-- doc: update CHANGELOG.md for v1.11.1 by @LNDS-Sysadmins in 6438a11
 
 
 ### Fixed
