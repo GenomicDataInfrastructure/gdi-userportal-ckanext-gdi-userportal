@@ -12,6 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.2] - 2025-10-08
+
+### Changed
+- chore(deps): update dependency botocore to v1.40.47 by @Renovate Bot in c2e95ad
+- chore(deps): update dependency boto3 to v1.40.47 by @Renovate Bot in 4cdae49
+
+
+### Fixed
+- fix(version_notes) Fix version notes by @Hans-christian in 8cf0466
+
+
 ## [v1.11.1] - 2025-10-07
 
 ### Added
