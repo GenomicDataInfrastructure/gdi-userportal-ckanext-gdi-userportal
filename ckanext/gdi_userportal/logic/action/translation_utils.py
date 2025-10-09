@@ -18,7 +18,7 @@ PACKAGE_REPLACE_FIELDS = [
     "conforms_to",
     "has_version",
     "language",
-    "spatial_uri",
+    "spatial_coverage",
     "theme",
     "dcat_type",
     "code_values",
@@ -41,6 +41,7 @@ RESOURCE_REPLACE_FIELDS = [
     "language",
     "access_rights",
     "conforms_to",
+    "license"
 ]
 ACCESS_SERVICES_REPLACE_FIELDS = [
     "access_rights",
@@ -53,6 +54,7 @@ NESTED_FIELD_TRANSLATIONS = {
     "qualified_relation": {"role"},
     "qualified_attribution": {"role"},
     "quality_annotation": {"motivated_by"},
+    "spatial_coverage": {"uri"},
 }
 
 TRANSLATED_SUFFIX = "_translated"
