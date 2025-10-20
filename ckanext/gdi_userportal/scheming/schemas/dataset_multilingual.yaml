@@ -662,13 +662,13 @@ resource_fields:
   label: Status
   preset: select
   choices:
-    - value: http://purl.org/adms/status/Completed
+    - value: http://publications.europa.eu/resource/authority/distribution-status/COMPLETED
       label: Completed
-    - value: http://purl.org/adms/status/UnderDevelopment
+    - value: http://publications.europa.eu/resource/authority/distribution-status/DEVELOP
       label: Under Development
-    - value: http://purl.org/adms/status/Deprecated
+    - value: http://publications.europa.eu/resource/authority/distribution-status/DEPRECATED
       label: Deprecated
-    - value: http://purl.org/adms/status/Withdrawn
+    - value: http://publications.europa.eu/resource/authority/distribution-status/WITHDRAWN
       label: Withdrawn
   help_text: The status of the resource in the context of maturity lifecycle.
 
