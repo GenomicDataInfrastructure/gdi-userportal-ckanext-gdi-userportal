@@ -12,16 +12,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.4] - 2025-10-20
+
+### Fixed
+- fix(adms:status) Use correct ontology to validate against by @Hans-christian in 1e4d151
+
 ## [v1.11.3] - 2025-10-09
 
 ### Added
 - feat(translate) More translate fields by @Hans-christian in c42bdd8
 
-
 ### Changed
 - chore(deps): update dependency botocore to v1.40.48 by @Renovate Bot in 2cb54bf
 - chore(deps): update dependency boto3 to v1.40.48 by @Renovate Bot in 43cdcca
-
 
 ## [v1.11.2] - 2025-10-08
 
