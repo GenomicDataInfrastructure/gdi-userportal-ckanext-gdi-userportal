@@ -543,7 +543,6 @@ dataset_fields:
 - field_name: qualified_attribution
   label: Qualified attribution
   repeating_label: Attribution
-  repeating_once: true
   repeating_subfields:
     - field_name: agent
       label: Agent
