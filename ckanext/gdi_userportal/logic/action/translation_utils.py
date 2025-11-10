@@ -31,7 +31,7 @@ PACKAGE_REPLACE_FIELDS = [
     "purpose",
     "qualified_attribution", #new (role in nested)
     "qualified_relation", #new (role in nested)
-    "quality_annotation",#new (motivated_by in nested (of body of target toch))
+    "quality_annotation", #new (body in nested)
     "spatial_coverage", #new (was spatial_uri)
     "status", #new
     "theme",
