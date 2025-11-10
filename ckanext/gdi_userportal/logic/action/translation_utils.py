@@ -15,46 +15,58 @@ from ckan.plugins import toolkit
 
 PACKAGE_REPLACE_FIELDS = [
     "access_rights",
-    "conforms_to",
-    "has_version",
-    "language",
-    "spatial_coverage",
-    "theme",
-    "dcat_type",
+    "applicable_legislation", #new
     "code_values",
     "coding_system",
+    "conforms_to",
+    "dcat_type",
+    "has_version",
     "health_category",
     "health_theme",
-    "publisher_type",
     "frequency",
-    "qualified_relation",
-    "quality_annotation",
-    "type",
-    "qualified_attribution",
+    "language",
     "legal_basis",
     "personal_data",
+    "publisher_type",
     "purpose",
+    "qualified_attribution", #new (role in nested)
+    "qualified_relation", #new (role in nested)
+    "quality_annotation",#new (motivated_by in nested (of body of target toch))
+    "spatial_coverage", #new (was spatial_uri)
+    "status", #new
+    "theme",
+    "type", #new
 ]
 RESOURCE_REPLACE_FIELDS = [
-    "format", 
-    "language",
     "access_rights",
+    "applicable_legislation", #new
     "conforms_to",
-    "license",
+    "format",
+    "hash_algorithm", #new
+    "language",
+    "license", #new
     "status",
 ]
 ACCESS_SERVICES_REPLACE_FIELDS = [
     "access_rights",
+    "applicable_legislation", #new
     "conforms_to",
-    "format", 
-    "language"
+    "creator", #new
+    "format",
+    "hvd_category", #new
+    "language",
+    "license", #new
+    "publisher", #new
+    "theme", #new
 ]
 
 NESTED_FIELD_TRANSLATIONS = {
     "qualified_relation": {"role"},
     "qualified_attribution": {"role"},
-    "quality_annotation": {"motivated_by"},
+    "quality_annotation": {"body"},
     "spatial_coverage": {"uri"},
+    "creator": {"type"},
+    "publisher": {"type"},
 }
 
 TRANSLATED_SUFFIX = "_translated"
