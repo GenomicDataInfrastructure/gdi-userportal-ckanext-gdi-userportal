@@ -76,7 +76,6 @@ def _base_package():
         ],
         "quality_annotation": [
             {
-                "motivated_by": "http://www.w3.org/ns/dqv#qualityAssessment",
                 "body": "https://acertificateserver.eu/mycertificate",
                 "target": "https://fair.healthdata.be/dataset/123",
             }
@@ -109,10 +108,10 @@ def test_replace_package_prefers_requested_language():
         "count": None,
     }
 
-    quality_annotation_motivation = result["quality_annotation"][0]["motivated_by"]
-    assert quality_annotation_motivation == {
-        "name": "http://www.w3.org/ns/dqv#qualityAssessment",
-        "display_name": "http://www.w3.org/ns/dqv#qualityAssessment",
+    quality_annotation_body = result["quality_annotation"][0]["body"]
+    assert quality_annotation_body == {
+        "name": "https://acertificateserver.eu/mycertificate",
+        "display_name": "https://acertificateserver.eu/mycertificate",
         "count": None,
     }
 
@@ -155,10 +154,10 @@ def test_replace_package_requested_language_empty_or_none():
         "count": None,
     }
 
-    quality_annotation_motivation = result["quality_annotation"][0]["motivated_by"]
-    assert quality_annotation_motivation == {
-        "name": "http://www.w3.org/ns/dqv#qualityAssessment",
-        "display_name": "http://www.w3.org/ns/dqv#qualityAssessment",
+    quality_annotation_body = result["quality_annotation"][0]["body"]
+    assert quality_annotation_body == {
+        "name": "https://acertificateserver.eu/mycertificate",
+        "display_name": "https://acertificateserver.eu/mycertificate",
         "count": None,
     }
 
@@ -232,10 +231,10 @@ def test_replace_package_falls_back_to_default_language():
         "count": None,
     }
 
-    quality_annotation_motivation = result["quality_annotation"][0]["motivated_by"]
-    assert quality_annotation_motivation == {
-        "name": "http://www.w3.org/ns/dqv#qualityAssessment",
-        "display_name": "http://www.w3.org/ns/dqv#qualityAssessment",
+    quality_annotation_body = result["quality_annotation"][0]["body"]
+    assert quality_annotation_body == {
+        "name": "https://acertificateserver.eu/mycertificate",
+        "display_name": "https://acertificateserver.eu/mycertificate",
         "count": None,
     }
 
@@ -245,7 +244,7 @@ def test_replace_package_translates_nested_values():
 
     translation_dict = {
         "http://www.iana.org/assignments/relation/related": "Related Resource",
-        "http://www.w3.org/ns/dqv#qualityAssessment": "Quality Assessment",
+        "https://acertificateserver.eu/mycertificate": "My Special Certificate",
     }
 
     result = replace_package(package, translation_dict, lang="en")
@@ -257,10 +256,10 @@ def test_replace_package_translates_nested_values():
         "count": None,
     }
 
-    quality_annotation_motivation = result["quality_annotation"][0]["motivated_by"]
-    assert quality_annotation_motivation == {
-        "name": "http://www.w3.org/ns/dqv#qualityAssessment",
-        "display_name": "Quality Assessment",
+    quality_annotation_body = result["quality_annotation"][0]["body"]
+    assert quality_annotation_body == {
+        "name": "https://acertificateserver.eu/mycertificate",
+        "display_name": "My Special Certificate",
         "count": None,
     }
 
@@ -271,4 +270,4 @@ def test_collect_values_to_translate_includes_nested_fields():
     values = collect_values_to_translate(package)
 
     assert "http://www.iana.org/assignments/relation/related" in values
-    assert "http://www.w3.org/ns/dqv#qualityAssessment" in values
+    assert "https://acertificateserver.eu/mycertificate" in values
