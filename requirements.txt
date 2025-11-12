@@ -9,7 +9,7 @@ opentelemetry-instrumentation==0.59b0
 opentelemetry-instrumentation-flask==0.59b0
 opentelemetry-exporter-otlp-proto-http==1.38.0
 ckantoolkit==0.0.7
-boto3==1.40.70
+boto3==1.40.71
 botocore==1.40.71
 
 
