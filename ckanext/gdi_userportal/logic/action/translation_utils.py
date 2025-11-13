@@ -65,15 +65,15 @@ ACCESS_SERVICES_REPLACE_FIELDS = [
 
 NESTED_FIELD_TRANSLATIONS = {
     "qualified_relation": {"role"},
-    "qualified_attribution": {"role"},
+    "qualified_attribution": {"role", "agent"},
+    "agent": {"type"},
     "quality_annotation": {"body"},
     "spatial_coverage": {"uri"},
     "creator": {"type"},
     "publisher": {"type"},
-    "provenance_activity": {"wasAssociatedWith"},
-    "wasAssociatedWith": {"type"},
-    "qualified_attribution": {"agent"},
-    "agent": {"type"},
+    "provenance_activity": {"type", "wasAssociatedWith"},
+    "wasAssociatedWith": {"type", "actedOnBehalfOf"},
+    "actedOnBehalfOf": {"type"},
 }
 
 TRANSLATED_SUFFIX = "_translated"
@@ -255,22 +255,24 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
 def _translate_fields(data, fields_list, translation_dict):
     for field in fields_list:
         value = data.get(field)
-        new_value = None
-        if value:
-            if field in NESTED_FIELD_TRANSLATIONS:
-                new_value = _translate_nested_field(
-                    field, value, translation_dict
-                )
-            elif isinstance(value, List):
-                new_value = [
-                    ValueLabel(name=x, display_name=translation_dict.get(x, x)).__dict__
-                    for x in value
-                ]
-            else:
-                new_value = ValueLabel(
-                    name=value, display_name=translation_dict.get(value, value)
-                ).__dict__
-        data[field] = new_value
+        if value is None:
+            data[field] = None
+            continue
+
+        if field in NESTED_FIELD_TRANSLATIONS:
+            data[field] = _translate_nested_field(field, value, translation_dict)
+            continue
+
+        if isinstance(value, List):
+            data[field] = [
+                ValueLabel(name=x, display_name=translation_dict.get(x, x)).__dict__
+                for x in value
+            ]
+            continue
+
+        data[field] = ValueLabel(
+            name=value, display_name=translation_dict.get(value, value)
+        ).__dict__
     return data
 
 
