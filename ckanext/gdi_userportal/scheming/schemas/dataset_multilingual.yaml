@@ -47,7 +47,6 @@ dataset_fields:
 
     - field_name: name_translated
       label: Name (translations)
-      preset: fluent_core_translated
       help_text: Name of the contact point in each language.
 
     - field_name: email
@@ -74,7 +73,6 @@ dataset_fields:
 
     - field_name: name_translated
       label: Name (translations)
-      preset: fluent_core_translated
       help_text: Name of the entity or person who published the dataset in each language.
 
     - field_name: email
@@ -109,7 +107,6 @@ dataset_fields:
 
     - field_name: name_translated
       label: Name (translations)
-      preset: fluent_core_translated
       help_text: Name of the entity or person who created the dataset in each language.
 
     - field_name: email
@@ -437,7 +434,6 @@ dataset_fields:
 
     - field_name: name_translated
       label: Name (translations)
-      preset: fluent_core_translated
       help_text: Name of the health data access body in each language.
 
     - field_name: email
@@ -556,7 +552,6 @@ dataset_fields:
 
         - field_name: name_translated
           label: Name (translations)
-          preset: fluent_core_translated
           help_text: Agent name in each language.
 
         - field_name: email
@@ -827,7 +822,6 @@ resource_fields:
 
         - field_name: name_translated
           label: Name (translations)
-          preset: fluent_core_translated
           help_text: Name of the contact point in each language.
 
         - field_name: email
@@ -858,7 +852,6 @@ resource_fields:
 
         - field_name: name_translated
           label: Name (translations)
-          preset: fluent_core_translated
           help_text: Name of the entity or person who created the data service in each language.
 
         - field_name: email
@@ -893,7 +886,6 @@ resource_fields:
 
         - field_name: name_translated
           label: Name (translations)
-          preset: fluent_core_translated
           help_text: Name of the entity or person who publishes the data service in each language.
 
         - field_name: email
