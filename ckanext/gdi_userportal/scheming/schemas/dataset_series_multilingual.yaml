@@ -51,7 +51,6 @@ dataset_fields:
 
     - field_name: name_translated
       label: Name (translations)
-      preset: fluent_core_translated
       help_text: Localised name of the contact point.
 
     - field_name: email
@@ -77,7 +76,6 @@ dataset_fields:
 
     - field_name: name_translated
       label: Name (translations)
-      preset: fluent_core_translated
       help_text: Localised name of the publisher.
 
     - field_name: email
@@ -112,7 +110,6 @@ dataset_fields:
 
     - field_name: name_translated
       label: Name (translations)
-      preset: fluent_core_translated
       help_text: Localised name of the creator.
 
     - field_name: email
