@@ -15,9 +15,10 @@ from ckan.plugins import toolkit
 
 PACKAGE_REPLACE_FIELDS = [
     "access_rights",
-    "applicable_legislation", #new
+    "applicable_legislation",
     "code_values",
     "coding_system",
+    "creator",
     "conforms_to",
     "dcat_type",
     "has_version",
@@ -27,37 +28,39 @@ PACKAGE_REPLACE_FIELDS = [
     "language",
     "legal_basis",
     "personal_data",
+    "provenance_activity",
+    "publisher",
     "publisher_type",
     "purpose",
-    "qualified_attribution", #new (role in nested)
-    "qualified_relation", #new (role in nested)
-    "quality_annotation", #new (body in nested)
-    "spatial_coverage", #new (was spatial_uri)
-    "status", #new
+    "qualified_attribution",
+    "qualified_relation",
+    "quality_annotation",
+    "spatial_coverage",
+    "status",
     "theme",
-    "type", #new
+    "type",
 ]
 RESOURCE_REPLACE_FIELDS = [
     "access_rights",
-    "applicable_legislation", #new
+    "applicable_legislation", 
     "conforms_to",
     "format",
-    "hash_algorithm", #new
+    "hash_algorithm", 
     "language",
-    "license", #new
+    "license",
     "status",
 ]
 ACCESS_SERVICES_REPLACE_FIELDS = [
     "access_rights",
-    "applicable_legislation", #new
+    "applicable_legislation", 
     "conforms_to",
-    "creator", #new
+    "creator", 
     "format",
-    "hvd_category", #new
+    "hvd_category",
     "language",
-    "license", #new
-    "publisher", #new
-    "theme", #new
+    "license", 
+    "publisher",
+    "theme",
 ]
 
 NESTED_FIELD_TRANSLATIONS = {
@@ -67,6 +70,10 @@ NESTED_FIELD_TRANSLATIONS = {
     "spatial_coverage": {"uri"},
     "creator": {"type"},
     "publisher": {"type"},
+    "provenance_activity": {"wasAssociatedWith"},
+    "wasAssociatedWith": {"type"},
+    "qualified_attribution": {"agent"},
+    "agent": {"type"},
 }
 
 TRANSLATED_SUFFIX = "_translated"
@@ -284,9 +291,15 @@ def _translate_nested_field(field: str, value: Any, translation_dict: Dict[str, 
         translated = value.copy()
         for nested_field in nested_fields:
             if nested_field in translated:
-                translated[nested_field] = _translate_atomic_or_collection(
-                    translated[nested_field], translation_dict
-                )
+                nested_value = translated[nested_field]
+                if nested_field in NESTED_FIELD_TRANSLATIONS:
+                    translated[nested_field] = _translate_nested_field(
+                        nested_field, nested_value, translation_dict
+                    )
+                else:
+                    translated[nested_field] = _translate_atomic_or_collection(
+                        nested_value, translation_dict
+                    )
         return translated
 
     return _translate_atomic_value(value, translation_dict)
@@ -297,7 +310,7 @@ def _translate_atomic_or_collection(value: Any, translation_dict: Dict[str, str]
         return [
             _translate_atomic_value(item, translation_dict)
             if isinstance(item, (str, int, float))
-            else item
+            else _translate_atomic_or_collection(item, translation_dict)
             for item in value
         ]
     if isinstance(value, dict):
@@ -311,7 +324,7 @@ def _translate_atomic_or_collection(value: Any, translation_dict: Dict[str, str]
 
 
 def _translate_atomic_value(value: Any, translation_dict: Dict[str, str]) -> Any:
-    if isinstance(value, str) and value:
+    if isinstance(value, str):
         return ValueLabel(
             name=value, display_name=translation_dict.get(value, value)
         ).__dict__
