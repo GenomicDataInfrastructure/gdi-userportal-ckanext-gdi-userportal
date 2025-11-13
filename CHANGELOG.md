@@ -12,6 +12,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.7] - 2025-11-13
+
+### Changed
+- chore(deps): update dependency boto3 to v1.40.71 by @Renovate Bot in 902045a
+- chore(deps): update dependency botocore to v1.40.71 (#245) by @LNDS-Sysadmins in c8cdcbb
+- chore(deps): update dependency botocore to v1.40.70 by @Renovate Bot in b479a17
+- chore(deps): update dependency boto3 to v1.40.70 by @Renovate Bot in 24a07ac
+- Apply suggestions from code review by @Hans-Christian in f3115d9
+- Update test_translation_utils.py by @Quinten in 090b4fa
+- Update translation_utils.py by @Quinten in 6a9cead
+- chore(deps): update docker.io/solr docker tag to v9.10.0 by @Renovate Bot in d7de1c1
+- chore(deps): update dependency botocore to v1.40.69 by @Renovate Bot in 0d182ea
+- chore(deps): update dependency boto3 to v1.40.69 by @Renovate Bot in 2449ccb
+- update boto3, botocore, opentelemetry-* by @Rania Hamdani in 7166929
+- doc: update CHANGELOG.md for v1.11.6 by @LNDS-Sysadmins in 9372f06
+
+
+### Fixed
+- fix(fluent) remove fluent for some values by @Hans-christian in 6d4a5b8
+
+
 ## [v1.11.6] - 2025-10-30
 
 ### Changed
