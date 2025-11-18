@@ -12,6 +12,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.8] - 2025-11-17
+
+### Added
+- feat(resolved-fields) add more fields which are resolvable by @Hans-christian in e948733
+
+
+### Changed
+- Update requirements.txt by @Quinten in 7df94ac
+
+
+### Fixed
+- fix UT by @Hans-christian in 0644a91
+
+
 ## [v1.11.7] - 2025-11-13
 
 ### Changed
