@@ -916,6 +916,8 @@ resource_fields:
     - field_name: hvd_category
       label: HVD Category
       help_text: A data category defined in the High Value Dataset Implementing Regulation.
+      preset: multiple_text
+      validators: ignore_missing scheming_multiple_text
       
   help_text: A data service that gives access to the resource.
 
