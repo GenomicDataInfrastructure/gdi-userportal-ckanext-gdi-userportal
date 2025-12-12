@@ -91,7 +91,7 @@ jobs:
       - name: Install unzip
         run: apt-get update && apt-get install -y unzip
       - name: Sonar scan
-        uses: SonarSource/sonarqube-scan-action@v6
+        uses: SonarSource/sonarqube-scan-action@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
