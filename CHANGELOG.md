@@ -19,24 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Changed
-- chore(deps): update dependency botocore to v1.42.9 by @Renovate Bot in aa3a824
-- chore(deps): update dependency boto3 to v1.42.9 by @Renovate Bot in 76a4aaf
-- chore(deps): update actions/cache action to v5 by @Renovate Bot in 0ffad8b
-- chore(deps): update dependency botocore to v1.42.8 by @Renovate Bot in 37a8e93
-- chore(deps): update dependency boto3 to v1.42.8 by @Renovate Bot in 6bc8769
-- chore(deps): update opentelemetry monorepo by @Renovate Bot in dda4fdd
-- chore(deps): update sonarsource/sonarqube-scan-action action to v7 by @Renovate Bot in d128233
-- Upgrade opentelemetry instrumentation packages by @Quinten in 3afdc8f
-- chore(deps): update dependency botocore to v1.42.2 by @Renovate Bot in 07e0ce6
-- chore(deps): update dependency boto3 to v1.42.2 by @Renovate Bot in d9cf7da
-- chore(deps): update opentelemetry monorepo to v1.39.0 by @Renovate Bot in 6817c30
 - Add preset and validators to hvd_category field by @Quinten in f1d03dd
 - Add hvd_category field to dataset schema by @Quinten in b077596
-- chore(deps): update actions/checkout action to v6 by @Renovate Bot in 196a9aa
-- Update CHANGELOG.md for recent changes by @Quinten in 74fc526
-- chore(deps): update dependency botocore to v1.40.75 by @Renovate Bot in 468bd5a
-- chore(deps): update dependency boto3 to v1.40.75 by @Renovate Bot in 5bf548f
-- doc: update CHANGELOG.md for v1.11.8 by @LNDS-Sysadmins in 34c70b3
 
 
 ## [v1.11.8] - 2025-11-17
