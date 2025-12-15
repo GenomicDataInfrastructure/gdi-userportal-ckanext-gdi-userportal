@@ -12,6 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.9] - 2025-12-15
+
+### Added
+- feat(contact page) Re add contact page url by @Hans-christian in 2cb03da
+
+
+### Changed
+- Add preset and validators to hvd_category field by @Quinten in f1d03dd
+- Add hvd_category field to dataset schema by @Quinten in b077596
+
+
 ## [v1.11.8] - 2025-11-17
 
 ### Added
