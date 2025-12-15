@@ -57,6 +57,11 @@ dataset_fields:
       label: Identifier
       help_text: Unique identifier for the contact point. Such as a ROR ID.
 
+    - field_name: url
+      label: URL
+      display_snippet: link.html
+      help_text: URL for more information about the contact point.
+
   help_text: Contact information for enquiries about the dataset.
 
 - field_name: publisher
