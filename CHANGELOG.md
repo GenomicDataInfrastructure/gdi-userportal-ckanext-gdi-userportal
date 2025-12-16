@@ -12,6 +12,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.10] - 2025-12-16
+
+### Changed
+- chore(deps): update boto3 and botocore versions (#273) by @Bruno Pacheco in 2df545f
+- Clean up CHANGELOG.md by removing old entries by @Quinten in ea9c6c3
+- doc: update CHANGELOG.md for v1.11.9 by @LNDS-Sysadmins in 61131c0
+
+
 ## [v1.11.9] - 2025-12-15
 
 ### Added
