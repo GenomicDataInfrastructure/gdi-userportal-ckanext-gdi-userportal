@@ -12,6 +12,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.11] - 2025-12-17
+
+### Changed
+- chore(deps): update botocore monorepo to v1.42.11 (#278) by @LNDS-Sysadmins in b4df6a4
+- doc: update CHANGELOG.md for v1.11.10 (#274) by @github-actions[bot] in c181969
+- chore(deps): add group botocore monorepo to renovate config (#277) by @Bruno Pacheco in 345d06a
+
+
 ## [v1.11.10] - 2025-12-16
 
 ### Changed
