@@ -2,12 +2,28 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "packageRules": [
     {
-      "matchPackageNames": ["opentelemetry**"],
+      "matchPackageNames": [
+        "opentelemetry**"
+      ],
       "groupName": "opentelemetry monorepo"
     },
     {
-      "depTypeList": ["devDependencies", "require-dev"],
-      "updateTypes": ["patch", "minor", "major"],
+      "matchPackageNames": [
+        "boto3",
+        "botocore"
+      ],
+      "groupName": "botocore monorepo"
+    },
+    {
+      "depTypeList": [
+        "devDependencies",
+        "require-dev"
+      ],
+      "updateTypes": [
+        "patch",
+        "minor",
+        "major"
+      ],
       "groupName": "devDependencies"
     },
     {
@@ -17,7 +33,9 @@
         "ghcr.io/renovatebot/renovate"
       ],
       "automerge": true,
-      "matchUpdateTypes": ["patch"],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "semanticCommitType": "fix",
       "automergeType": "pr"
     }
