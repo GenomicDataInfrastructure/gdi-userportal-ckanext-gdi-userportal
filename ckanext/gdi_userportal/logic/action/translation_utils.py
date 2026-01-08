@@ -270,6 +270,10 @@ def _normalize_tags_field(data: Any) -> None:
             name = tag.get("name") or tag.get("display_name")
             if isinstance(name, str):
                 normalized_tags.append(name)
+            else:
+                log.warning("Dropping tag without string name/display_name: %s", tag)
+            continue
+        log.warning("Dropping tag with unsupported type: %s", tag)
     data["tags"] = normalized_tags
 
 
