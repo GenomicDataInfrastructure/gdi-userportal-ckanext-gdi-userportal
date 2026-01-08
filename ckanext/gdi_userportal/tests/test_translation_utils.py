@@ -342,6 +342,19 @@ def test_replace_package_translates_nested_values():
     assert associated_agent["actedOnBehalfOf"][0]["type"]["display_name"] == "Translated Org Type"
 
 
+def test_replace_package_normalizes_tags_to_strings():
+    package = deepcopy(_base_package())
+    package["tags"] = [
+        {"name": "alpha", "display_name": "Alpha"},
+        {"display_name": "Bravo"},
+        "charlie",
+    ]
+
+    result = replace_package(package, translation_dict={}, lang="en")
+
+    assert result["tags"] == ["alpha", "Bravo", "charlie"]
+
+
 def test_collect_values_to_translate_includes_nested_fields():
     package = _base_package()
 

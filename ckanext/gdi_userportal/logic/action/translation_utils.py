@@ -236,6 +236,7 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
     preferred_lang = _get_language(lang)
 
     _apply_translated_properties(data, preferred_lang)
+    _normalize_tags_field(data)
 
     data = _translate_fields(data, PACKAGE_REPLACE_FIELDS, translation_dict)
     resources = data.get("resources", [])
@@ -250,6 +251,26 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
     data["resources"] = resources
 
     return data
+
+
+def _normalize_tags_field(data: Any) -> None:
+    if not isinstance(data, dict):
+        return
+
+    tags = data.get("tags")
+    if not isinstance(tags, list):
+        return
+
+    normalized_tags = []
+    for tag in tags:
+        if isinstance(tag, str):
+            normalized_tags.append(tag)
+            continue
+        if isinstance(tag, dict):
+            name = tag.get("name") or tag.get("display_name")
+            if isinstance(name, str):
+                normalized_tags.append(name)
+    data["tags"] = normalized_tags
 
 
 def _translate_fields(data, fields_list, translation_dict):
