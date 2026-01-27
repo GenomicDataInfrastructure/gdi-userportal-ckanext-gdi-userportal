@@ -16,6 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - 
+## [v1.11.12] - 2026-01-21
+
+### Changed
+- added some logging by @Hans-christian in 63075d0
+- chore(deps): update botocore monorepo to v1.42.23 by @Renovate Bot in aaff88f
+- chore(deps): update botocore monorepo to v1.42.18 by @Renovate Bot in 2f9eaca
+- chore(deps): update botocore monorepo to v1.42.16 (#284) by @LNDS-Sysadmins in 91e76d1
+- chore(deps): update botocore monorepo to v1.42.15 (#283) by @LNDS-Sysadmins in 690b1bf
+- chore(deps): update botocore monorepo to v1.42.14 (#282) by @LNDS-Sysadmins in 4828ed3
+- chore(deps): update botocore monorepo to v1.42.13 (#281) by @LNDS-Sysadmins in 3eac5d7
+- chore(deps): update botocore monorepo to v1.42.12 (#280) by @LNDS-Sysadmins in 43d5ccb
+- doc: update CHANGELOG.md for v1.11.11 (#279) by @github-actions[bot] in 7e086d2
+
+
+### Fixed
+- fix(tags) Sanitize tags to list of strings by @Hans-christian in 980637e
 
 
 ## [v1.11.11] - 2025-12-17
