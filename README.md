@@ -133,6 +133,22 @@ To initialize db with harvester tables:
 To clean the db:
 
      ckan db clean
+
+## Term Translation Migrations
+
+This extension includes a versioned migration system for managing term translations in CKAN's `term_translation` table. Migrations run automatically on container startup.
+
+For detailed documentation, see [docs/term_translation_migrations.md](docs/term_translation_migrations.md).
+
+Quick commands:
+
+```bash
+# Check migration status
+docker exec <ckan-container> ckan gdi-userportal translations status
+
+# Run all pending migrations manually
+docker exec <ckan-container> ckan gdi-userportal translations migrate
+```
 ## Tests
 
 To run the tests, do:

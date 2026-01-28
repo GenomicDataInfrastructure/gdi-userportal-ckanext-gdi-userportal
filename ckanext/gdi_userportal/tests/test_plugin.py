@@ -76,3 +76,16 @@ def test_before_dataset_index_normalizes_multi_value_fields(field, values):
 
     assert result[field] == values
     assert f"extras_{field}" not in result
+
+
+def test_get_commands_returns_cli_commands():
+    """Test that get_commands returns the CLI command group."""
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    
+    commands = plugin_instance.get_commands()
+    
+    assert commands is not None
+    assert isinstance(commands, list)
+    assert len(commands) > 0
+    # Verify the command group is the gdi_userportal command
+    assert commands[0].name == "gdi-userportal"
