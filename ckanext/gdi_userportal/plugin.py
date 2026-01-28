@@ -54,6 +54,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.ITemplateHelpers, inherit=True)
     plugins.implements(plugins.IMiddleware, inherit=True)
     plugins.implements(plugins.IConfigurable, inherit=True)
+    plugins.implements(plugins.IClick)
 
     _dcatap_fields_to_normalize = [
         "access_rights",
@@ -237,3 +238,8 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     def make_middleware(self, app, config):
         FlaskInstrumentor().instrument_app(app)
         return app
+
+    # IClick
+    def get_commands(self):
+        from ckanext.gdi_userportal.cli import get_commands
+        return get_commands()
