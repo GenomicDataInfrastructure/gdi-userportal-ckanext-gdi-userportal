@@ -3,10 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Base utilities for term translation migrations.
+Helper utilities for term translation migrations.
 
-Provides helper functions for loading seed data and executing
-database operations in migration files.
+Provides reusable functions for loading seed data and executing
+database operations in migration version files.
+
+Available functions:
+- load_csv: Load translations from a CSV file
+- bulk_insert_translations: Insert/update translations (UPSERT)
+- bulk_delete_translations: Delete translations by term and lang_code
+- delete_translations_by_terms: Delete translations based on a translations list
 """
 
 import csv
@@ -20,22 +26,22 @@ from ckan import model
 log = logging.getLogger(__name__)
 
 
-def get_seeds_path() -> str:
-    """Get the path to the seeds directory."""
-    return os.path.join(os.path.dirname(__file__), "seeds")
+def get_versions_path() -> str:
+    """Get the path to the versions directory."""
+    return os.path.dirname(__file__)
 
 
 def load_csv(filename: str) -> List[Tuple[str, str, str]]:
     """
-    Load translations from a CSV file in the seeds directory.
+    Load translations from a CSV file in the versions directory.
     
     Args:
-        filename: Name of the CSV file (e.g., "initial_translations.csv")
+        filename: Name of the CSV file (e.g., "001_initial_translations.csv")
         
     Returns:
         List of (term, translation, lang_code) tuples
     """
-    csv_path = os.path.join(get_seeds_path(), filename)
+    csv_path = os.path.join(get_versions_path(), filename)
     translations = []
     
     with open(csv_path, "r", encoding="utf-8") as f:

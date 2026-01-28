@@ -21,15 +21,14 @@ This migration system restores that functionality with improvements:
 ## Directory Structure
 
 ```
-migrations/
-├── __init__.py          # Public API exports
-├── base.py              # Helper functions (load_csv, bulk_insert, etc.)
-├── runner.py            # Migration execution engine
-├── README.md            # This file
-├── seeds/               # Seed data files (CSV)
-│   └── initial_translations.csv
-└── versions/            # Migration files
-    └── 001_initial_seed.py
+ckanext/gdi_userportal/migrations/
+├── __init__.py                      # Public API exports
+├── runner.py                        # Migration execution engine
+└── versions/                        # Migration files and data
+    ├── __init__.py
+    ├── 001_initial_seed.py          # Migration file
+    ├── 001_initial_translations.csv # Seed data for 001 migration
+    └── term_translation_helpers.py  # Reusable helper functions
 ```
 
 ## How It Works
@@ -115,9 +114,6 @@ docker exec <ckan-container> ckan gdi-userportal translations status
 # Run all pending migrations
 docker exec <ckan-container> ckan gdi-userportal translations migrate
 
-# Create a new migration file
-docker exec <ckan-container> ckan gdi-userportal translations create "add country translations"
-
 # Show details of a specific migration
 docker exec <ckan-container> ckan gdi-userportal translations show 001_initial_seed
 
@@ -127,30 +123,7 @@ docker exec <ckan-container> ckan gdi-userportal translations downgrade 001_init
 
 ## Creating New Migrations
 
-### Option 1: Use the CLI (Recommended)
-
-```bash
-# Create a new migration with auto-generated version number
-docker exec <ckan-container> ckan gdi-userportal translations create "add country translations"
-```
-
-This will:
-- Auto-detect the next version number (e.g., `002`)
-- Create a file like `versions/002_add_country_translations.py`
-- Set up the boilerplate code with `upgrade()` and `downgrade()` functions
-
-Then edit the generated file to add your translations to the `TRANSLATIONS` list:
-
-```python
-TRANSLATIONS: List[Tuple[str, str, str]] = [
-    ("my_field", "My Field", "en"),
-    ("my_field", "Mijn Veld", "nl"),
-    ("http://example.org/term", "Example Term", "en"),
-    ("http://example.org/term", "Voorbeeld Term", "nl"),
-]
-```
-
-### Option 2: Create Manually with CSV
+### Manual Creation with CSV
 
 For large translation sets, use a CSV file:
 
@@ -172,18 +145,22 @@ description: str = "Add new vocabulary terms for XYZ"
 
 
 def upgrade() -> int:
-    from ckanext.gdi_userportal.migrations.base import load_csv, bulk_insert_translations
-    translations = load_csv("new_terms.csv")
+    from ckanext.gdi_userportal.migrations.versions.term_translation_helpers import (
+        load_csv, bulk_insert_translations
+    )
+    translations = load_csv("002_new_terms.csv")
     return bulk_insert_translations(translations)
 
 
 def downgrade() -> int:
-    from ckanext.gdi_userportal.migrations.base import load_csv, delete_translations_by_terms
-    translations = load_csv("new_terms.csv")
+    from ckanext.gdi_userportal.migrations.versions.term_translation_helpers import (
+        load_csv, delete_translations_by_terms
+    )
+    translations = load_csv("002_new_terms.csv")
     return delete_translations_by_terms(translations)
 ```
 
-2. Add the seed data file in `seeds/new_terms.csv`:
+2. Add the seed data file in `versions/002_new_terms.csv`:
 
 ```csv
 term,term_translation,lang_code
@@ -192,6 +169,35 @@ http://example.org/new-term,Nieuwe Term,nl
 ```
 
 3. Commit the files and rebuild/restart the container.
+
+### Manual Creation with Inline Translations
+
+For small translation sets:
+
+```python
+# versions/002_add_new_terms.py
+
+from typing import Union, List, Tuple
+
+revision: str = "002_add_new_terms"
+down_revision: Union[str, None] = "001_initial_seed"
+description: str = "Add new vocabulary terms"
+
+TRANSLATIONS: List[Tuple[str, str, str]] = [
+    ("my_field", "My Field", "en"),
+    ("my_field", "Mijn Veld", "nl"),
+]
+
+
+def upgrade() -> int:
+    from ckanext.gdi_userportal.migrations.versions.term_translation_helpers import bulk_insert_translations
+    return bulk_insert_translations(TRANSLATIONS)
+
+
+def downgrade() -> int:
+    from ckanext.gdi_userportal.migrations.versions.term_translation_helpers import delete_translations_by_terms
+    return delete_translations_by_terms(TRANSLATIONS)
+```
 
 ## Troubleshooting
 

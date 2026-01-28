@@ -9,10 +9,11 @@ This module provides an Alembic-like versioned migration system for managing
 term_translation entries in the CKAN database.
 
 Structure:
-- versions/      Individual migration files (001_xxx.py, 002_xxx.py, etc.)
-- seeds/         Seed data files (CSV, JSON, etc.)
-- base.py        Helper functions for migrations
-- runner.py      Migration execution engine
+- versions/                         Migration files and their associated data
+  - 001_initial_seed.py             Migration file
+  - 001_initial_translations.csv    Seed data for migration 001
+  - term_translation_helpers.py     Reusable helper functions
+- runner.py                         Migration execution engine
 
 Each version file has:
 - revision: Unique version identifier

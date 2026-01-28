@@ -197,13 +197,13 @@ TRANSLATIONS: List[Tuple[str, str, str]] = [
 
 def upgrade() -> int:
     """Apply the migration."""
-    from ckanext.gdi_userportal.migrations.base import bulk_insert_translations
+    from ckanext.gdi_userportal.migrations.versions.term_translation_helpers import bulk_insert_translations
     return bulk_insert_translations(TRANSLATIONS)
 
 
 def downgrade() -> int:
     """Revert the migration."""
-    from ckanext.gdi_userportal.migrations.base import delete_translations_by_terms
+    from ckanext.gdi_userportal.migrations.versions.term_translation_helpers import delete_translations_by_terms
     return delete_translations_by_terms(TRANSLATIONS)
 '''
         

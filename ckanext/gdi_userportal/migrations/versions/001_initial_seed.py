@@ -25,15 +25,19 @@ description: str = "Restore EU vocabulary translations from initial_translations
 
 def upgrade() -> int:
     """Load all translations from the CSV seed file."""
-    from ckanext.gdi_userportal.migrations.base import load_csv, bulk_insert_translations
+    from ckanext.gdi_userportal.migrations.versions.term_translation_helpers import (
+        load_csv, bulk_insert_translations
+    )
     
-    translations = load_csv("initial_translations.csv")
+    translations = load_csv("001_initial_translations.csv")
     return bulk_insert_translations(translations)
 
 
 def downgrade() -> int:
     """Remove all translations loaded from the CSV seed file."""
-    from ckanext.gdi_userportal.migrations.base import load_csv, delete_translations_by_terms
+    from ckanext.gdi_userportal.migrations.versions.term_translation_helpers import (
+        load_csv, delete_translations_by_terms
+    )
     
-    translations = load_csv("initial_translations.csv")
+    translations = load_csv("001_initial_translations.csv")
     return delete_translations_by_terms(translations)
