@@ -12,6 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.16] - 2026-01-30
+
+### Changed
+- chore: update changelog for v1.11.15 (#296) by @github-actions[bot] in 00df8d7
+
+
 ## [v1.11.15] - 2026-01-30
 
 ### Added
