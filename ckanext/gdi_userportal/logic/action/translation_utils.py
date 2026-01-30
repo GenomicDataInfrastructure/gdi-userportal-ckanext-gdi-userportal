@@ -238,6 +238,14 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
     _apply_translated_properties(data, preferred_lang)
     _normalize_tags_field(data)
 
+    # Flatten tags to just names (DDS expects string array, not tag objects)
+    tags = data.get("tags")
+    if isinstance(tags, list):
+        data["tags"] = [
+            tag.get("name") if isinstance(tag, dict) else tag
+            for tag in tags
+        ]
+
     data = _translate_fields(data, PACKAGE_REPLACE_FIELDS, translation_dict)
     resources = data.get("resources", [])
 
@@ -413,8 +421,11 @@ def _apply_translated_properties(data: Any, preferred_lang: str, fallback_lang: 
     for key, value in list(data.items()):
         if key.endswith(TRANSLATED_SUFFIX) and isinstance(value, dict):
             base_key = key[:-len(TRANSLATED_SUFFIX)]
-            merged_values = value.copy()
             existing_value = data.get(base_key)
+            # Don't replace list fields (like tags) with translated strings
+            if isinstance(existing_value, list):
+                continue
+            merged_values = value.copy()
             if isinstance(existing_value, dict):
                 merged_values.update(existing_value)
             data[base_key] = _select_translated_value(
