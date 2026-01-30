@@ -8,5 +8,4 @@ include requirements.txt
 recursive-include ckanext/gdi_userportal *.html *.json *.js *.less *.css *.mo *.yml *.yaml
 recursive-include ckanext/gdi_userportal/migration *.ini *.py *.mako
 recursive-include ckanext/gdi_userportal/migrations *.py
-recursive-include ckanext/gdi_userportal/migrations/seeds *.csv
-recursive-include ckanext/gdi_userportal/migrations/versions *.py
+recursive-include ckanext/gdi_userportal/migrations/versions *.py *.csv
