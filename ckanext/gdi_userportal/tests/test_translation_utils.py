@@ -17,6 +17,7 @@ for path in (ROOT_DIR, SRC_DIR):
 from unittest.mock import patch
 
 from ckanext.gdi_userportal.logic.action.translation_utils import (
+    _merge_tags_translated_into_tags,
     collect_values_to_translate,
     replace_package,
     replace_search_facets,
@@ -365,3 +366,176 @@ def test_collect_values_to_translate_includes_nested_fields():
     assert "http://example.com/activity-type" in values
     assert "http://example.com/agent-type" in values
     assert "http://example.com/org-type" in values
+
+
+class TestMergeTagsTranslatedIntoTags:
+    """Tests for _merge_tags_translated_into_tags function."""
+
+    def test_no_tags_translated_does_nothing(self):
+        """When no tags_translated field exists, data is unchanged."""
+        data = {"tags": ["existing-tag"], "title": "Test"}
+
+        _merge_tags_translated_into_tags(data)
+
+        assert data["tags"] == ["existing-tag"]
+        assert data["title"] == "Test"
+
+    def test_merges_tags_from_all_languages(self):
+        """Tags from all languages in tags_translated are merged."""
+        data = {
+            "tags": ["harvested"],
+            "tags_translated": {
+                "en": ["english-tag"],
+                "nl": ["dutch-tag"],
+                "de": ["german-tag"]
+            }
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        assert "harvested" in data["tags"]
+        assert "english-tag" in data["tags"]
+        assert "dutch-tag" in data["tags"]
+        assert "german-tag" in data["tags"]
+
+    def test_removes_duplicates(self):
+        """Duplicate tags are not added twice."""
+        data = {
+            "tags": ["same-tag", "unique"],
+            "tags_translated": {
+                "en": ["same-tag", "another"]
+            }
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        # Count occurrences of same-tag
+        tag_count = sum(1 for t in data["tags"] if t == "same-tag" or (isinstance(t, dict) and t.get("name") == "same-tag"))
+        assert tag_count == 1
+        assert "unique" in data["tags"]
+        assert "another" in data["tags"]
+
+    def test_handles_empty_tags_list(self):
+        """Works when existing tags is empty list."""
+        data = {
+            "tags": [],
+            "tags_translated": {
+                "en": ["translated-only"]
+            }
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        assert "translated-only" in data["tags"]
+
+    def test_handles_no_existing_tags(self):
+        """Works when tags field doesn't exist."""
+        data = {
+            "tags_translated": {
+                "en": ["new-tag"]
+            }
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        assert "new-tag" in data["tags"]
+
+    def test_handles_non_dict_data(self):
+        """Non-dict input is handled gracefully."""
+        data = "not a dict"
+
+        # Should not raise an exception
+        _merge_tags_translated_into_tags(data)
+
+    def test_handles_non_dict_tags_translated(self):
+        """Non-dict tags_translated is handled gracefully."""
+        data = {
+            "tags": ["existing"],
+            "tags_translated": "not a dict"
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        assert data["tags"] == ["existing"]
+
+    def test_filters_blank_tags(self):
+        """Blank and whitespace-only tags are filtered out."""
+        data = {
+            "tags": ["valid"],
+            "tags_translated": {
+                "en": ["", "  ", "valid-translated"]
+            }
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        assert "" not in data["tags"]
+        assert "valid" in data["tags"]
+        assert "valid-translated" in data["tags"]
+
+    def test_trims_whitespace(self):
+        """Whitespace around tags is trimmed."""
+        data = {
+            "tags": [],
+            "tags_translated": {
+                "en": ["  spaced tag  "]
+            }
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        assert "spaced tag" in data["tags"]
+
+    def test_preserves_existing_tag_objects(self):
+        """Existing tag objects (dicts) are preserved."""
+        data = {
+            "tags": [{"name": "tag-obj", "display_name": "Tag Object"}],
+            "tags_translated": {
+                "en": ["string-tag"]
+            }
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        assert {"name": "tag-obj", "display_name": "Tag Object"} in data["tags"]
+        assert "string-tag" in data["tags"]
+
+    def test_handles_none_tags_translated(self):
+        """None tags_translated is handled gracefully."""
+        data = {
+            "tags": ["existing"],
+            "tags_translated": None
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        assert data["tags"] == ["existing"]
+
+    def test_handles_non_list_language_values(self):
+        """Non-list values in tags_translated are skipped."""
+        data = {
+            "tags": ["existing"],
+            "tags_translated": {
+                "en": "not a list",
+                "nl": ["valid-tag"]
+            }
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        assert "existing" in data["tags"]
+        assert "valid-tag" in data["tags"]
+
+    def test_handles_non_string_tags_in_translated(self):
+        """Non-string tags in tags_translated are skipped."""
+        data = {
+            "tags": ["existing"],
+            "tags_translated": {
+                "en": [123, None, "valid-tag"]
+            }
+        }
+
+        _merge_tags_translated_into_tags(data)
+
+        assert "existing" in data["tags"]
+        assert "valid-tag" in data["tags"]
