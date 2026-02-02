@@ -19,6 +19,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Changed
+- chore: update changelog for v1.11.15 (#296) by @github-actions[bot] in 00df8d7
+- chore(deps): update botocore monorepo to v1.42.38 by @Renovate Bot in 78871cd
+- Enhance term translation migration system and addressing comments by @nolliia in 67289f1
+- added the missing test for commands that we added in plugin.py by @nolliia in 7dc4943
+- chore(deps): update botocore monorepo to v1.42.36 (#293) by @LNDS-Sysadmins in 831a18d
+- chore(deps): update botocore monorepo to v1.42.35 by @Renovate Bot in 8f44576
+- chore(deps): update docker.io/solr docker tag to v9.10.1 by @Renovate Bot in 5a9001c
+- doc: update CHANGELOG.md for v1.11.14 by @LNDS-Sysadmins in ff7a2df
+- doc: update CHANGELOG.md for v1.11.12 by @LNDS-Sysadmins in 9ff7e4a
+
+
+### Fixed
+- chore(deps): update botocore monorepo to v1.42.38 (patch) #295 by @nolliia in 3f63e01
+- fix missing reuse license by @nolliia in 9207ceb
+
+
+## [v1.11.15] - 2026-01-30
+
+### Added
+- feat: Implement term translation migration system for GDI User Portal by @nolliia in 09eeaf6
+
+
+### Changed
 - chore(deps): update botocore monorepo to v1.42.38 by @Renovate Bot in 78871cd
 - Enhance term translation migration system and addressing comments by @nolliia in 67289f1
 - added the missing test for commands that we added in plugin.py by @nolliia in 7dc4943
