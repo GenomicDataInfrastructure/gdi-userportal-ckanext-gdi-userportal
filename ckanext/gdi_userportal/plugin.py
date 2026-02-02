@@ -207,6 +207,45 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         data_dict = self._parse_agent_name(data_dict, "publisher")
         data_dict = self._parse_agent_name(data_dict, "creator")
 
+        # Merge tags from tags_translated into tags for Solr indexing
+        data_dict = self._merge_tags_translated_for_indexing(data_dict)
+
+        return data_dict
+
+    def _merge_tags_translated_for_indexing(self, data_dict):
+        """
+        Merges tags from extras_tags_translated into the tags field for Solr indexing.
+        This ensures manually added multilingual tags are searchable via tag filters.
+        """
+        tags_translated_raw = data_dict.get('extras_tags_translated')
+        if not tags_translated_raw:
+            return data_dict
+
+        try:
+            tags_translated = json.loads(tags_translated_raw) if isinstance(tags_translated_raw, str) else tags_translated_raw
+        except json.JSONDecodeError:
+            return data_dict
+
+        if not isinstance(tags_translated, dict):
+            return data_dict
+
+        # Get existing tags
+        existing_tags = data_dict.get('tags', [])
+        if isinstance(existing_tags, str):
+            existing_tags = [existing_tags]
+
+        # Collect all tags from tags_translated (all languages)
+        seen = set(existing_tags)
+        merged_tags = list(existing_tags)
+
+        for lang_tags in tags_translated.values():
+            if isinstance(lang_tags, list):
+                for tag in lang_tags:
+                    if isinstance(tag, str) and tag.strip() and tag.strip() not in seen:
+                        seen.add(tag.strip())
+                        merged_tags.append(tag.strip())
+
+        data_dict['tags'] = merged_tags
         return data_dict
 
     def before_dataset_view(self, pkg_dict):

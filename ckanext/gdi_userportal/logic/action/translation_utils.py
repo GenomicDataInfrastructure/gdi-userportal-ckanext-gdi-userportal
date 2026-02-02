@@ -236,15 +236,8 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
     preferred_lang = _get_language(lang)
 
     _apply_translated_properties(data, preferred_lang)
+    _merge_tags_translated_into_tags(data)
     _normalize_tags_field(data)
-
-    # Flatten tags to just names (DDS expects string array, not tag objects)
-    tags = data.get("tags")
-    if isinstance(tags, list):
-        data["tags"] = [
-            tag.get("name") if isinstance(tag, dict) else tag
-            for tag in tags
-        ]
 
     data = _translate_fields(data, PACKAGE_REPLACE_FIELDS, translation_dict)
     resources = data.get("resources", [])
@@ -259,6 +252,54 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
     data["resources"] = resources
 
     return data
+
+
+def _merge_tags_translated_into_tags(data: Any) -> None:
+    """
+    Merges tags from tags_translated into the standard tags field.
+    
+    tags_translated is a multilingual dict like {"en": ["tag1", "tag2"], "nl": ["tag3"]}.
+    This function extracts all tag values and merges them into the tags field,
+    ensuring tags are searchable via CKAN's standard tag filtering.
+    """
+    if not isinstance(data, dict):
+        return
+
+    tags_translated = data.get("tags_translated")
+    if not tags_translated or not isinstance(tags_translated, dict):
+        return
+
+    # Get existing tags
+    existing_tags = data.get("tags")
+    if not isinstance(existing_tags, list):
+        existing_tags = []
+
+    # Collect all tags from tags_translated (all languages)
+    translated_tags = set()
+    for lang_tags in tags_translated.values():
+        if isinstance(lang_tags, list):
+            for tag in lang_tags:
+                if isinstance(tag, str) and tag.strip():
+                    translated_tags.add(tag.strip())
+
+    # Merge with existing tags, preserving order and removing duplicates
+    seen = set()
+    merged_tags = []
+    
+    # First add existing tags
+    for tag in existing_tags:
+        tag_str = tag if isinstance(tag, str) else (tag.get("name") if isinstance(tag, dict) else None)
+        if tag_str and tag_str not in seen:
+            seen.add(tag_str)
+            merged_tags.append(tag)
+    
+    # Then add translated tags that aren't already present
+    for tag in translated_tags:
+        if tag not in seen:
+            seen.add(tag)
+            merged_tags.append(tag)
+
+    data["tags"] = merged_tags
 
 
 def _normalize_tags_field(data: Any) -> None:
