@@ -49,6 +49,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IFacets, inherit=True)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IActions)
+    plugins.implements(plugins.IBlueprint)
     plugins.implements(plugins.IPackageController)
     plugins.implements(plugins.IValidators)
     plugins.implements(plugins.ITemplateHelpers, inherit=True)
@@ -126,6 +127,46 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
     def get_helpers(self):
         return get_portal_helpers()
+
+    # IBlueprint
+    def get_blueprint(self):
+        """
+        Ensure DCAT exports work for both datasets and dataset series without relying on
+        HTTP redirects. Some clients (e.g. REST clients with redirect-following disabled)
+        treat redirects as errors.
+        """
+        from ckanext.dcat.helpers import endpoints_enabled
+
+        if not endpoints_enabled():
+            return []
+
+        from flask import Blueprint
+        import ckanext.dcat.utils as dcat_utils
+
+        bp = Blueprint("gdi_userportal_dcat_export_alias", __name__)
+
+        def export_dataset_in_format(_id, _format):
+            return dcat_utils.read_dataset_page(_id, _format)
+
+        def view_for_format(_format):
+            def view(_id):
+                return export_dataset_in_format(_id, _format)
+
+            return view
+
+        for fmt in ("jsonld", "rdf", "ttl", "xml", "n3"):
+            bp.add_url_rule(
+                f"/dataset/<_id>.{fmt}",
+                view_func=view_for_format(fmt),
+                endpoint=f"export_dataset_{fmt}",
+            )
+            bp.add_url_rule(
+                f"/dataset_series/<_id>.{fmt}",
+                view_func=view_for_format(fmt),
+                endpoint=f"export_dataset_series_{fmt}",
+            )
+
+        return bp
 
     def read(self, entity):
         pass
