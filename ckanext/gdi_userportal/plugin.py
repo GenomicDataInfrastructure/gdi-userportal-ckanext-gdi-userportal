@@ -166,7 +166,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
                 endpoint=f"export_dataset_series_{fmt}",
             )
 
-        return bp
+        return [bp]
 
     def read(self, entity):
         pass
