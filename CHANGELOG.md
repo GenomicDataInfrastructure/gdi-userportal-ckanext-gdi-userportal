@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.17] - 2026-02-05
+
+### Changed
+- Fix YAML indentation and add access service theme by @Quinten in 5d5cf0b
+- chore(deps): update botocore monorepo to v1.42.42 (#302) by @LNDS-Sysadmins in b0e3080
+- chore(deps): update botocore monorepo to v1.42.40 (#301) by @LNDS-Sysadmins in 0dbf76d
+
+
+### Fixed
+- fix(dcat): avoid redirects for dataset series RDF/ttl .. exports (#304) by @Kacem Bechka in cebec9b
+
+
 ## [v1.11.15] - 2026-01-30
 
 ### Added
