@@ -87,6 +87,17 @@ dataset_fields:
       - field_name: type
         label: Type
 
+      - field_name: publisher_note
+        label: Publisher note
+        preset: fluent_markdown
+        help_text: A description of the publisher activities.
+
+      - field_name: publisher_type
+        label: Publisher type
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+        help_text: A type of organisation that makes the Dataset available.
+
       - field_name: identifier
         label: Identifier
         help_text: Unique identifier for the publisher, such as a ROR ID.
@@ -122,6 +133,17 @@ dataset_fields:
       - field_name: type
         label: Type
         help_text: Type of creator (e.g., Organization, Person).
+
+      - field_name: publisher_note
+        label: Publisher note
+        preset: fluent_markdown
+        help_text: A description of the publisher activities.
+
+      - field_name: publisher_type
+        label: Publisher type
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+        help_text: A type of organisation that makes the Dataset available.
 
       - field_name: identifier
         label: Identifier
@@ -279,6 +301,18 @@ dataset_fields:
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
     help_text: A related resource, such as a publication, that references, cites, or otherwise points to the dataset.
+
+  - field_name: distribution
+    label: Distribution
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: A distribution of the dataset.
+
+  - field_name: sample
+    label: Sample
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: A sample distribution of the dataset.
 
   - field_name: analytics
     label: Analytics

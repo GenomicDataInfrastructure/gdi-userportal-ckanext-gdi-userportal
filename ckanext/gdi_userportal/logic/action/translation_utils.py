@@ -43,11 +43,14 @@ PACKAGE_REPLACE_FIELDS = [
 RESOURCE_REPLACE_FIELDS = [
     "access_rights",
     "applicable_legislation", 
+    "compress_format",
     "conforms_to",
     "format",
-    "hash_algorithm", 
+    "hash_algorithm",
     "language",
     "license",
+    "mimetype",
+    "package_format",
     "status",
 ]
 ACCESS_SERVICES_REPLACE_FIELDS = [
@@ -58,7 +61,7 @@ ACCESS_SERVICES_REPLACE_FIELDS = [
     "format",
     "hvd_category",
     "language",
-    "license", 
+    "license",
     "publisher",
     "theme",
 ]
@@ -69,8 +72,8 @@ NESTED_FIELD_TRANSLATIONS = {
     "agent": {"type"},
     "quality_annotation": {"body"},
     "spatial_coverage": {"uri"},
-    "creator": {"type"},
-    "publisher": {"type"},
+    "creator": {"publisher_type", "type"},
+    "publisher": {"publisher_type", "type"},
     "provenance_activity": {"type", "wasAssociatedWith"},
     "wasAssociatedWith": {"type", "actedOnBehalfOf"},
     "actedOnBehalfOf": {"type"},
