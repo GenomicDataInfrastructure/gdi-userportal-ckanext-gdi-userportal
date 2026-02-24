@@ -68,7 +68,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         "alternate_identifier",
         "documentation",
         "is_referenced_by",
-        "analytics",
         "applicable_legislation",
         "coding_system",
         "purpose",
