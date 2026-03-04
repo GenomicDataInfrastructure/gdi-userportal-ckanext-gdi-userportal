@@ -9,3 +9,6 @@ https://publications.europa.eu/resource/authority/file-type/VCF,Variant Call For
 https://www.iana.org/assignments/media-types/application/vcf,Variant Call Format (VCF),en
 https://edamontology.org/format_3016,Variant Call Format (VCF),en
 https://samtools.github.io/hts-specs/VCFv4.5.pdf,Variant Call Format (VCF),en
+http://data.gdi.eu/core/p2/1MGCompliant,1+MG Compliant,en
+http://data.gdi.eu/core/p2/ExternallyGoverned,Externally Governed,en
+http://data.gdi.eu/core/p2/1MGCohort,1+MG Cohort,en
