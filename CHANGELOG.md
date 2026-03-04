@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.19] - 2026-03-04
+
+### Changed
+- chore: add more labels on HealthDCAT-AP (#325) by @Bruno Pacheco in 98d5c9b
+- chore: add more labels on HealthDCAT-AP (#324) by @Bruno Pacheco in b75711e
+- chore(deps): update docker/login-action action to v4 (#322) by @LNDS-Sysadmins in ccf538d
+- chore(deps): update botocore monorepo to v1.42.60 (#321) by @LNDS-Sysadmins in 1adb6a8
+- chore(deps): update aquasecurity/trivy-action action to v0.34.2 (#320) by @LNDS-Sysadmins in 9c4fa7b
+- chore(deps): update botocore monorepo to v1.42.59 (#319) by @LNDS-Sysadmins in 85fe73f
+- chore(deps): update botocore monorepo to v1.42.57 by @Renovate Bot in 4ad24d3
+
+
 ## [v1.11.17] - 2026-02-05
 
 ### Changed
