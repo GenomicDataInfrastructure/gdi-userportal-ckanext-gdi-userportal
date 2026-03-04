@@ -1,0 +1,11 @@
+term,term_translation,lang_code
+https://eur-lex.europa.eu/eli/reg/2025/327/oj,Regulation (EU) 2025/327 of the European Parliament and of the Council of 11 February 2025 on the European Health Data Space and amending Directive 2011/24/EU and Regulation (EU) 2024/2847 (Text with EEA relevance),en
+http://data.europa.eu/eli/reg/2025/327/oj,Regulation (EU) 2025/327 of the European Parliament and of the Council of 11 February 2025 on the European Health Data Space and amending Directive 2011/24/EU and Regulation (EU) 2024/2847 (Text with EEA relevance),en 
+http://data.gdi.eu/core/p2/HealthCategoryHumanGenomic,Human Genomic,en
+http://data.gdi.eu/core/p2/HealthCategoryHumanGenetic,Human Genetic,en
+http://data.gdi.eu/core/p2/HealthCategoryHumanEpigenomic,Human Epigenomic,en
+https://en.wikipedia.org/wiki/Reference_genome,Reference genome,en
+https://publications.europa.eu/resource/authority/file-type/VCF,Variant Call Format (VCF),en
+https://www.iana.org/assignments/media-types/application/vcf,Variant Call Format (VCF),en
+https://edamontology.org/format_3016,Variant Call Format (VCF),en
+https://samtools.github.io/hts-specs/VCFv4.5.pdf,Variant Call Format (VCF),en
