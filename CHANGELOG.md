@@ -12,6 +12,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.20] - 2026-03-11
+
+### Changed
+- chore(deps): update botocore monorepo to v1.42.65 (#333) by @LNDS-Sysadmins in 012726e
+- chore(deps): update docker.io/solr docker tag to v10 by @Renovate Bot in ddc47e4
+- chore(deps): update botocore monorepo to v1.42.63 (#331) by @LNDS-Sysadmins in 9c37d06
+- chore(deps): update aquasecurity/trivy-action action to v0.35.0 (#332) by @LNDS-Sysadmins in c3b5bf0
+- chore(deps): update botocore monorepo to v1.42.62 (#327) by @LNDS-Sysadmins in 24e7d29
+- chore(deps): update docker/build-push-action action to v7 (#329) by @LNDS-Sysadmins in 6b8b3e6
+- chore(deps): update docker/metadata-action action to v6 (#330) by @LNDS-Sysadmins in a1f12f1
+- doc: update CHANGELOG.md for v1.11.19 (#326) by @github-actions[bot] in c2adf63
+
+
 ## [v1.11.19] - 2026-03-04
 
 ### Changed
