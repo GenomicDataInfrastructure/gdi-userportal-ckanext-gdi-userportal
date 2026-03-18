@@ -9,174 +9,171 @@ about_url: http://github.com/ckan/ckanext-dcat
 form_languages: [en, nl]
 
 dataset_fields:
+  - field_name: title_translated
+    label:
+      en: Title
+      nl: Titel
+    preset: fluent_core_translated
+    help_text: A descriptive title for the dataset series in each language.
 
-- field_name: title_translated
-  label:
-    en: Title
-    nl: Titel
-  preset: fluent_core_translated
-  help_text: A descriptive title for the dataset series in each language.
+  - field_name: name
+    label: URL
+    preset: dataset_slug
+    form_placeholder: eg. my-dataset-series
 
-- field_name: name
-  label: URL
-  preset: dataset_slug
-  form_placeholder: eg. my-dataset-series
+  - field_name: notes_translated
+    label:
+      en: Description
+      nl: Beschrijving
+    preset: fluent_core_translated
+    form_snippet: fluent_markdown.html
+    display_snippet: fluent_markdown.html
+    help_text: A free-text account of the dataset series.
 
-- field_name: notes_translated
-  label:
-    en: Description
-    nl: Beschrijving
-  preset: fluent_core_translated
-  form_snippet: fluent_markdown.html
-  display_snippet: fluent_markdown.html
-  help_text: A free-text account of the dataset series.
+  - field_name: applicable_legislation
+    label: Applicable legislation
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: The legislation that mandates the creation or management of the dataset series.
 
-- field_name: applicable_legislation
-  label: Applicable legislation
-  preset: multiple_text
-  validators: ignore_missing scheming_multiple_text
-  help_text: The legislation that mandates the creation or management of the dataset series.
+  - field_name: contact
+    label: Contact points
+    repeating_label: Contact point
+    repeating_subfields:
+      - field_name: name
+        label: Name
 
-- field_name: contact
-  label: Contact points
-  repeating_label: Contact point
-  repeating_subfields:
+      - field_name: name_translated
+        label: Name (translations)
+        help_text: Localised name of the contact point.
 
-    - field_name: name
-      label: Name
+      - field_name: email
+        label: Email
+        display_snippet: email.html
 
-    - field_name: name_translated
-      label: Name (translations)
-      help_text: Localised name of the contact point.
+      - field_name: url
+        label: URL
+        display_snippet: link.html
 
-    - field_name: email
-      label: Email
-      display_snippet: email.html
+    help_text: Contact information for enquiries about the dataset series.
 
-    - field_name: url
-      label: URL
-      display_snippet: link.html
+  - field_name: frequency
+    label:
+      en: Frequency
+      nl: Frequentie
+    help_text: The frequency with which items are added to the dataset series collection.
 
-  help_text: Contact information for enquiries about the dataset series.
+  - field_name: spatial_coverage
+    label: Spatial coverage
+    repeating_subfields:
+      - field_name: uri
+        label: URI
 
-- field_name: frequency
-  label:
-    en: Frequency
-    nl: Frequentie
-  help_text: The frequency with which items are added to the dataset series collection.
+      - field_name: text
+        label: Label
 
-- field_name: spatial_coverage
-  label: Spatial coverage
-  repeating_subfields:
+    help_text: A geographic region that is covered by the dataset series.
 
-    - field_name: uri
-      label: URI
+  - field_name: modified
+    label:
+      en: Modification date
+      nl: Wijzigingsdatum
+    preset: datetime_flex
+    help_text: Date on which the dataset series was changed.
 
-    - field_name: text
-      label: Label
+  - field_name: publisher
+    label: Publisher
+    repeating_label: Publisher
+    repeating_once: true
+    repeating_subfields:
+      - field_name: spatial
+        label: Spatial coverage
+        repeating_subfields:
+          - field_name: uri
+            label: URI
+          - field_name: text
+            label: Label
+        help_text: A geographic region that is covered by the publisher.
 
-  help_text: A geographic region that is covered by the dataset series.
+      - field_name: email
+        label: Email
+        display_snippet: email.html
 
-- field_name: modified
-  label:
-    en: Modification date
-    nl: Wijzigingsdatum
-  preset: datetime_flex
-  help_text: Date on which the dataset series was changed.
+      - field_name: identifier
+        label: Identifier
+        help_text: Unique identifier for the publisher, such as a ROR ID.
 
-- field_name: publisher
-  label: Publisher
-  repeating_label: Publisher
-  repeating_once: true
-  repeating_subfields:
-    - field_name: spatial
-      label: Spatial coverage
-      repeating_subfields:
-        - field_name: uri
-          label: URI
-        - field_name: text
-          label: Label
-      help_text: A geographic region that is covered by the publisher.
+      - field_name: name
+        label: Name
 
-    - field_name: email
-      label: Email
-      display_snippet: email.html
+      - field_name: publisher_note
+        label: Publisher note
 
-    - field_name: identifier
-      label: Identifier
-      help_text: Unique identifier for the publisher, such as a ROR ID.
+      - field_name: publisher_type
+        label: Publisher type
 
-    - field_name: name
-      label: Name
+      - field_name: type
+        label: Type
 
-    - field_name: publisher_note
-      label: Publisher note
+      - field_name: url
+        label: URL
+        display_snippet: link.html
+    help_text: Entity responsible for ensuring the coherency of the dataset series.
 
-    - field_name: publisher_type
-      label: Publisher type
+  - field_name: owner_org
+    label: Organization
+    preset: dataset_organization
+    help_text: The CKAN organization the dataset series belongs to.
 
-    - field_name: type
-      label: Type    
-    
-    - field_name: url
-      label: URL
-      display_snippet: link.html
-  help_text: Entity responsible for ensuring the coherency of the dataset series.
+  - field_name: issued
+    label:
+      en: Release date
+      nl: Releasedatum
+    preset: datetime_flex
+    help_text: Date of formal issuance of the dataset series. This is the moment when the dataset series was established as a managed resource.
 
-- field_name: owner_org
-  label: Organization
-  preset: dataset_organization
-  help_text: The CKAN organization the dataset series belongs to.
+  - field_name: temporal_start
+    label: Temporal start date
+    preset: datetime_flex
+    help_inline: true
+    help_text: Start of the time period that the dataset covers.
 
-- field_name: issued
-  label:
-    en: Release date
-    nl: Releasedatum
-  preset: datetime_flex
-  help_text: Date of formal issuance of the dataset series. This is the moment when the dataset series was established as a managed resource.
+  - field_name: temporal_end
+    label: Temporal end date
+    preset: datetime_flex
+    help_inline: true
+    help_text: End of the time period that the dataset covers.
 
-- field_name: temporal_start
-  label: Temporal start date
-  preset: datetime_flex
-  help_inline: true
-  help_text: Start of the time period that the dataset covers.
+  - field_name: series_order_field
+    preset: dataset_series_order
+    help_text: If the series is ordered, the field in the member datasets that will be used for sorting.
 
-- field_name: temporal_end
-  label: Temporal end date
-  preset: datetime_flex
-  help_inline: true
-  help_text: End of the time period that the dataset covers.
-
-- field_name: series_order_field
-  preset: dataset_series_order
-  help_text: If the series is ordered, the field in the member datasets that will be used for sorting.
-
-- field_name: series_order_type
-  preset: dataset_series_order_type
-  help_text: The type of sorting that needs to be performed on series members.
+  - field_name: series_order_type
+    preset: dataset_series_order_type
+    help_text: The type of sorting that needs to be performed on series members.
 
 resource_fields:
-- field_name: url
-  label: URL
-  preset: resource_url_upload
+  - field_name: url
+    label: URL
+    preset: resource_url_upload
 
-- field_name: name_translated
-  label:
-    en: Name
-    nl: Naam
-  preset: fluent_core_translated
-  help_text: A descriptive title for the resource.
+  - field_name: name_translated
+    label:
+      en: Name
+      nl: Naam
+    preset: fluent_core_translated
+    help_text: A descriptive title for the resource.
 
-- field_name: description_translated
-  label:
-    en: Description
-    nl: Beschrijving
-  preset: fluent_core_translated
-  form_snippet: fluent_markdown.html
-  display_snippet: fluent_markdown.html
-  help_text: A free-text account of the resource.
+  - field_name: description_translated
+    label:
+      en: Description
+      nl: Beschrijving
+    preset: fluent_core_translated
+    form_snippet: fluent_markdown.html
+    display_snippet: fluent_markdown.html
+    help_text: A free-text account of the resource.
 
-- field_name: format
-  label: Format
-  preset: resource_format_autocomplete
-  help_text: File format. If not provided it will be guessed.
+  - field_name: format
+    label: Format
+    preset: resource_format_autocomplete
+    help_text: File format. If not provided it will be guessed.
