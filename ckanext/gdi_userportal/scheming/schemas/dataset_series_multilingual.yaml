@@ -110,7 +110,7 @@ dataset_fields:
       label: Name
 
     - field_name: publisher_note
-      label: Publisher type
+      label: Publisher note
 
     - field_name: publisher_type
       label: Publisher type
