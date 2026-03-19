@@ -151,29 +151,3 @@ dataset_fields:
   - field_name: series_order_type
     preset: dataset_series_order_type
     help_text: The type of sorting that needs to be performed on series members.
-
-resource_fields:
-  - field_name: url
-    label: URL
-    preset: resource_url_upload
-
-  - field_name: name_translated
-    label:
-      en: Name
-      nl: Naam
-    preset: fluent_core_translated
-    help_text: A descriptive title for the resource.
-
-  - field_name: description_translated
-    label:
-      en: Description
-      nl: Beschrijving
-    preset: fluent_core_translated
-    form_snippet: fluent_markdown.html
-    display_snippet: fluent_markdown.html
-    help_text: A free-text account of the resource.
-
-  - field_name: format
-    label: Format
-    preset: resource_format_autocomplete
-    help_text: File format. If not provided it will be guessed.
