@@ -151,3 +151,5 @@ dataset_fields:
   - field_name: series_order_type
     preset: dataset_series_order_type
     help_text: The type of sorting that needs to be performed on series members.
+
+resource_fields: []
