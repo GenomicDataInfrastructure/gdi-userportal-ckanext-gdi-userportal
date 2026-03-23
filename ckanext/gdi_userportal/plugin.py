@@ -102,6 +102,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
     def _update_facets(self, facets_dict):
         facets_dict.pop("groups", None)
+        facets_dict["vocab_in_series_title"] = toolkit._("Dataset series")
         return facets_dict
 
     def dataset_facets(self, facets_dict, package_type):
@@ -216,6 +217,27 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             data_dict[f"{field}_name"] = names
         return data_dict
 
+    def _parse_series_ids(self, in_series):
+        if not in_series:
+            return []
+
+        if isinstance(in_series, list):
+            return in_series
+
+        if isinstance(in_series, str):
+            try:
+                parsed = json.loads(in_series)
+            except json.JSONDecodeError:
+                return [in_series]
+
+            if isinstance(parsed, list):
+                return parsed
+
+            if parsed:
+                return [parsed]
+
+        return []
+
     def before_dataset_index(self, data_dict):
         publisher_name = data_dict.get('extras_publisher__name')
         creator_name = data_dict.get('extras_creator__name')
@@ -237,6 +259,35 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             except json.JSONDecodeError:
                 creator_names = [creator_name]
             data_dict['creator_name'] = creator_names
+
+        series_ids = self._parse_series_ids(data_dict.get("in_series"))
+        if series_ids:
+            data_dict["vocab_in_series"] = series_ids
+
+            series_names = []
+            series_titles = []
+
+            for series_id in series_ids:
+                try:
+                    series_dict = toolkit.get_action("package_show")(
+                        {"ignore_auth": True}, {"id": series_id}
+                    )
+                except (toolkit.ObjectNotFound, toolkit.NotAuthorized):
+                    continue
+
+                if series_dict.get("name"):
+                    series_names.append(series_dict["name"])
+                if series_dict.get("title"):
+                    series_titles.append(series_dict["title"])
+
+            if series_names:
+                data_dict["vocab_in_series_name"] = list(
+                    dict.fromkeys(series_names)
+                )
+            if series_titles:
+                data_dict["vocab_in_series_title"] = list(
+                    dict.fromkeys(series_titles)
+                )
 
         for field in self._dcatap_fields_to_normalize:
             data_dict = self._parse_to_array(data_dict, field)

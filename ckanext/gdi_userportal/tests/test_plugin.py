@@ -52,6 +52,7 @@ To temporary patch the CKAN configuration for the duration of a test you can use
         pass
 """
 import json
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -76,6 +77,34 @@ def test_before_dataset_index_normalizes_multi_value_fields(field, values):
 
     assert result[field] == values
     assert f"extras_{field}" not in result
+
+
+def test_dataset_facets_include_dataset_series_title():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance.dataset_facets(
+        {"tags": "Tags", "groups": "Groups"}, "dataset"
+    )
+
+    assert "groups" not in result
+    assert result["vocab_in_series_title"] == "Dataset series"
+
+
+def test_before_dataset_index_adds_dataset_series_titles():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    package_show = MagicMock(
+        return_value={"name": "series-name", "title": "Series Title"}
+    )
+
+    with patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        return_value=package_show,
+    ):
+        result = plugin_instance.before_dataset_index({"in_series": "series-id"})
+
+    assert result["vocab_in_series"] == ["series-id"]
+    assert result["vocab_in_series_name"] == ["series-name"]
+    assert result["vocab_in_series_title"] == ["Series Title"]
 
 
 def test_get_commands_returns_cli_commands():
