@@ -68,7 +68,7 @@ jobs:
           fi
 
           # Dataset series extension
-          pip install -e 'git+https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-dataset-series.git@v1.0.0#egg=ckanext-dataset-series'
+          pip install -e 'git+https://github.com/ckan/ckanext-dataset-series.git@v0.1.1#egg=ckanext-dataset-series'
           if [ -f "${PIP_SRC}/ckanext-dataset-series/requirements.txt" ]; then
             pip install -r "${PIP_SRC}/ckanext-dataset-series/requirements.txt"
           fi
