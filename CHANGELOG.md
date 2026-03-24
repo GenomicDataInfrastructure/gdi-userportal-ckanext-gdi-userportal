@@ -31,7 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update dataset_series_multilingual.yaml by @Quinten in 9dd0d66
 - Rework dataset_series schema fields and ordering by @Quinten in 50f0218
 - chore(deps): update botocore monorepo to v1.42.70 by @Renovate Bot in 31c8cf7
-- doc: update CHANGELOG.md for v1.11.20 by @LNDS-Sysadmins in 3fb16f9
 
 
 ### Fixed
