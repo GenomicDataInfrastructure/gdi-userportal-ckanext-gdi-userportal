@@ -88,6 +88,7 @@ def test_dataset_facets_include_dataset_series_title():
 
     assert "groups" not in result
     assert result["vocab_in_series_title"] == "Dataset series"
+    assert result["tags"] == "Tags"
 
 
 def test_before_dataset_index_adds_dataset_series_titles():
