@@ -56,6 +56,38 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+
+@pytest.mark.parametrize(
+    "in_series_value, expected_ids",
+    [
+        (None, []),
+        ("", []),
+        (["id1", "id2"], ["id1", "id2"]),
+        ('["id1", "id2"]', ["id1", "id2"]),
+        ('"single-id"', ["single-id"]),
+        ("not-json", ["not-json"]),
+    ],
+)
+def test_parse_series_ids_handles_various_inputs(in_series_value, expected_ids):
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance._parse_series_ids(in_series_value)
+
+    assert result == expected_ids
+
+
+@pytest.mark.parametrize("in_series_value", [None, ""])
+def test_before_dataset_index_does_not_set_series_vocab_fields_for_empty_in_series(
+    in_series_value,
+):
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance.before_dataset_index({"in_series": in_series_value})
+
+    assert "vocab_in_series" not in result
+    assert "vocab_in_series_name" not in result
+    assert "vocab_in_series_title" not in result
+
 import ckanext.gdi_userportal.plugin as plugin
 
 
