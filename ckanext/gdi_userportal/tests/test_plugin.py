@@ -140,6 +140,112 @@ def test_before_dataset_index_adds_dataset_series_titles():
     assert result["vocab_in_series_title"] == ["Series Title"]
 
 
+def test_before_dataset_index_ignores_errors_from_package_show():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    def package_show(context, data_dict):
+        series_id = data_dict["id"]
+        if series_id == "series-error-notfound":
+            raise plugin.toolkit.ObjectNotFound("series not found")
+        if series_id == "series-error-notauthorized":
+            raise plugin.toolkit.NotAuthorized("not authorized to read series")
+
+        return {
+            "name": f"{series_id}-name",
+            "title": f"{series_id}-title",
+        }
+
+    with patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        return_value=package_show,
+    ):
+        result = plugin_instance.before_dataset_index(
+            {
+                "in_series": [
+                    "series-error-notfound",
+                    "series-ok",
+                    "series-error-notauthorized",
+                ]
+            }
+        )
+
+    assert result["vocab_in_series"] == [
+        "series-error-notfound",
+        "series-ok",
+        "series-error-notauthorized",
+    ]
+    assert result["vocab_in_series_name"] == ["series-ok-name"]
+    assert result["vocab_in_series_title"] == ["series-ok-title"]
+
+
+def test_before_dataset_index_handles_partial_series_metadata():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    def package_show(context, data_dict):
+        series_id = data_dict["id"]
+        if series_id == "series-with-name-only":
+            return {"name": "name-only-series"}
+        if series_id == "series-with-title-only":
+            return {"title": "Title Only Series"}
+        return {}
+
+    with patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        return_value=package_show,
+    ):
+        result = plugin_instance.before_dataset_index(
+            {
+                "in_series": [
+                    "series-with-name-only",
+                    "series-with-title-only",
+                ]
+            }
+        )
+
+    assert result["vocab_in_series"] == [
+        "series-with-name-only",
+        "series-with-title-only",
+    ]
+    assert result["vocab_in_series_name"] == ["name-only-series"]
+    assert result["vocab_in_series_title"] == ["Title Only Series"]
+
+
+def test_before_dataset_index_deduplicates_series_metadata():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    def package_show(context, data_dict):
+        series_id = data_dict["id"]
+        if series_id in ("series-1", "series-1-duplicate"):
+            return {"name": "series-1-name", "title": "Series 1"}
+        if series_id == "series-2":
+            return {"name": "series-2-name", "title": "Series 2"}
+        return {}
+
+    with patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        return_value=package_show,
+    ):
+        result = plugin_instance.before_dataset_index(
+            {
+                "in_series": [
+                    "series-1",
+                    "series-1",
+                    "series-1-duplicate",
+                    "series-2",
+                ]
+            }
+        )
+
+    assert result["vocab_in_series"] == [
+        "series-1",
+        "series-1",
+        "series-1-duplicate",
+        "series-2",
+    ]
+    assert result["vocab_in_series_name"] == ["series-1-name", "series-2-name"]
+    assert result["vocab_in_series_title"] == ["Series 1", "Series 2"]
+
+
 def test_get_commands_returns_cli_commands():
     """Test that get_commands returns the CLI command group."""
     plugin_instance = plugin.GdiUserPortalPlugin()
