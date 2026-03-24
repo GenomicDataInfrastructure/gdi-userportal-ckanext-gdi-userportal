@@ -12,6 +12,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.21] - 2026-03-24
+
+### Changed
+- Update opentelemetry-instrumentation-flask version by @Hans-Christian in 213e9a0
+- Update opentelemetry-instrumentation version by @Hans-Christian in 536a44b
+- chore(deps): update opentelemetry monorepo to v1.40.0 by @Renovate Bot in 71a3b9c
+- chore(deps): update botocore monorepo to v1.42.74 by @Renovate Bot in 5d9df2c
+- Add dataset series indexing edge case tests by @Hans-christian in e96b6c4
+- Apply suggestions from code review by @Hans-Christian in 625a37c
+- Update ckanext/gdi_userportal/tests/test_plugin.py by @Hans-Christian in 90b04d2
+- Add translations dataset series by @Hans-christian in 95d6471
+- Update test.yml by @Quinten in c70f01d
+- Update dataset_series_multilingual.yaml by @Quinten in 5712dbc
+- Remove resource_fields from multilingual schema by @Quinten in 5dd425b
+- chore(deps): update botocore monorepo to v1.42.71 by @Renovate Bot in 1ec3f99
+- Fix YAML indentation in scheming schema by @Quinten in cd17095
+- Update dataset_series_multilingual.yaml by @Quinten in 9dd0d66
+- Rework dataset_series schema fields and ordering by @Quinten in 50f0218
+- chore(deps): update botocore monorepo to v1.42.70 by @Renovate Bot in 31c8cf7
+- doc: update CHANGELOG.md for v1.11.20 by @LNDS-Sysadmins in 3fb16f9
+
+
+### Fixed
+- Add dataset series search facet and harvest schema fix by @Hans-christian in 3209fcb
+
+
 ## [v1.11.20] - 2026-03-11
 
 ### Changed
