@@ -7,6 +7,10 @@ import json
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
+from ckanext.gdi_userportal.logic.action.translation_utils import (
+    SEARCH_INDEX_TRANSLATED_FIELDS,
+    get_all_translations,
+)
 from ckanext.gdi_userportal.logic.action.get import (
     enhanced_package_search,
     enhanced_package_show,
@@ -29,6 +33,14 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 import logging
 
 log = logging.getLogger(__name__)
+
+TRANSLATED_SEARCH_SOLR_FIELDS = {
+    field_name: f"vocab_{field_name}_search"
+    for field_name in SEARCH_INDEX_TRANSLATED_FIELDS
+}
+RESOURCE_TRANSLATED_SEARCH_FIELDS = ("conforms_to",)
+RESOURCE_TRANSLATED_SEARCH_EXTRA_FIELDS = ("res_extras_conforms_to", "resource_conforms_to")
+ACCESS_SERVICE_TRANSLATED_SEARCH_SOURCE = "res_extras_access_services"
 
 
 def setup_opentelemetry():
@@ -238,6 +250,129 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         return []
 
+    def _deduplicate_non_empty_strings(self, values):
+        seen = set()
+        deduplicated = []
+
+        for value in values:
+            if not isinstance(value, str):
+                continue
+
+            normalized = value.strip()
+            if not normalized or normalized in seen:
+                continue
+
+            seen.add(normalized)
+            deduplicated.append(normalized)
+
+        return deduplicated
+
+    def _extract_string_values(self, value):
+        if value is None:
+            return []
+
+        if isinstance(value, str):
+            return [value]
+
+        if isinstance(value, list):
+            extracted = []
+            for item in value:
+                extracted.extend(self._extract_string_values(item))
+            return extracted
+
+        if isinstance(value, dict):
+            extracted = []
+            name = value.get("name")
+            if isinstance(name, str):
+                extracted.append(name)
+            return extracted
+
+        return []
+
+    def _parse_json_if_possible(self, value):
+        if not isinstance(value, str):
+            return value
+
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+
+    def _collect_resource_conforms_to_terms(self, data_dict):
+        values = []
+
+        for field_name in RESOURCE_TRANSLATED_SEARCH_EXTRA_FIELDS:
+            values.extend(
+                self._extract_string_values(
+                    self._parse_json_if_possible(data_dict.get(field_name))
+                )
+            )
+
+        resources = data_dict.get("resources")
+        if isinstance(resources, list):
+            for resource in resources:
+                if not isinstance(resource, dict):
+                    continue
+
+                for field_name in RESOURCE_TRANSLATED_SEARCH_FIELDS:
+                    values.extend(self._extract_string_values(resource.get(field_name)))
+
+                access_services = resource.get("access_services")
+                if isinstance(access_services, list):
+                    for access_service in access_services:
+                        if not isinstance(access_service, dict):
+                            continue
+                        values.extend(
+                            self._extract_string_values(
+                                access_service.get("conforms_to")
+                            )
+                        )
+
+        access_services = self._parse_json_if_possible(
+            data_dict.get(ACCESS_SERVICE_TRANSLATED_SEARCH_SOURCE)
+        )
+        if isinstance(access_services, list):
+            for access_service in access_services:
+                if not isinstance(access_service, dict):
+                    continue
+                values.extend(
+                    self._extract_string_values(access_service.get("conforms_to"))
+                )
+
+        return self._deduplicate_non_empty_strings(values)
+
+    def _add_translated_search_fields(self, data_dict):
+        field_terms = {
+            field_name: self._extract_string_values(data_dict.get(field_name))
+            for field_name in SEARCH_INDEX_TRANSLATED_FIELDS
+        }
+
+        field_terms["conforms_to"].extend(
+            self._collect_resource_conforms_to_terms(data_dict)
+        )
+
+        all_terms = []
+        for values in field_terms.values():
+            all_terms.extend(values)
+
+        try:
+            translations_by_term = get_all_translations(all_terms)
+        except Exception:
+            log.exception("Failed to load term translations for Solr indexing")
+            translations_by_term = {}
+
+        for field_name, solr_field in TRANSLATED_SEARCH_SOLR_FIELDS.items():
+            search_terms = []
+            for term in self._deduplicate_non_empty_strings(field_terms[field_name]):
+                search_terms.append(term)
+                search_terms.extend(translations_by_term.get(term, []))
+
+            search_terms = self._deduplicate_non_empty_strings(search_terms)
+            if search_terms:
+                data_dict[solr_field] = search_terms
+
+        return data_dict
+
     def before_dataset_index(self, data_dict):
         publisher_name = data_dict.get('extras_publisher__name')
         creator_name = data_dict.get('extras_creator__name')
@@ -300,6 +435,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         # Merge tags from tags_translated into tags for Solr indexing
         data_dict = self._merge_tags_translated_for_indexing(data_dict)
+        data_dict = self._add_translated_search_fields(data_dict)
 
         return data_dict
 

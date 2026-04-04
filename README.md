@@ -149,6 +149,26 @@ docker exec <ckan-container> ckan gdi-userportal translations status
 # Run all pending migrations manually
 docker exec <ckan-container> ckan gdi-userportal translations migrate
 ```
+
+## Search Indexing For Translated Vocabulary Values
+
+Free-text dataset search indexes translated labels for these vocabulary-backed fields:
+
+- `conforms_to`
+- `code_values`
+- `coding_system`
+
+At Solr index time, the extension stores both the raw values and all translations available in CKAN's `term_translation` table for these fields. This keeps the API response shape unchanged while allowing `package_search` and `enhanced_package_search` free-text queries to match readable labels.
+
+Notes:
+
+- The translated Solr values are internal search fields and are not exposed as new API fields.
+- Search coverage depends on translations already being present in `term_translation`.
+- After deploying changes to this indexing behavior or loading new translations, rebuild the search index:
+
+```bash
+docker exec <ckan-container> ckan -c /srv/app/ckan.ini search-index rebuild
+```
 ## Tests
 
 To run the tests, do:
