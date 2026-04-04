@@ -310,12 +310,12 @@ def test_before_dataset_index_indexes_resource_and_access_service_conforms_to():
     assert result["vocab_conforms_to_search"] == [
         "http://example.org/resource-standard",
         "Resource standard",
-        "http://example.org/service-standard",
-        "Service standard",
         "http://example.org/resource-spec",
         "Resource specification",
         "http://example.org/access-service-spec",
         "Access service specification",
+        "http://example.org/service-standard",
+        "Service standard",
     ]
 
 
