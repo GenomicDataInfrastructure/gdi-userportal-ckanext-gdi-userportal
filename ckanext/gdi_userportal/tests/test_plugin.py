@@ -221,6 +221,21 @@ def test_before_dataset_index_deduplicates_terms_and_translations():
                 "term_translation": "Disease",
                 "lang_code": "nl",
             },
+            {
+                "term": 123,  # non-string term, should be ignored
+                "term_translation": "Invalid",
+                "lang_code": "en",
+            },
+            {
+                "term": "http://www.wikidata.org/entity/Q12125",
+                "term_translation": "",  # empty translation, should be ignored
+                "lang_code": "en",
+            },
+            {
+                "term": "http://www.wikidata.org/entity/Q12125",
+                "term_translation": "   ",  # whitespace-only translation, should be ignored
+                "lang_code": "en",
+            },
         ]
     )
 
@@ -245,6 +260,18 @@ def test_before_dataset_index_indexes_resource_and_access_service_conforms_to():
         "res_extras_access_services": json.dumps(
             [{"conforms_to": ["http://example.org/service-standard"]}]
         ),
+        # New coverage for `resources[*].conforms_to` and
+        # `resources[*].access_services[*].conforms_to`
+        "resources": [
+            {
+                "conforms_to": ["http://example.org/resource-spec"],
+                "access_services": [
+                    {
+                        "conforms_to": ["http://example.org/access-service-spec"],
+                    }
+                ],
+            }
+        ],
     }
 
     translation_show = MagicMock(
@@ -257,6 +284,16 @@ def test_before_dataset_index_indexes_resource_and_access_service_conforms_to():
             {
                 "term": "http://example.org/service-standard",
                 "term_translation": "Service standard",
+                "lang_code": "en",
+            },
+            {
+                "term": "http://example.org/resource-spec",
+                "term_translation": "Resource specification",
+                "lang_code": "en",
+            },
+            {
+                "term": "http://example.org/access-service-spec",
+                "term_translation": "Access service specification",
                 "lang_code": "en",
             },
         ]
@@ -275,6 +312,10 @@ def test_before_dataset_index_indexes_resource_and_access_service_conforms_to():
         "Resource standard",
         "http://example.org/service-standard",
         "Service standard",
+        "http://example.org/resource-spec",
+        "Resource specification",
+        "http://example.org/access-service-spec",
+        "Access service specification",
     ]
 
 

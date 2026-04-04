@@ -10,6 +10,7 @@ from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     SEARCH_INDEX_TRANSLATED_FIELDS,
     get_all_translations,
+    _deduplicate_non_empty_strings,
 )
 from ckanext.gdi_userportal.logic.action.get import (
     enhanced_package_search,
@@ -250,23 +251,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         return []
 
-    def _deduplicate_non_empty_strings(self, values):
-        seen = set()
-        deduplicated = []
-
-        for value in values:
-            if not isinstance(value, str):
-                continue
-
-            normalized = value.strip()
-            if not normalized or normalized in seen:
-                continue
-
-            seen.add(normalized)
-            deduplicated.append(normalized)
-
-        return deduplicated
-
     def _extract_string_values(self, value):
         if value is None:
             return []
@@ -339,17 +323,15 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
                     self._extract_string_values(access_service.get("conforms_to"))
                 )
 
-        return self._deduplicate_non_empty_strings(values)
+        return _deduplicate_non_empty_strings(values)
 
     def _add_translated_search_fields(self, data_dict):
-        field_terms = {
-            field_name: self._extract_string_values(data_dict.get(field_name))
-            for field_name in SEARCH_INDEX_TRANSLATED_FIELDS
-        }
-
-        field_terms["conforms_to"].extend(
-            self._collect_resource_conforms_to_terms(data_dict)
-        )
+        field_terms = {}
+        for field_name in SEARCH_INDEX_TRANSLATED_FIELDS:
+            values = self._extract_string_values(data_dict.get(field_name))
+            if field_name == "conforms_to":
+                values.extend(self._collect_resource_conforms_to_terms(data_dict))
+            field_terms[field_name] = values
 
         all_terms = []
         for values in field_terms.values():
@@ -363,11 +345,11 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         for field_name, solr_field in TRANSLATED_SEARCH_SOLR_FIELDS.items():
             search_terms = []
-            for term in self._deduplicate_non_empty_strings(field_terms[field_name]):
+            for term in _deduplicate_non_empty_strings(field_terms[field_name]):
                 search_terms.append(term)
                 search_terms.extend(translations_by_term.get(term, []))
 
-            search_terms = self._deduplicate_non_empty_strings(search_terms)
+            search_terms = _deduplicate_non_empty_strings(search_terms)
             if search_terms:
                 data_dict[solr_field] = search_terms
 

@@ -78,6 +78,26 @@ None at present
 	ckanext.gdi_userportal.some_setting = some_default_value
 
 
+## Translated Vocabulary Search Indexing
+
+This extension indexes translated labels for vocabulary-backed fields (`conforms_to`, `code_values`, `coding_system`) into dedicated Solr search fields to improve free-text searchability.
+
+### How it works
+- Raw vocabulary terms and their translations are stored in internal Solr fields (`vocab_conforms_to_search`, `vocab_code_values_search`, `vocab_coding_system_search`).
+- These fields are not exposed via the public API schema but enable searching by translated labels.
+- Terms are collected from dataset extras, resource extras, and access service metadata.
+- Translations are fetched using the `term_translation_show` action.
+
+### Rebuilding the search index
+After deploying changes to indexing logic or loading new translations, rebuild the search index:
+
+```bash
+ckan search-index rebuild
+```
+
+This ensures all datasets are re-indexed with the updated translations.
+
+
 ## Developer installation
 
 To install ckanext-gdi-userportal for development, activate your CKAN virtualenv and
