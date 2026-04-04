@@ -256,10 +256,10 @@ def test_before_dataset_index_deduplicates_terms_and_translations():
 def test_before_dataset_index_indexes_resource_and_access_service_conforms_to():
     plugin_instance = plugin.GdiUserPortalPlugin()
     input_data = {
-        "res_extras_conforms_to": json.dumps(["http://example.org/resource-standard"]),
-        "res_extras_access_services": json.dumps(
-            [{"conforms_to": ["http://example.org/service-standard"]}]
-        ),
+        # `extras_*` coverage
+        "extras_conforms_to": json.dumps(["http://example.org/spec"]),
+        "extras_code_values": json.dumps(["http://www.wikidata.org/entity/Q12125"]),
+        "extras_coding_system": json.dumps(["https://www.wikidata.org/entity/P494"]),
         # New coverage for `resources[*].conforms_to` and
         # `resources[*].access_services[*].conforms_to`
         "resources": [
@@ -277,13 +277,8 @@ def test_before_dataset_index_indexes_resource_and_access_service_conforms_to():
     translation_show = MagicMock(
         return_value=[
             {
-                "term": "http://example.org/resource-standard",
-                "term_translation": "Resource standard",
-                "lang_code": "en",
-            },
-            {
-                "term": "http://example.org/service-standard",
-                "term_translation": "Service standard",
+                "term": "http://example.org/spec",
+                "term_translation": "Specification",
                 "lang_code": "en",
             },
             {
@@ -308,14 +303,12 @@ def test_before_dataset_index_indexes_resource_and_access_service_conforms_to():
         result = plugin_instance.before_dataset_index(input_data.copy())
 
     assert result["vocab_conforms_to_search"] == [
-        "http://example.org/resource-standard",
-        "Resource standard",
+        "http://example.org/spec",
+        "Specification",
         "http://example.org/resource-spec",
         "Resource specification",
         "http://example.org/access-service-spec",
         "Access service specification",
-        "http://example.org/service-standard",
-        "Service standard",
     ]
 
 
