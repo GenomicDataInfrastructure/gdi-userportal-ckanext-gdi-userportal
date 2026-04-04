@@ -177,18 +177,6 @@ dataset_fields:
     preset: datetime_flex
     help_text: Most recent date on which the dataset was changed, updated or modified.
 
-  - field_name: temporal_start
-    label: Temporal start date
-    preset: datetime_flex
-    help_inline: true
-    help_text: Start of the time period that the dataset covers.
-
-  - field_name: temporal_end
-    label: Temporal end date
-    preset: datetime_flex
-    help_inline: true
-    help_text: End of the time period that the dataset covers.
-
   - field_name: in_series
     preset: dataset_series_in_series
 

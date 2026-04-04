@@ -132,17 +132,17 @@ dataset_fields:
     preset: datetime_flex
     help_text: Date of formal issuance of the dataset series. This is the moment when the dataset series was established as a managed resource.
 
-  - field_name: temporal_start
-    label: Temporal start date
-    preset: datetime_flex
-    help_inline: true
-    help_text: Start of the time period that the dataset covers.
+  - field_name: temporal_coverage
+    label: Temporal coverage
+    repeating_subfields:
+      - field_name: start
+        label: Start
+        preset: datetime_flex
 
-  - field_name: temporal_end
-    label: Temporal end date
-    preset: datetime_flex
-    help_inline: true
-    help_text: End of the time period that the dataset covers.
+      - field_name: end
+        label: End
+        preset: datetime_flex
+    help_text: The temporal period or periods the dataset series covers.
 
   - field_name: series_order_field
     preset: dataset_series_order
