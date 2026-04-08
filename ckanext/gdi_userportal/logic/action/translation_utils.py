@@ -90,6 +90,11 @@ LANGUAGE_VALUE_FIELDS = {
 
 DEFAULT_FALLBACK_LANG = "en"
 SUPPORTED_LANGUAGES = {DEFAULT_FALLBACK_LANG, "nl"}
+SEARCH_INDEX_TRANSLATED_FIELDS = (
+    "conforms_to",
+    "code_values",
+    "coding_system",
+)
 
 
 
@@ -127,6 +132,53 @@ def get_translations(values_to_translate: List, lang: str = DEFAULT_FALLBACK_LAN
             translations[transl_item["term"]] = transl_item["term_translation"]
 
     return translations
+
+
+def _deduplicate_non_empty_strings(values: List[Any]) -> List[str]:
+    seen = set()
+    deduplicated = []
+
+    for value in values:
+        if not isinstance(value, str):
+            continue
+
+        normalized = value.strip()
+        if not normalized or normalized in seen:
+            continue
+
+        seen.add(normalized)
+        deduplicated.append(normalized)
+
+    return deduplicated
+
+
+def get_all_translations(values_to_translate: List[Any]) -> Dict[str, List[str]]:
+    """Return all known translations for each term, grouped by term."""
+    terms = _deduplicate_non_empty_strings(values_to_translate)
+    if not terms:
+        return {}
+
+    translation_table = toolkit.get_action("term_translation_show")(
+        {},
+        {"terms": terms},
+    )
+
+    translations = {term: [] for term in terms}
+
+    for translation_row in translation_table:
+        term = translation_row.get("term")
+        translated_value = translation_row.get("term_translation")
+        if not isinstance(term, str) or not isinstance(translated_value, str):
+            continue
+        if term not in translations:
+            translations[term] = []
+        translations[term].append(translated_value)
+
+    return {
+        term: _deduplicate_non_empty_strings(values)
+        for term, values in translations.items()
+        if values
+    }
 
 
 def _normalize_language(lang_value: Any) -> str:

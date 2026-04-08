@@ -111,6 +111,239 @@ def test_before_dataset_index_normalizes_multi_value_fields(field, values):
     assert f"extras_{field}" not in result
 
 
+def test_before_dataset_index_adds_translated_search_fields():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "extras_conforms_to": json.dumps(["http://example.org/spec"]),
+        "extras_code_values": json.dumps(["http://www.wikidata.org/entity/Q12125"]),
+        "extras_coding_system": json.dumps(["https://www.wikidata.org/entity/P494"]),
+    }
+
+    translation_rows = [
+        {
+            "term": "http://example.org/spec",
+            "term_translation": "Specification",
+            "lang_code": "en",
+        },
+        {
+            "term": "http://example.org/spec",
+            "term_translation": "Specificatie",
+            "lang_code": "nl",
+        },
+        {
+            "term": "http://www.wikidata.org/entity/Q12125",
+            "term_translation": "Disease",
+            "lang_code": "en",
+        },
+        {
+            "term": "https://www.wikidata.org/entity/P494",
+            "term_translation": "ICD-10 identifier",
+            "lang_code": "en",
+        },
+    ]
+
+    translation_show = MagicMock(return_value=translation_rows)
+
+    with patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        side_effect=lambda action_name: translation_show
+        if action_name == "term_translation_show"
+        else MagicMock(),
+    ):
+        result = plugin_instance.before_dataset_index(input_data.copy())
+
+    translation_show.assert_called_once_with(
+        {},
+        {
+            "terms": [
+                "http://example.org/spec",
+                "http://www.wikidata.org/entity/Q12125",
+                "https://www.wikidata.org/entity/P494",
+            ]
+        },
+    )
+    assert result["vocab_conforms_to_search"] == [
+        "http://example.org/spec",
+        "Specification",
+        "Specificatie",
+    ]
+    assert result["vocab_code_values_search"] == [
+        "http://www.wikidata.org/entity/Q12125",
+        "Disease",
+    ]
+    assert result["vocab_coding_system_search"] == [
+        "https://www.wikidata.org/entity/P494",
+        "ICD-10 identifier",
+    ]
+
+
+def test_before_dataset_index_keeps_raw_values_when_translations_are_missing():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "extras_code_values": json.dumps(["http://www.wikidata.org/entity/Q12125"]),
+    }
+
+    translation_show = MagicMock(return_value=[])
+
+    with patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        side_effect=lambda action_name: translation_show
+        if action_name == "term_translation_show"
+        else MagicMock(),
+    ):
+        result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["vocab_code_values_search"] == [
+        "http://www.wikidata.org/entity/Q12125"
+    ]
+
+
+def test_before_dataset_index_deduplicates_terms_and_translations():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "extras_code_values": json.dumps(
+            [
+                "http://www.wikidata.org/entity/Q12125",
+                "http://www.wikidata.org/entity/Q12125",
+            ]
+        ),
+    }
+
+    translation_show = MagicMock(
+        return_value=[
+            {
+                "term": "http://www.wikidata.org/entity/Q12125",
+                "term_translation": "Disease",
+                "lang_code": "en",
+            },
+            {
+                "term": "http://www.wikidata.org/entity/Q12125",
+                "term_translation": "Disease",
+                "lang_code": "nl",
+            },
+            {
+                "term": 123,  # non-string term, should be ignored
+                "term_translation": "Invalid",
+                "lang_code": "en",
+            },
+            {
+                "term": "http://www.wikidata.org/entity/Q12125",
+                "term_translation": "",  # empty translation, should be ignored
+                "lang_code": "en",
+            },
+            {
+                "term": "http://www.wikidata.org/entity/Q12125",
+                "term_translation": "   ",  # whitespace-only translation, should be ignored
+                "lang_code": "en",
+            },
+        ]
+    )
+
+    with patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        side_effect=lambda action_name: translation_show
+        if action_name == "term_translation_show"
+        else MagicMock(),
+    ):
+        result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["vocab_code_values_search"] == [
+        "http://www.wikidata.org/entity/Q12125",
+        "Disease",
+    ]
+
+
+def test_before_dataset_index_indexes_resource_and_access_service_conforms_to():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        # `extras_*` coverage
+        "extras_conforms_to": json.dumps(["http://example.org/spec"]),
+        "extras_code_values": json.dumps(["http://www.wikidata.org/entity/Q12125"]),
+        "extras_coding_system": json.dumps(["https://www.wikidata.org/entity/P494"]),
+        # New coverage for `resources[*].conforms_to` and
+        # `resources[*].access_services[*].conforms_to`
+        "resources": [
+            {
+                "conforms_to": ["http://example.org/resource-spec"],
+                "access_services": [
+                    {
+                        "conforms_to": ["http://example.org/access-service-spec"],
+                    }
+                ],
+            }
+        ],
+    }
+
+    translation_show = MagicMock(
+        return_value=[
+            {
+                "term": "http://example.org/spec",
+                "term_translation": "Specification",
+                "lang_code": "en",
+            },
+            {
+                "term": "http://example.org/resource-spec",
+                "term_translation": "Resource specification",
+                "lang_code": "en",
+            },
+            {
+                "term": "http://example.org/access-service-spec",
+                "term_translation": "Access service specification",
+                "lang_code": "en",
+            },
+        ]
+    )
+
+    with patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        side_effect=lambda action_name: translation_show
+        if action_name == "term_translation_show"
+        else MagicMock(),
+    ):
+        result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["vocab_conforms_to_search"] == [
+        "http://example.org/spec",
+        "Specification",
+        "http://example.org/resource-spec",
+        "Resource specification",
+        "http://example.org/access-service-spec",
+        "Access service specification",
+    ]
+
+
+def test_before_dataset_index_handles_malformed_resource_access_services():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "extras_conforms_to": "http://example.org/spec",
+        "res_extras_access_services": "not-json",
+    }
+
+    translation_show = MagicMock(
+        return_value=[
+            {
+                "term": "http://example.org/spec",
+                "term_translation": "Specification",
+                "lang_code": "en",
+            }
+        ]
+    )
+
+    with patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        side_effect=lambda action_name: translation_show
+        if action_name == "term_translation_show"
+        else MagicMock(),
+    ):
+        result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["conforms_to"] == "http://example.org/spec"
+    assert result["vocab_conforms_to_search"] == [
+        "http://example.org/spec",
+        "Specification",
+    ]
+
+
 def test_dataset_facets_include_dataset_series_title():
     plugin_instance = plugin.GdiUserPortalPlugin()
 
