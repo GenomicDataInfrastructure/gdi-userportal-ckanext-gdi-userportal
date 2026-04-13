@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import os
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
@@ -20,28 +19,11 @@ from ckanext.gdi_userportal.logic.action.get import (
 from ckanext.gdi_userportal.logic.auth.get import config_option_show
 from ckanext.gdi_userportal.validation import scheming_isodatetime_flex
 
-from opentelemetry import metrics
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
-
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 import logging
 
 log = logging.getLogger(__name__)
-
-OTEL_EXPORTER_OTLP_PROTOCOL = os.getenv("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf").lower()
-
-if OTEL_EXPORTER_OTLP_PROTOCOL == "grpc":
-    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-else:
-    from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
 TRANSLATED_SEARCH_SOLR_FIELDS = {
     field_name: f"vocab_{field_name}_search"
@@ -50,19 +32,6 @@ TRANSLATED_SEARCH_SOLR_FIELDS = {
 RESOURCE_TRANSLATED_SEARCH_FIELDS = ("conforms_to",)
 RESOURCE_TRANSLATED_SEARCH_EXTRA_FIELDS = ("res_extras_conforms_to", "resource_conforms_to")
 ACCESS_SERVICE_TRANSLATED_SEARCH_SOURCE = "res_extras_access_services"
-
-
-def setup_opentelemetry():
-    resource = Resource(attributes={SERVICE_NAME: "ckan"})
-
-    traceProvider = TracerProvider(resource=resource)
-    processor = BatchSpanProcessor(OTLPSpanExporter())
-    traceProvider.add_span_processor(processor)
-    trace.set_tracer_provider(traceProvider)
-
-    reader = PeriodicExportingMetricReader(OTLPMetricExporter())
-    provider = MeterProvider(resource=resource, metric_readers=[reader])
-    metrics.set_meter_provider(provider)
 
 
 class GdiUserPortalPlugin(plugins.SingletonPlugin):
@@ -488,7 +457,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
     # IConfigurable
     def configure(self, config):
-        setup_opentelemetry()
+        pass
 
     # IMiddleware
     def make_middleware(self, app, config):
