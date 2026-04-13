@@ -21,17 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Update requirements.txt by @Hans-Christian in f9d4363
-- chore(deps): update botocore monorepo to v1.42.88 by @Renovate Bot in d50e24c
-- chore(deps): update opentelemetry monorepo to v1.41.0 by @Renovate Bot in 3da4f9e
-- chore(deps): update botocore monorepo to v1.42.87 (#349) by @LNDS-Sysadmins in 8bb21d1
-- chore(deps): update docker/build-push-action digest to bcafcac (#351) by @LNDS-Sysadmins in b1c7897
-- chore(deps): update botocore monorepo to v1.42.85 by @Renovate Bot in 160ed4c
-- chore(deps): update oras-project/setup-oras action to v2 by @Renovate Bot in 4d594c4
 - chore: add zizmor for automated scan and mitigation for current issues (#348) by @Kacem Bechka in 664d0ce
 - test: update test to include dataset-level extras and resource conforms_to coverage as suggested by @Hans-christian in 0292aca
-- chore(deps): update botocore monorepo to v1.42.82 by @Renovate Bot in 071c5c5
 - Remove v1.11.20 entry from CHANGELOG.md by @Hans-Christian in c5f24fc
-- doc: update CHANGELOG.md for v1.11.21 by @LNDS-Sysadmins in 5a9bc5d
 
 
 ### Fixed
