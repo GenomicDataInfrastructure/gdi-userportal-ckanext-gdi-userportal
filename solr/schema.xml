@@ -164,12 +164,13 @@ attribute with the form `ckan-X.Y` -->
         <field name="access_rights" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="conforms_to" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="has_version" type="string" indexed="true" stored="true" multiValued="true" />
-        <field name="identifier" type="string" indexed="true" stored="true" multiValued="false" />
+        <field name="identifier" type="string" indexed="false" stored="true" multiValued="false" />
         <field name="language" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="uri" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="provenance" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="spatial_uri" type="string" indexed="true" stored="true" multiValued="false" />
-        <field name="documentation" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="documentation" type="string" indexed="false" stored="true" multiValued="true" />
+        <field name="distribution" type="string" indexed="false" stored="true" multiValued="true" />
         <field name="purpose" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="resources_formats" type="string" indexed="true" stored="true"
             multiValued="true" />
