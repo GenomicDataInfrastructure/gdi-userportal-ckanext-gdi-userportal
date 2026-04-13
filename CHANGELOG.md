@@ -12,6 +12,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.23] - 2026-04-13
+
+### Added
+- feat(search): index translated labels for conforms_to, code_values, and coding_system by @Hans-christian in 73dd126
+- feat(temporal): use temporal_coverage in userportal schemas by @Quinten in 02e2da4
+
+
+### Changed
+- Update requirements.txt by @Hans-Christian in f9d4363
+- chore: add zizmor for automated scan and mitigation for current issues (#348) by @Kacem Bechka in 664d0ce
+- test: update test to include dataset-level extras and resource conforms_to coverage as suggested by @Hans-christian in 0292aca
+- Remove v1.11.20 entry from CHANGELOG.md by @Hans-Christian in c5f24fc
+
+
+### Fixed
+- fix: align opentelemetry instrumentation pins by @Hans-christian in 360562a
+- fix: correct test assertion order to match actual collection sequence by @Hans-christian in f6dba1e
+- fix: remove duplicate README section and enhance existing search indexing docs by @Hans-christian in b08e004
+- fix: address SonarCloud comments - consolidate deduplication utility, refactor search field building, enhance test coverage, and document translated search indexing by @Hans-christian in ef12f37
+
+
 ## [v1.11.21] - 2026-03-24
 
 ### Changed
