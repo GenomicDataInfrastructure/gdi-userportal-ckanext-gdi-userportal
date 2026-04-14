@@ -35,6 +35,16 @@ import logging
 log = logging.getLogger(__name__)
 
 OTEL_EXPORTER_OTLP_PROTOCOL = os.getenv("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf").lower()
+_ALLOWED_OTEL_EXPORTER_OTLP_PROTOCOLS = {"grpc", "http/protobuf"}
+
+if OTEL_EXPORTER_OTLP_PROTOCOL not in _ALLOWED_OTEL_EXPORTER_OTLP_PROTOCOLS:
+    log.warning(
+        "Invalid OTEL_EXPORTER_OTLP_PROTOCOL=%r; falling back to 'http/protobuf'. "
+        "Allowed values are: %s",
+        OTEL_EXPORTER_OTLP_PROTOCOL,
+        ", ".join(sorted(_ALLOWED_OTEL_EXPORTER_OTLP_PROTOCOLS)),
+    )
+    OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
 
 if OTEL_EXPORTER_OTLP_PROTOCOL == "grpc":
     from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
