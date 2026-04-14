@@ -57,7 +57,8 @@ dataset_fields:
 
       - field_name: url
         label: URL
-        display_snippet: link.html
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
         help_text: URL for more information about the contact point.
     help_text: Contact information for enquiries about the dataset.
 
@@ -879,6 +880,8 @@ resource_fields:
 
           - field_name: url
             label: URL
+            preset: multiple_text
+            validators: ignore_missing scheming_multiple_text
             display_snippet: link.html
         help_text: Contact information for enquiries about the data service.
 
