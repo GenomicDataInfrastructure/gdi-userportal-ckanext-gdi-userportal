@@ -12,6 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.24] - 2026-04-14
+
+### Changed
+- Update ckanext/gdi_userportal/plugin.py by @Hans-Christian in e6090c5
+- chore(deps): update actions/cache digest to 27d5ce7 by @Renovate Bot in a31d4b0
+- Select OTLP exporter by protocol by @Hans-christian in 5ccdcfc
+- Update CHANGELOG.md to reflect recent changes by @Quinten in 11aab02
+- doc: update CHANGELOG.md for v1.11.23 by @LNDS-Sysadmins in 07c46e6
+- Turn off indexing for some schema fields; add distribution by @Quinten in 345433d
+
+
 ## [v1.11.23] - 2026-04-13
 
 ### Added
