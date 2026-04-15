@@ -12,6 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.25] - 2026-04-15
+
+### Changed
+- Use multiple_text for URL fields; add Solr field by @Quinten in 009a131
+- doc: update CHANGELOG.md for v1.11.24 by @LNDS-Sysadmins in a2e2475
+
+
 ## [v1.11.24] - 2026-04-14
 
 ### Changed
