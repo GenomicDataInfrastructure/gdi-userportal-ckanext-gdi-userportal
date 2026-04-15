@@ -53,7 +53,8 @@ dataset_fields:
 
       - field_name: url
         label: URL
-        display_snippet: link.html
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
 
     help_text: Contact information for enquiries about the dataset series.
 
