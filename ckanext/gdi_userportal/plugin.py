@@ -61,7 +61,7 @@ RESOURCE_TRANSLATED_SEARCH_FIELDS = ("conforms_to",)
 RESOURCE_TRANSLATED_SEARCH_EXTRA_FIELDS = ("res_extras_conforms_to", "resource_conforms_to")
 ACCESS_SERVICE_TRANSLATED_SEARCH_SOURCE = "res_extras_access_services"
 PUBLICATIONS_DATA_THEME_HTTP_PREFIX = (
-    "http://publications.europa.eu/resource/authority/data-theme/"
+    "http://publications.europa.eu/resource/authority/data-theme/" #nonsonar
 )
 PUBLICATIONS_DATA_THEME_HTTPS_PREFIX = (
     "https://publications.europa.eu/resource/authority/data-theme/"
