@@ -60,6 +60,12 @@ TRANSLATED_SEARCH_SOLR_FIELDS = {
 RESOURCE_TRANSLATED_SEARCH_FIELDS = ("conforms_to",)
 RESOURCE_TRANSLATED_SEARCH_EXTRA_FIELDS = ("res_extras_conforms_to", "resource_conforms_to")
 ACCESS_SERVICE_TRANSLATED_SEARCH_SOURCE = "res_extras_access_services"
+PUBLICATIONS_DATA_THEME_HTTP_PREFIX = (
+    "http://publications.europa.eu/resource/authority/data-theme/"  # NOSONAR - canonical authority URI
+)
+PUBLICATIONS_DATA_THEME_HTTPS_PREFIX = (
+    "https://publications.europa.eu/resource/authority/data-theme/"
+)
 
 
 def setup_opentelemetry():
@@ -300,6 +306,42 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         except json.JSONDecodeError:
             return value
 
+    def _canonicalize_publications_data_theme_uri(self, value):
+        if not isinstance(value, str):
+            return value
+
+        if value.startswith(PUBLICATIONS_DATA_THEME_HTTPS_PREFIX):
+            suffix = value[len(PUBLICATIONS_DATA_THEME_HTTPS_PREFIX) :]
+            return f"{PUBLICATIONS_DATA_THEME_HTTP_PREFIX}{suffix}"
+
+        return value
+
+    def _normalize_theme_values(self, theme_value):
+        if isinstance(theme_value, str):
+            return self._canonicalize_publications_data_theme_uri(theme_value)
+
+        if not isinstance(theme_value, list):
+            return theme_value
+
+        normalized = [
+            self._canonicalize_publications_data_theme_uri(item)
+            if isinstance(item, str)
+            else item
+            for item in theme_value
+        ]
+
+        # Keep first occurrence order while removing duplicates.
+        deduplicated = []
+        seen = set()
+        for item in normalized:
+            if isinstance(item, str):
+                if item in seen:
+                    continue
+                seen.add(item)
+            deduplicated.append(item)
+
+        return deduplicated
+
     def _collect_resource_conforms_to_terms(self, data_dict):
         values = []
 
@@ -426,6 +468,9 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         for field in self._dcatap_fields_to_normalize:
             data_dict = self._parse_to_array(data_dict, field)
+
+        if data_dict.get("theme") is not None:
+            data_dict["theme"] = self._normalize_theme_values(data_dict["theme"])
 
         if data_dict.get("res_format"):
             data_dict["res_format"] = list(dict.fromkeys(data_dict.get("res_format")))

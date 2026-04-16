@@ -111,6 +111,45 @@ def test_before_dataset_index_normalizes_multi_value_fields(field, values):
     assert f"extras_{field}" not in result
 
 
+def test_before_dataset_index_canonicalizes_http_https_theme_uris():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "extras_theme": json.dumps(
+            [
+                "https://publications.europa.eu/resource/authority/data-theme/HEAL",
+                "http://publications.europa.eu/resource/authority/data-theme/HEAL",
+                "https://publications.europa.eu/resource/authority/data-theme/ENER",
+            ]
+        )
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["theme"] == [
+        "http://publications.europa.eu/resource/authority/data-theme/HEAL",
+        "http://publications.europa.eu/resource/authority/data-theme/ENER",
+    ]
+
+
+def test_before_dataset_index_keeps_non_publications_theme_uris_unchanged():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "extras_theme": json.dumps(
+            [
+                "https://example.org/theme/custom",
+                "http://publications.europa.eu/resource/authority/data-theme/HEAL",
+            ]
+        )
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["theme"] == [
+        "https://example.org/theme/custom",
+        "http://publications.europa.eu/resource/authority/data-theme/HEAL",
+    ]
+
+
 def test_before_dataset_index_adds_translated_search_fields():
     plugin_instance = plugin.GdiUserPortalPlugin()
     input_data = {
