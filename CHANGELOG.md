@@ -12,6 +12,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.26] - 2026-04-16
+
+### Changed
+- chore(deps): update botocore monorepo to v1.42.89 (#358) by @LNDS-Sysadmins in 6922e12
+- doc: update CHANGELOG.md for v1.11.25 (#362) by @github-actions[bot] in 4b8c85e
+- Implement theme URI normalization and canonicalization in GdiUserPortalPlugin (#363) by @Kacem Bechka in aa14ad6
+
+
 ## [v1.11.25] - 2026-04-15
 
 ### Changed
