@@ -64,7 +64,10 @@ jobs:
           cd ..
 
           # Scheming release 3.1.0
-          pip install -e 'git+https://github.com/ckan/ckanext-scheming.git@release-3.1.0#egg=ckanext-scheming[requirements]'
+          pip install -e 'git+https://github.com/ckan/ckanext-scheming.git@release-3.1.0#egg=ckanext-scheming'
+          if [ -f "${PIP_SRC}/ckanext-scheming/requirements.txt" ]; then
+            pip install -r "${PIP_SRC}/ckanext-scheming/requirements.txt"
+          fi
 
           # DCAT extension maintained for the GDI user portal
           pip install -e 'git+https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-dcat.git@v2.3.4#egg=ckanext-dcat'
