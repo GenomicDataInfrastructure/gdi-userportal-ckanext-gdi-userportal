@@ -96,11 +96,13 @@ jobs:
       - name: Generate coverage report
         run: |
           coverage xml -o coverage.xml
-      - name: Install unzip and gpg
-        run: apt-get update && apt-get install -y unzip gnupg
+      - name: Install unzip 
+        run: apt-get update && apt-get install -y unzip 
       - name: SonarQube Scan
         if: github.actor != 'dependabot[bot]'
         uses: SonarSource/sonarqube-scan-action@59db25f34e16620e48ab4bb9e4a5dce155cb5432 # v8.0.0
+        with:
+          skipSignatureVerification: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
