@@ -199,6 +199,9 @@ attribute with the form `ckan-X.Y` -->
         <field name="publisher_identifier" type="string" indexed="true" stored="true"
             multiValued="true" />
 
+        <field name="qualified_attribution_agent_name" type="text_general" indexed="true" stored="true" multiValued="true" />
+        <field name="qualified_attribution_agent_name_ngram" type="text_ngram" indexed="true" stored="false" multiValued="true" />
+
         <field name="capacity" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="permission_labels" type="string" indexed="true" stored="false"
             multiValued="true" />
@@ -279,4 +282,6 @@ attribute with the form `ckan-X.Y` -->
     <copyField source="creator_name" dest="text" />
     <copyField source="contact_name" dest="text" />
     <copyField source="publisher_name" dest="text" />
+    <copyField source="qualified_attribution_agent_name" dest="text" />
+    <copyField source="qualified_attribution_agent_name" dest="qualified_attribution_agent_name_ngram" />
 </schema>
