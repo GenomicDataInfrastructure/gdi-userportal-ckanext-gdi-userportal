@@ -14,7 +14,13 @@ dataset_fields:
       en: Title
       nl: Titel
     preset: fluent_core_translated
-    help_text: A descriptive title for the dataset series in each language.
+    help_text:
+      en: A descriptive title for the dataset series in each language.
+      nl: Een beschrijvende titel voor de datasetreeks in elke taal.
+    filter_help_text:
+      en: Use this filter to search dataset series by title.
+      nl: Gebruik deze filter om datasetreeksen op titel te zoeken.
+    facet_key: title
 
   - field_name: name
     label: URL

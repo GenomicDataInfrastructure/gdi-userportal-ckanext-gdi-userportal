@@ -32,6 +32,25 @@ def _schema():
     }
 
 
+def _dataset_series_schema():
+    return {
+        "dataset_fields": [
+            {
+                "field_name": "title_translated",
+                "facet_key": "title",
+                "help_text": {
+                    "en": "A descriptive title for the dataset series in each language.",
+                    "nl": "Een beschrijvende titel voor de datasetreeks in elke taal.",
+                },
+                "filter_help_text": {
+                    "en": "Use this filter to search dataset series by title.",
+                    "nl": "Gebruik deze filter om datasetreeksen op titel te zoeken.",
+                },
+            }
+        ]
+    }
+
+
 def _call_action(data_dict=None, language="en"):
     schema_show = MagicMock(return_value=_schema())
 
@@ -92,3 +111,20 @@ def test_gdi_filter_help_texts_show_uses_requested_dataset_type():
         gdi_filter_help_texts_show({}, {"type": "dataset_series"})
 
     schema_show.assert_called_once_with({}, {"type": "dataset_series"})
+
+
+def test_gdi_filter_help_texts_show_returns_dataset_series_help_text():
+    schema_show = MagicMock(return_value=_dataset_series_schema())
+
+    with patch(
+        "ckanext.gdi_userportal.logic.action.get.toolkit.get_action",
+        return_value=schema_show,
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.get_request_language",
+        return_value="nl",
+    ):
+        result = gdi_filter_help_texts_show({}, {"type": "dataset_series"})
+
+    assert result == {
+        "title": "Gebruik deze filter om datasetreeksen op titel te zoeken."
+    }
