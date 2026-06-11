@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from ckanext.gdi_userportal.logic.action import get as action_get
 from ckanext.gdi_userportal.logic.action.get import gdi_filter_help_texts_show
 
 
@@ -168,6 +169,22 @@ def _dataset_series_schema():
     return _schema(DATASET_SERIES_FILTER_CASES)
 
 
+def _fallback_schema():
+    return {
+        "dataset_fields": [
+            {
+                "field_name": "fallback_title",
+                "facet_key": "fallback_title",
+                "help_text": "Fallback help text.",
+            },
+            {
+                "field_name": "hidden_field",
+                "facet_key": "hidden_field",
+            },
+        ]
+    }
+
+
 def _call_action(data_dict=None, language="en", schema=None):
     schema_show = MagicMock(return_value=schema or _schema())
     request_data = data_dict or {}
@@ -254,3 +271,127 @@ def test_gdi_filter_help_texts_show_uses_requested_dataset_type():
         gdi_filter_help_texts_show({}, {"type": "dataset_series"})
 
     schema_show.assert_called_once_with({}, {"type": "dataset_series"})
+
+
+def test_gdi_filter_help_texts_show_uses_help_text_when_filter_help_text_missing():
+    result = _call_action(schema=_fallback_schema())
+
+    assert result == {"fallback_title": "Fallback help text."}
+
+
+def test_gdi_filter_help_texts_show_parses_comma_separated_keys():
+    result = _call_action({"keys": "theme, access_rights"})
+
+    assert result == {
+        "theme": "Use this filter to search datasets by theme.",
+        "access_rights": "Use this filter to search datasets by access rights.",
+    }
+
+
+def test_gdi_filter_help_texts_show_rejects_invalid_keys_type():
+    with pytest.raises(Exception):
+        _call_action({"keys": 42})
+
+
+def test_enhanced_package_search_replaces_results_and_facets():
+    response = {
+        "results": [{"name": "dataset-1"}],
+        "search_facets": {"theme": {"title": "Theme"}},
+    }
+
+    package_search = MagicMock(return_value=response)
+
+    with patch(
+        "ckanext.gdi_userportal.logic.action.get.toolkit.get_action",
+        side_effect=lambda name: package_search if name == "package_search" else None,
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.collect_values_to_translate",
+        return_value=["alpha"],
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.get_request_language",
+        return_value="nl",
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.get_translations",
+        return_value={"alpha": "beta"},
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.replace_package",
+        side_effect=lambda package, translations, lang=None: {
+            **package,
+            "translated_lang": lang,
+            "translated_values": translations,
+        },
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.replace_search_facets",
+        return_value={"theme": {"title": "Vertaling"}},
+    ) as replace_search_facets:
+        result = action_get.enhanced_package_search({}, {"rows": 0})
+
+    assert result["results"] == [
+        {
+            "name": "dataset-1",
+            "translated_lang": "nl",
+            "translated_values": {"alpha": "beta"},
+        }
+    ]
+    assert result["search_facets"] == {"theme": {"title": "Vertaling"}}
+    replace_search_facets.assert_called_once()
+
+
+def test_enhanced_package_search_leaves_results_without_search_facets():
+    response = {"results": [{"name": "dataset-1"}]}
+
+    package_search = MagicMock(return_value=response)
+
+    with patch(
+        "ckanext.gdi_userportal.logic.action.get.toolkit.get_action",
+        side_effect=lambda name: package_search if name == "package_search" else None,
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.collect_values_to_translate",
+        return_value=["alpha"],
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.get_request_language",
+        return_value="en",
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.get_translations",
+        return_value={"alpha": "beta"},
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.replace_package",
+        side_effect=lambda package, translations, lang=None: {
+            **package,
+            "translated_lang": lang,
+        },
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.replace_search_facets"
+    ) as replace_search_facets:
+        result = action_get.enhanced_package_search({}, {"rows": 0})
+
+    assert result["results"] == [{"name": "dataset-1", "translated_lang": "en"}]
+    assert "search_facets" not in result
+    replace_search_facets.assert_not_called()
+
+
+def test_enhanced_package_show_replaces_package():
+    response = {"name": "dataset-1"}
+
+    package_show = MagicMock(return_value=response)
+
+    with patch(
+        "ckanext.gdi_userportal.logic.action.get.toolkit.get_action",
+        side_effect=lambda name: package_show if name == "package_show" else None,
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.collect_values_to_translate",
+        return_value=["alpha"],
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.get_request_language",
+        return_value="en",
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.get_translations",
+        return_value={"alpha": "beta"},
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.replace_package",
+        return_value={"name": "dataset-1", "translated": True},
+    ) as replace_package:
+        result = action_get.enhanced_package_show({}, {"id": "dataset-1"})
+
+    assert result == {"name": "dataset-1", "translated": True}
+    replace_package.assert_called_once()
