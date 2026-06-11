@@ -69,6 +69,10 @@ dataset_fields:
       en: Frequency
       nl: Frequentie
     help_text: The frequency with which items are added to the dataset series collection.
+    filter_help_text:
+      en: Use this filter to search dataset series by frequency.
+      nl: Gebruik deze filter om datasetreeksen op frequentie te zoeken.
+    facet_key: frequency
 
   - field_name: spatial_coverage
     label: Spatial coverage
@@ -87,6 +91,10 @@ dataset_fields:
       nl: Wijzigingsdatum
     preset: datetime_flex
     help_text: Date on which the dataset series was changed.
+    filter_help_text:
+      en: Use this filter to search dataset series by modification date.
+      nl: Gebruik deze filter om datasetreeksen op wijzigingsdatum te zoeken.
+    facet_key: modified
 
   - field_name: publisher
     label: Publisher
@@ -138,6 +146,10 @@ dataset_fields:
       nl: Releasedatum
     preset: datetime_flex
     help_text: Date of formal issuance of the dataset series. This is the moment when the dataset series was established as a managed resource.
+    filter_help_text:
+      en: Use this filter to search dataset series by release date.
+      nl: Gebruik deze filter om datasetreeksen op releasedatum te zoeken.
+    facet_key: issued
 
   - field_name: temporal_coverage
     label: Temporal coverage
