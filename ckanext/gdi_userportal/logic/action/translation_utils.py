@@ -109,7 +109,7 @@ class ValueLabel:
 
 def get_translations(values_to_translate: List, lang: str = DEFAULT_FALLBACK_LANG) -> Dict[str, str]:
     """Calls term_translation_show action with a list of values to translate"""
-    pref_language = _get_language(lang)
+    pref_language = get_preferred_language(lang)
 
     translation_table = toolkit.get_action("term_translation_show")(
         {},
@@ -201,7 +201,7 @@ def _normalize_language(lang_value: Any) -> str:
     return primary.lower()
 
 
-def _get_language(lang: str) -> str:
+def get_preferred_language(lang: str) -> str:
     """
     Tries to get default language from environment variables/ckan config, defaults to English
     """
@@ -217,6 +217,10 @@ def _get_language(lang: str) -> str:
         language = DEFAULT_FALLBACK_LANG
 
     return language
+
+
+def _get_language(lang: str) -> str:
+    return get_preferred_language(lang)
 
 
 def _select_and_append_values(
@@ -295,7 +299,7 @@ def collect_values_to_translate(data: Any) -> List:
 
 
 def replace_package(data, translation_dict, lang: Optional[str] = None):
-    preferred_lang = _get_language(lang)
+    preferred_lang = get_preferred_language(lang)
 
     _apply_translated_properties(data, preferred_lang)
     _merge_tags_translated_into_tags(data)
@@ -485,7 +489,7 @@ def _change_facet(facet, translation_dict):
 
 
 def replace_search_facets(data, translation_dict, lang):
-    preferred_lang = _get_language(lang)
+    preferred_lang = get_preferred_language(lang)
     new_facets = {}
     for key, facet in data.items():
         title = facet["title"]

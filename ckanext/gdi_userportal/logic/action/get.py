@@ -12,8 +12,8 @@ from ckan.plugins import toolkit
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     collect_values_to_translate,
     get_request_language,
+    get_preferred_language,
     get_translations,
-    _get_language,
     replace_package,
     replace_search_facets,
 )
@@ -51,7 +51,7 @@ def gdi_filter_help_texts_show(context, data_dict) -> Dict[str, str]:
     data_dict = data_dict or {}
     dataset_type = data_dict.get("type", "dataset")
     requested_keys = _parse_requested_keys(data_dict.get("keys"))
-    language = _get_language(get_request_language())
+    language = get_preferred_language(get_request_language())
 
     schema = toolkit.get_action("scheming_dataset_schema_show")(
         context, {"type": dataset_type}
