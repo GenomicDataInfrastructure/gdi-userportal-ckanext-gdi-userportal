@@ -107,7 +107,7 @@ class ValueLabel:
     count: int = None
 
 
-def get_translations(values_to_translate: List, lang: str = DEFAULT_FALLBACK_LANG) -> Dict[str, str]:
+def get_translations(values_to_translate: List, lang: Optional[str] = DEFAULT_FALLBACK_LANG) -> Dict[str, str]:
     """Calls term_translation_show action with a list of values to translate"""
     pref_language = get_preferred_language(lang)
 
