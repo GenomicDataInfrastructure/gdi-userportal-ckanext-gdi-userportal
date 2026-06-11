@@ -17,7 +17,7 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
     replace_package,
     replace_search_facets,
 )
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional, Set, Tuple
 
 
 @toolkit.side_effect_free
@@ -89,7 +89,7 @@ def gdi_dataset_help_texts_show(context, data_dict=None) -> Dict[str, str]:
 def _collect_help_texts(
     schema: Dict[str, Any],
     key_property: str,
-    text_properties: tuple[str, ...],
+    text_properties: Tuple[str, ...],
     requested_keys: Optional[Set[str]],
     language: str,
 ) -> Dict[str, str]:
@@ -107,7 +107,7 @@ def _collect_help_texts(
 
 
 def _first_localized_text(
-    field: Dict[str, Any], text_properties: tuple[str, ...], language: str
+    field: Dict[str, Any], text_properties: Tuple[str, ...], language: str
 ) -> str:
     for text_property in text_properties:
         help_text = _localized_text(field.get(text_property), language)
