@@ -289,7 +289,7 @@ def test_gdi_filter_help_texts_show_parses_comma_separated_keys():
 
 
 def test_gdi_filter_help_texts_show_rejects_invalid_keys_type():
-    with pytest.raises(Exception):
+    with pytest.raises(action_get.toolkit.ValidationError):
         _call_action({"keys": 42})
 
 
