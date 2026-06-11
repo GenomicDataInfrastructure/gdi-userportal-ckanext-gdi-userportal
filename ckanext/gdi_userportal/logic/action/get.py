@@ -47,7 +47,7 @@ def enhanced_package_show(context, data_dict) -> Dict:
 
 
 @toolkit.side_effect_free
-def gdi_filter_help_texts_show(context, data_dict) -> Dict[str, str]:
+def gdi_filter_help_texts_show(context, data_dict=None) -> Dict[str, str]:
     data_dict = data_dict or {}
     dataset_type = data_dict.get("type", "dataset")
     requested_keys = _parse_requested_keys(data_dict.get("keys"))
