@@ -201,7 +201,7 @@ def _normalize_language(lang_value: Any) -> str:
     return primary.lower()
 
 
-def get_preferred_language(lang: str) -> str:
+def get_preferred_language(lang: Optional[str]) -> str:
     """
     Tries to get default language from environment variables/ckan config, defaults to English
     """
