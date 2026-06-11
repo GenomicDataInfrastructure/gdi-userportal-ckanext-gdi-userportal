@@ -15,4 +15,4 @@ def test_get_auth_functions_exposes_filter_help_texts_action():
 
 
 def test_filter_help_texts_auth_allows_access():
-    assert gdi_filter_help_texts_show(None, {}, {}) == {"success": True}
+    assert gdi_filter_help_texts_show({}, {}) == {"success": True}
