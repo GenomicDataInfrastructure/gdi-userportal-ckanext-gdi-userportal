@@ -86,7 +86,7 @@ def _parse_requested_keys(keys: Any) -> Optional[Set[str]]:
         raise toolkit.ValidationError({"keys": "Must be a list of strings"})
 
     parsed_keys = {key.strip() for key in keys if isinstance(key, str) and key.strip()}
-    return parsed_keys or None
+    return parsed_keys
 
 
 def _localized_text(value: Any, language: str) -> str:
