@@ -19,7 +19,7 @@ dataset_fields:
     filter_help_text:
       en: Use this filter to search datasets by title.
       nl: Gebruik deze filter om datasets op titel te zoeken.
-    filter_key: title
+    facet_key: title
 
   - field_name: name
     label: URL

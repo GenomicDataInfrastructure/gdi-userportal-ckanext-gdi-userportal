@@ -14,7 +14,7 @@ def _schema():
         "dataset_fields": [
             {
                 "field_name": "title_translated",
-                "filter_key": "title",
+                "facet_key": "title",
                 "help_text": {
                     "en": "A descriptive title for the dataset.",
                     "nl": "Een beschrijvende titel voor de dataset.",
@@ -26,7 +26,7 @@ def _schema():
             },
             {
                 "field_name": "theme",
-                "filter_key": "theme",
+                "facet_key": "theme",
             },
         ]
     }

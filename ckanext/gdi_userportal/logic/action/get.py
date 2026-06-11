@@ -59,15 +59,15 @@ def gdi_filter_help_texts_show(context, data_dict) -> Dict[str, str]:
 
     help_texts = {}
     for field in schema.get("dataset_fields", []):
-        filter_key = field.get("filter_key")
-        if not filter_key or (requested_keys is not None and filter_key not in requested_keys):
+        facet_key = field.get("facet_key")
+        if not facet_key or (requested_keys is not None and facet_key not in requested_keys):
             continue
 
         help_text = _localized_text(
             field.get("filter_help_text") or field.get("help_text"), language
         )
         if help_text:
-            help_texts[filter_key] = help_text
+            help_texts[facet_key] = help_text
 
     return help_texts
 
