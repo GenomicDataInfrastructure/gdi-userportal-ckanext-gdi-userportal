@@ -100,10 +100,13 @@ def test_gdi_filter_help_texts_show_empty_requested_keys_returns_no_keys(keys):
 
 
 def test_gdi_filter_help_texts_show_filters_requested_keys_from_list():
+    result = _call_action({"keys": ["title"]}, language="nl")
+
     assert result == {"title": "Gebruik deze filter om datasets op titel te zoeken."}
 
 
 def test_gdi_filter_help_texts_show_uses_requested_dataset_type():
+    schema_show = MagicMock(return_value=_schema())
 
     with patch(
         "ckanext.gdi_userportal.logic.action.get.toolkit.get_action",
