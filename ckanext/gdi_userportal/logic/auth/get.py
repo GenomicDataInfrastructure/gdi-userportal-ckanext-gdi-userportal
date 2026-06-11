@@ -25,3 +25,8 @@ def config_option_show(next_auth, context, data_dict=None):
 @toolkit.auth_allow_anonymous_access
 def gdi_filter_help_texts_show(context, data_dict=None):
     return {"success": True}
+
+
+@toolkit.auth_allow_anonymous_access
+def gdi_dataset_help_texts_show(context, data_dict=None):
+    return {"success": True}

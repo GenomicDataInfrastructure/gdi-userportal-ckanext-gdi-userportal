@@ -7,7 +7,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from ckanext.gdi_userportal.logic.action import get as action_get
-from ckanext.gdi_userportal.logic.action.get import gdi_filter_help_texts_show
+from ckanext.gdi_userportal.logic.action.get import (
+    gdi_dataset_help_texts_show,
+    gdi_filter_help_texts_show,
+)
 
 
 DATASET_FILTER_CASES = [
@@ -185,6 +188,52 @@ def _fallback_schema():
     }
 
 
+def _dataset_help_text_schema():
+    return {
+        "dataset_fields": [
+            {
+                "field_name": "title_translated",
+                "facet_key": "title",
+                "help_text": {
+                    "en": "A descriptive title for the dataset.",
+                    "nl": "Een beschrijvende titel voor de dataset.",
+                },
+                "filter_help_text": {
+                    "en": "Use this filter to search datasets by title.",
+                    "nl": "Gebruik deze filter om datasets op titel te zoeken.",
+                },
+            },
+            {
+                "field_name": "access_rights",
+                "facet_key": "access_rights",
+                "help_text": {
+                    "en": "Information that indicates whether the dataset is open or restricted.",
+                    "nl": "Informatie die aangeeft of de dataset open of beperkt toegankelijk is.",
+                },
+            },
+            {
+                "field_name": "hidden_field",
+                "facet_key": "hidden_field",
+            },
+        ]
+    }
+
+
+def _dataset_series_help_text_schema():
+    return {
+        "dataset_fields": [
+            {
+                "field_name": "title_translated",
+                "facet_key": "title",
+                "help_text": {
+                    "en": "A descriptive title for the dataset series.",
+                    "nl": "Een beschrijvende titel voor de datasetreeks.",
+                },
+            },
+        ]
+    }
+
+
 def _call_action(data_dict=None, language="en", schema=None):
     schema_show = MagicMock(return_value=schema or _schema())
     request_data = data_dict or {}
@@ -198,6 +247,24 @@ def _call_action(data_dict=None, language="en", schema=None):
         return_value=language,
     ):
         result = gdi_filter_help_texts_show({}, request_data)
+
+    schema_show.assert_called_once_with({}, {"type": dataset_type})
+    return result
+
+
+def _call_dataset_action(data_dict=None, language="en", schema=None):
+    schema_show = MagicMock(return_value=schema or _dataset_help_text_schema())
+    request_data = data_dict or {}
+    dataset_type = request_data.get("type", "dataset")
+
+    with patch(
+        "ckanext.gdi_userportal.logic.action.get.toolkit.get_action",
+        return_value=schema_show,
+    ), patch(
+        "ckanext.gdi_userportal.logic.action.get.get_request_language",
+        return_value=language,
+    ):
+        result = gdi_dataset_help_texts_show({}, request_data)
 
     schema_show.assert_called_once_with({}, {"type": dataset_type})
     return result
@@ -291,6 +358,69 @@ def test_gdi_filter_help_texts_show_parses_comma_separated_keys():
 def test_gdi_filter_help_texts_show_rejects_invalid_keys_type():
     with pytest.raises(Exception):
         _call_action({"keys": 42})
+
+
+@pytest.mark.parametrize(
+    "language, expected",
+    [
+        ("en", "A descriptive title for the dataset."),
+        ("nl", "Een beschrijvende titel voor de dataset."),
+    ],
+)
+def test_gdi_dataset_help_texts_show_returns_localized_help_text(language, expected):
+    result = _call_dataset_action({"keys": ["title_translated"]}, language=language)
+
+    assert result == {"title_translated": expected}
+
+
+@pytest.mark.parametrize("language", [None, "", "de"])
+def test_gdi_dataset_help_texts_show_falls_back_to_english(language):
+    result = _call_dataset_action({"keys": ["title_translated"]}, language=language)
+
+    assert result == {"title_translated": "A descriptive title for the dataset."}
+
+
+def test_gdi_dataset_help_texts_show_filters_requested_keys_from_json_string():
+    result = _call_dataset_action({"keys": '["access_rights", "unknown"]'})
+
+    assert result == {
+        "access_rights": "Information that indicates whether the dataset is open or restricted.",
+    }
+
+
+@pytest.mark.parametrize("keys", ["[]", [], ["   "], [None]])
+def test_gdi_dataset_help_texts_show_empty_requested_keys_returns_no_keys(keys):
+    result = _call_dataset_action({"keys": keys})
+
+    assert result == {}
+
+
+def test_gdi_dataset_help_texts_show_uses_requested_dataset_type():
+    result = _call_dataset_action(
+        {"type": "dataset_series", "keys": ["title_translated"]},
+        schema=_dataset_series_help_text_schema(),
+    )
+
+    assert result == {"title_translated": "A descriptive title for the dataset series."}
+
+
+def test_gdi_dataset_help_texts_show_omits_fields_without_help_text():
+    result = _call_dataset_action({"keys": "hidden_field, access_rights"})
+
+    assert result == {
+        "access_rights": "Information that indicates whether the dataset is open or restricted.",
+    }
+
+
+def test_gdi_dataset_help_texts_show_uses_help_text_not_filter_help_text():
+    result = _call_dataset_action({"keys": ["title_translated"]})
+
+    assert result == {"title_translated": "A descriptive title for the dataset."}
+
+
+def test_gdi_dataset_help_texts_show_rejects_invalid_keys_type():
+    with pytest.raises(Exception):
+        _call_dataset_action({"keys": 42})
 
 
 def test_enhanced_package_search_replaces_results_and_facets():

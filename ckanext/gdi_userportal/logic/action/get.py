@@ -57,19 +57,63 @@ def gdi_filter_help_texts_show(context, data_dict=None) -> Dict[str, str]:
         context, {"type": dataset_type}
     )
 
+    return _collect_help_texts(
+        schema,
+        "facet_key",
+        ("filter_help_text", "help_text"),
+        requested_keys,
+        language,
+    )
+
+
+@toolkit.side_effect_free
+def gdi_dataset_help_texts_show(context, data_dict=None) -> Dict[str, str]:
+    data_dict = data_dict or {}
+    dataset_type = data_dict.get("type", "dataset")
+    requested_keys = _parse_requested_keys(data_dict.get("keys"))
+    language = get_preferred_language(get_request_language())
+
+    schema = toolkit.get_action("scheming_dataset_schema_show")(
+        context, {"type": dataset_type}
+    )
+
+    return _collect_help_texts(
+        schema,
+        "field_name",
+        ("help_text",),
+        requested_keys,
+        language,
+    )
+
+
+def _collect_help_texts(
+    schema: Dict[str, Any],
+    key_property: str,
+    text_properties: tuple[str, ...],
+    requested_keys: Optional[Set[str]],
+    language: str,
+) -> Dict[str, str]:
     help_texts = {}
     for field in schema.get("dataset_fields", []):
-        facet_key = field.get("facet_key")
-        if not facet_key or (requested_keys is not None and facet_key not in requested_keys):
+        key = field.get(key_property)
+        if not key or (requested_keys is not None and key not in requested_keys):
             continue
 
-        help_text = _localized_text(
-            field.get("filter_help_text") or field.get("help_text"), language
-        )
+        help_text = _first_localized_text(field, text_properties, language)
         if help_text:
-            help_texts[facet_key] = help_text
+            help_texts[key] = help_text
 
     return help_texts
+
+
+def _first_localized_text(
+    field: Dict[str, Any], text_properties: tuple[str, ...], language: str
+) -> str:
+    for text_property in text_properties:
+        help_text = _localized_text(field.get(text_property), language)
+        if help_text:
+            return help_text
+    return ""
 
 
 def _parse_requested_keys(keys: Any) -> Optional[Set[str]]:

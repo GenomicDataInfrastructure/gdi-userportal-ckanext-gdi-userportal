@@ -14,12 +14,14 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
     _deduplicate_non_empty_strings,
 )
 from ckanext.gdi_userportal.logic.action.get import (
+    gdi_dataset_help_texts_show,
     enhanced_package_search,
     enhanced_package_show,
     gdi_filter_help_texts_show,
 )
 from ckanext.gdi_userportal.logic.auth.get import (
     config_option_show,
+    gdi_dataset_help_texts_show as gdi_dataset_help_texts_show_auth,
     gdi_filter_help_texts_show as gdi_filter_help_texts_show_auth,
 )
 from ckanext.gdi_userportal.validation import scheming_isodatetime_flex
@@ -160,6 +162,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     def get_auth_functions(self):
         return {
             "config_option_show": config_option_show,
+            "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show_auth,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show_auth,
         }
 
@@ -167,6 +170,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         return {
             "enhanced_package_search": enhanced_package_search,
             "enhanced_package_show": enhanced_package_show,
+            "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show,
         }
 
