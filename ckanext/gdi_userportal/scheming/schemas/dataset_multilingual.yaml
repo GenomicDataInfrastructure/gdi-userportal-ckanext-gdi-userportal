@@ -13,7 +13,13 @@ dataset_fields:
   - field_name: title_translated
     label: Title
     preset: fluent_core_translated
-    help_text: A descriptive title for the dataset.
+    help_text:
+      en: A descriptive title for the dataset.
+      nl: Een beschrijvende titel voor de dataset.
+    filter_help_text:
+      en: Use this filter to search datasets by title.
+      nl: Gebruik deze filter om datasets op titel te zoeken.
+    filter_key: title
 
   - field_name: name
     label: URL

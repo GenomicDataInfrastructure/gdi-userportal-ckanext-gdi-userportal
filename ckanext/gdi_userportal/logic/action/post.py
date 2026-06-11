@@ -7,6 +7,7 @@ import logging
 from ckan.plugins import toolkit
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     collect_values_to_translate,
+    get_request_language,
     get_translations,
     replace_package,
     replace_search_facets,
@@ -25,7 +26,7 @@ def enhanced_package_search(context, data_dict=None) -> Dict:
     try:
         result = toolkit.get_action("package_search")(context, data_dict)
         values_to_translate = collect_values_to_translate(result)
-        lang = toolkit.request.headers.get("Accept-Language")
+        lang = get_request_language()
         translations = get_translations(values_to_translate, lang=lang)
 
         result["results"] = [

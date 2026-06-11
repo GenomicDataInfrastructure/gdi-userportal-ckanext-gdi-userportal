@@ -134,6 +134,13 @@ def get_translations(values_to_translate: List, lang: str = DEFAULT_FALLBACK_LAN
     return translations
 
 
+def get_request_language() -> Optional[str]:
+    try:
+        return toolkit.request.headers.get("Accept-Language")
+    except RuntimeError:
+        return None
+
+
 def _deduplicate_non_empty_strings(values: List[Any]) -> List[str]:
     seen = set()
     deduplicated = []

@@ -16,6 +16,7 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
 from ckanext.gdi_userportal.logic.action.get import (
     enhanced_package_search,
     enhanced_package_show,
+    gdi_filter_help_texts_show,
 )
 from ckanext.gdi_userportal.logic.auth.get import config_option_show
 from ckanext.gdi_userportal.validation import scheming_isodatetime_flex
@@ -160,6 +161,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         return {
             "enhanced_package_search": enhanced_package_search,
             "enhanced_package_show": enhanced_package_show,
+            "gdi_filter_help_texts_show": gdi_filter_help_texts_show,
         }
 
     def get_helpers(self):
