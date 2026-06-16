@@ -100,7 +100,7 @@ def _collect_help_texts(
             continue
 
         help_text = _first_localized_text(field, text_properties, language)
-        if help_text:
+        if help_text is not None:
             help_texts[key] = help_text
 
     return help_texts
@@ -108,12 +108,12 @@ def _collect_help_texts(
 
 def _first_localized_text(
     field: Dict[str, Any], text_properties: Tuple[str, ...], language: str
-) -> str:
+) -> Optional[str]:
     for text_property in text_properties:
         help_text = _localized_text(field.get(text_property), language)
         if help_text:
             return help_text
-    return ""
+    return None
 
 
 def _parse_requested_keys(keys: Any) -> Optional[Set[str]]:
