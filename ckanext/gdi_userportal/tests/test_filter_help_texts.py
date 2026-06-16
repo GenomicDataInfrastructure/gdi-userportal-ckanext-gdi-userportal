@@ -391,6 +391,27 @@ def test_gdi_filter_help_texts_show_normalizes_complex_whitespace_help_text():
     }
 
 
+def test_gdi_filter_help_texts_show_falls_back_when_localized_text_is_not_string():
+    schema = {
+        "dataset_fields": [
+            {
+                "field_name": "health_theme",
+                "facet_key": "health_theme",
+                "filter_help_text": {
+                    "en": "A category of the Dataset or tag describing the Dataset.",
+                    "nl": None,
+                },
+            },
+        ]
+    }
+
+    result = _call_action({"keys": ["health_theme"]}, language="nl", schema=schema)
+
+    assert result == {
+        "health_theme": "A category of the Dataset or tag describing the Dataset.",
+    }
+
+
 def test_gdi_filter_help_texts_show_parses_comma_separated_keys():
     result = _call_action({"keys": "theme, access_rights"})
 
