@@ -12,6 +12,61 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.27] - 2026-06-16
+
+### Changed
+- Use built-in type hints in help text action by @Hans-christian in 6109261
+- Order imports in help text action by @Hans-christian in 6f0dfee
+- Clarify help text helper return value by @Hans-christian in 98d53f6
+- chore(deps): update botocore monorepo to v1.43.30 by @Renovate Bot in 6b7c6ff
+- Use Python 3.8 compatible tuple typing by @Hans-christian in 1bdaa8e
+- Initial plan by @copilot-swe-agent[bot] in bd7c404
+- Add dataset detail help text endpoint by @Hans-christian in d988079
+- Cover filter help text action branches by @Hans-christian in 2599f6f
+- Add filter help texts for HealthDCAT facets by @Hans-christian in c404daf
+- Fix filter help text unit tests by @Hans-christian in b5e8cc3
+- Add anonymous auth for filter help texts by @Hans-christian in d23c44f
+- Add dataset series filter help text by @Hans-christian in 6f4496b
+- Rename filter key to facet key by @Hans-christian in 0e2c300
+- Add multilingual filter help text by @Hans-christian in dbe0558
+- chore(deps): update botocore monorepo to v1.43.27 by @Renovate Bot in df169f4
+- chore(deps): update sonarsource/sonarqube-scan-action action to v8.2.0 (#389) by @LNDS-Sysadmins in a19feb1
+- chore(deps): update botocore monorepo to v1.43.26 (#390) by @LNDS-Sysadmins in 065010f
+- chore(deps): update astral-sh/setup-uv action to v8.2.0 (#387) by @LNDS-Sysadmins in 20fd6da
+- chore(deps): update botocore monorepo to v1.43.25 (#388) by @LNDS-Sysadmins in 094a15e
+- chore(deps): update sonarsource/sonarqube-scan-action action to v8.1.0 (#381) by @LNDS-Sysadmins in daaa74f
+- chore(deps): update docker/build-push-action digest to f9f3042 (#382) by @LNDS-Sysadmins in ac3da5f
+- chore(deps): update ckan/ckan-solr docker tag to v2.12 (#377) by @LNDS-Sysadmins in 268662b
+- chore(deps): update botocore monorepo to v1.43.22 (#378) by @LNDS-Sysadmins in cfb8f2e
+- chore(deps): update ckan/ckan-postgres-dev docker tag to v2.12 (#379) by @LNDS-Sysadmins in 7c5565e
+- chore(deps): update docker/login-action digest to 650006c (#383) by @LNDS-Sysadmins in 9976ec3
+- chore(deps): update docker/metadata-action digest to 80c7e94 (#384) by @LNDS-Sysadmins in 24bc538
+- chore(deps): update actions/checkout action to v6.0.3 (#385) by @LNDS-Sysadmins in 5b75ef8
+- chore(deps): update actions/checkout digest to df4cb1c (#386) by @LNDS-Sysadmins in 3164f14
+- chore(deps): update botocore monorepo to v1.43.6 (#376) by @LNDS-Sysadmins in de101c2
+- chore(deps): update botocore monorepo to v1.43.4 (#375) by @LNDS-Sysadmins in c728c72
+- Update test.yml by @Hans-Christian in 152d029
+- Update GitHub Actions workflow to simplify installation by @Hans-Christian in 6663f55
+- Add GPG installation to test workflow by @Hans-Christian in 71f847c
+- Rename Sonar scan step to SonarQube Scan by @Hans-Christian in 0fe2798
+- chore(deps): update sonarsource/sonarqube-scan-action action to v7.2.1 (#371) by @LNDS-Sysadmins in 6fd577b
+- Add skipSignatureVerification to Sonar scan action by @Hans-Christian in 020b7b3
+- chore(deps): update sonarsource/sonarqube-scan-action action to v8 by @Renovate Bot in 1e19ddd
+- chore(deps): update botocore monorepo to v1.43.3 by @Renovate Bot in 3d80ad0
+- chore(deps): update botocore monorepo to v1.42.97 (#370) by @LNDS-Sysadmins in fd3c3d8
+- chore(deps): update botocore monorepo to v1.42.95 (#368) by @LNDS-Sysadmins in d274c4a
+- chore(deps): update opentelemetry monorepo (#369) by @LNDS-Sysadmins in 9e83768
+- chore(deps): update aquasecurity/trivy-action action to v0.36.0 (#367) by @LNDS-Sysadmins in 2861855
+- chore(deps): update astral-sh/setup-uv action to v8.1.0 (#366) by @LNDS-Sysadmins in 1dbf7d2
+- chore(deps): update botocore monorepo to v1.42.93 (#365) by @LNDS-Sysadmins in 2af4d0a
+- doc: update CHANGELOG.md for v1.11.26 (#364) by @github-actions[bot] in 6ccb475
+
+
+### Fixed
+- fix(ci): align action pin version comments for zizmor by @copilot-swe-agent[bot] in 2139290
+- fix: update ckanext-scheming install to use valid pip egg fragment syntax (#374) by @Copilot in d507f11
+
+
 ## [v1.11.26] - 2026-04-16
 
 ### Changed
