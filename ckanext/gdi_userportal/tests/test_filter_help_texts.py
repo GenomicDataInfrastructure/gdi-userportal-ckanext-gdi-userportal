@@ -346,6 +346,72 @@ def test_gdi_filter_help_texts_show_uses_help_text_when_filter_help_text_missing
     assert result == {"fallback_title": "Fallback help text."}
 
 
+def test_gdi_filter_help_texts_show_normalizes_multiline_help_text():
+    schema = {
+        "dataset_fields": [
+            {
+                "field_name": "health_theme",
+                "facet_key": "health_theme",
+                "filter_help_text": {
+                    "en": "A category of the Dataset\nor tag describing the Dataset.\n",
+                },
+            },
+        ]
+    }
+
+    result = _call_action({"keys": ["health_theme"]}, schema=schema)
+
+    assert result == {
+        "health_theme": "A category of the Dataset or tag describing the Dataset.",
+    }
+
+
+def test_gdi_filter_help_texts_show_normalizes_complex_whitespace_help_text():
+    schema = {
+        "dataset_fields": [
+            {
+                "field_name": "health_theme",
+                "facet_key": "health_theme",
+                "filter_help_text": {
+                    # tabs, multiple spaces, and blank lines should all be normalized
+                    "en": (
+                        "A\tcategory   of   the\tDataset\n"
+                        "\n"
+                        "or\t\t   tag   describing\t  the   Dataset.\n"
+                    ),
+                },
+            },
+        ]
+    }
+
+    result = _call_action({"keys": ["health_theme"]}, schema=schema)
+
+    assert result == {
+        "health_theme": "A category of the Dataset or tag describing the Dataset.",
+    }
+
+
+def test_gdi_filter_help_texts_show_falls_back_when_localized_text_is_not_string():
+    schema = {
+        "dataset_fields": [
+            {
+                "field_name": "health_theme",
+                "facet_key": "health_theme",
+                "filter_help_text": {
+                    "en": "A category of the Dataset or tag describing the Dataset.",
+                    "nl": None,
+                },
+            },
+        ]
+    }
+
+    result = _call_action({"keys": ["health_theme"]}, language="nl", schema=schema)
+
+    assert result == {
+        "health_theme": "A category of the Dataset or tag describing the Dataset.",
+    }
+
+
 def test_gdi_filter_help_texts_show_parses_comma_separated_keys():
     result = _call_action({"keys": "theme, access_rights"})
 
@@ -416,6 +482,25 @@ def test_gdi_dataset_help_texts_show_uses_help_text_not_filter_help_text():
     result = _call_dataset_action({"keys": ["title_translated"]})
 
     assert result == {"title_translated": "A descriptive title for the dataset."}
+
+
+def test_gdi_dataset_help_texts_show_normalizes_multiline_help_text():
+    schema = {
+        "dataset_fields": [
+            {
+                "field_name": "health_theme",
+                "help_text": {
+                    "en": "A category of the Dataset\nor tag describing the Dataset.\n",
+                },
+            },
+        ]
+    }
+
+    result = _call_dataset_action({"keys": ["health_theme"]}, schema=schema)
+
+    assert result == {
+        "health_theme": "A category of the Dataset or tag describing the Dataset.",
+    }
 
 
 def test_gdi_dataset_help_texts_show_rejects_invalid_keys_type():

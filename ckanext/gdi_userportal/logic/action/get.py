@@ -135,9 +135,24 @@ def _parse_requested_keys(keys: object) -> set[str] | None:
 
 def _localized_text(value: object, language: str) -> str:
     if isinstance(value, dict):
-        return value.get(language) or value.get("en") or ""
+        localized_value = value.get(language)
+        if isinstance(localized_value, str):
+            return _normalize_help_text(localized_value)
+
+        fallback_value = value.get("en")
+        if isinstance(fallback_value, str):
+            return _normalize_help_text(fallback_value)
+
+        return ""
 
     if isinstance(value, str):
-        return value
+        return _normalize_help_text(value)
 
     return ""
+
+
+def _normalize_help_text(value: str | None) -> str:
+    if value is None:
+        return ""
+
+    return " ".join(value.split())
