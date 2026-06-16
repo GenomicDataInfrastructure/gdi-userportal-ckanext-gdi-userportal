@@ -366,6 +366,31 @@ def test_gdi_filter_help_texts_show_normalizes_multiline_help_text():
     }
 
 
+def test_gdi_filter_help_texts_show_normalizes_complex_whitespace_help_text():
+    schema = {
+        "dataset_fields": [
+            {
+                "field_name": "health_theme",
+                "facet_key": "health_theme",
+                "filter_help_text": {
+                    # tabs, multiple spaces, and blank lines should all be normalized
+                    "en": (
+                        "A\tcategory   of   the\tDataset\n"
+                        "\n"
+                        "or\t\t   tag   describing\t  the   Dataset.\n"
+                    ),
+                },
+            },
+        ]
+    }
+
+    result = _call_action({"keys": ["health_theme"]}, schema=schema)
+
+    assert result == {
+        "health_theme": "A category of the Dataset or tag describing the Dataset.",
+    }
+
+
 def test_gdi_filter_help_texts_show_parses_comma_separated_keys():
     result = _call_action({"keys": "theme, access_rights"})
 
