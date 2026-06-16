@@ -8,7 +8,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-from typing import Any, Dict, Optional, Set, Tuple
 
 from ckan.plugins import toolkit
 from ckanext.gdi_userportal.logic.action.translation_utils import (
@@ -22,7 +21,7 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
 
 
 @toolkit.side_effect_free
-def enhanced_package_search(context, data_dict) -> Dict:
+def enhanced_package_search(context, data_dict) -> dict:
     result = toolkit.get_action("package_search")(context, data_dict)
     values_to_translate = collect_values_to_translate(result)
     lang = get_request_language()
@@ -39,7 +38,7 @@ def enhanced_package_search(context, data_dict) -> Dict:
 
 
 @toolkit.side_effect_free
-def enhanced_package_show(context, data_dict) -> Dict:
+def enhanced_package_show(context, data_dict) -> dict:
     result = toolkit.get_action("package_show")(context, data_dict)
     values_to_translate = collect_values_to_translate(result)
     lang = get_request_language()
@@ -48,7 +47,7 @@ def enhanced_package_show(context, data_dict) -> Dict:
 
 
 @toolkit.side_effect_free
-def gdi_filter_help_texts_show(context, data_dict=None) -> Dict[str, str]:
+def gdi_filter_help_texts_show(context, data_dict=None) -> dict[str, str]:
     data_dict = data_dict or {}
     dataset_type = data_dict.get("type", "dataset")
     requested_keys = _parse_requested_keys(data_dict.get("keys"))
@@ -68,7 +67,7 @@ def gdi_filter_help_texts_show(context, data_dict=None) -> Dict[str, str]:
 
 
 @toolkit.side_effect_free
-def gdi_dataset_help_texts_show(context, data_dict=None) -> Dict[str, str]:
+def gdi_dataset_help_texts_show(context, data_dict=None) -> dict[str, str]:
     data_dict = data_dict or {}
     dataset_type = data_dict.get("type", "dataset")
     requested_keys = _parse_requested_keys(data_dict.get("keys"))
@@ -88,12 +87,12 @@ def gdi_dataset_help_texts_show(context, data_dict=None) -> Dict[str, str]:
 
 
 def _collect_help_texts(
-    schema: Dict[str, Any],
+    schema: dict[str, object],
     key_property: str,
-    text_properties: Tuple[str, ...],
-    requested_keys: Optional[Set[str]],
+    text_properties: tuple[str, ...],
+    requested_keys: set[str] | None,
     language: str,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     help_texts = {}
     for field in schema.get("dataset_fields", []):
         key = field.get(key_property)
@@ -108,8 +107,8 @@ def _collect_help_texts(
 
 
 def _first_localized_text(
-    field: Dict[str, Any], text_properties: Tuple[str, ...], language: str
-) -> Optional[str]:
+    field: dict[str, object], text_properties: tuple[str, ...], language: str
+) -> str | None:
     for text_property in text_properties:
         help_text = _localized_text(field.get(text_property), language)
         if help_text:
@@ -117,7 +116,7 @@ def _first_localized_text(
     return None
 
 
-def _parse_requested_keys(keys: Any) -> Optional[Set[str]]:
+def _parse_requested_keys(keys: object) -> set[str] | None:
     if keys is None or keys == "":
         return None
 
@@ -134,7 +133,7 @@ def _parse_requested_keys(keys: Any) -> Optional[Set[str]]:
     return parsed_keys
 
 
-def _localized_text(value: Any, language: str) -> str:
+def _localized_text(value: object, language: str) -> str:
     if isinstance(value, dict):
         return value.get(language) or value.get("en") or ""
 
