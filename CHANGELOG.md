@@ -64,16 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - fix(ci): align action pin version comments for zizmor by @copilot-swe-agent[bot] in 2139290
-- Potential fix for pull request finding by @Hans-Christian in 56e6132
-- Potential fix for pull request finding by @Hans-Christian in 9afb30d
-- Potential fix for pull request finding by @Hans-Christian in 4b00085
-- Potential fix for pull request finding by @Hans-Christian in e0c8a45
-- Potential fix for pull request finding by @Hans-Christian in 79ab475
-- Potential fix for pull request finding by @Hans-Christian in f063fe4
-- Potential fix for pull request finding by @Hans-Christian in 785a636
-- Potential fix for pull request finding by @Hans-Christian in a05c410
-- Potential fix for pull request finding by @Hans-Christian in 0196b0b
-- fix oss by @Hans-christian in c99a7de
 - fix: update ckanext-scheming install to use valid pip egg fragment syntax (#374) by @Copilot in d507f11
 
 
