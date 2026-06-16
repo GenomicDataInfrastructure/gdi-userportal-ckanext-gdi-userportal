@@ -16,8 +16,12 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
 from ckanext.gdi_userportal.logic.action.get import (
     enhanced_package_search,
     enhanced_package_show,
+    gdi_filter_help_texts_show,
 )
-from ckanext.gdi_userportal.logic.auth.get import config_option_show
+from ckanext.gdi_userportal.logic.auth.get import (
+    config_option_show,
+    gdi_filter_help_texts_show as gdi_filter_help_texts_show_auth,
+)
 from ckanext.gdi_userportal.validation import scheming_isodatetime_flex
 
 from opentelemetry import metrics
@@ -151,15 +155,19 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     def organization_facets(self, facets_dict, organization_type, package_type):
         return self._update_facets(facets_dict)
 
-        # IAuthFunctions
+    # IAuthFunctions
 
     def get_auth_functions(self):
-        return {"config_option_show": config_option_show}
+        return {
+            "config_option_show": config_option_show,
+            "gdi_filter_help_texts_show": gdi_filter_help_texts_show_auth,
+        }
 
     def get_actions(self):
         return {
             "enhanced_package_search": enhanced_package_search,
             "enhanced_package_show": enhanced_package_show,
+            "gdi_filter_help_texts_show": gdi_filter_help_texts_show,
         }
 
     def get_helpers(self):
