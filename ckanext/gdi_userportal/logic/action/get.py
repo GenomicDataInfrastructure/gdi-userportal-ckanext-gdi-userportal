@@ -8,6 +8,8 @@
 # -*- coding: utf-8 -*-
 
 import json
+from typing import Any, Dict, Optional, Set, Tuple
+
 from ckan.plugins import toolkit
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     collect_values_to_translate,
@@ -17,7 +19,6 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
     replace_package,
     replace_search_facets,
 )
-from typing import Any, Dict, Optional, Set, Tuple
 
 
 @toolkit.side_effect_free
