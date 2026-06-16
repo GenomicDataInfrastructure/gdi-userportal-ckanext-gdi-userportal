@@ -46,7 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore(deps): update botocore monorepo to v1.43.6 (#376) by @LNDS-Sysadmins in de101c2
 - chore(deps): update botocore monorepo to v1.43.4 (#375) by @LNDS-Sysadmins in c728c72
 - Update test.yml by @Hans-Christian in 152d029
-- Update test.yml by @Hans-Christian in 3226f44
 - Update GitHub Actions workflow to simplify installation by @Hans-Christian in 6663f55
 - Add GPG installation to test workflow by @Hans-Christian in 71f847c
 - Rename Sonar scan step to SonarQube Scan by @Hans-Christian in 0fe2798
