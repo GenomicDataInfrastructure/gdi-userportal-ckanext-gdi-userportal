@@ -5,6 +5,7 @@
 
 import json
 import os
+from urllib.parse import quote
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
@@ -97,6 +98,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     _dcatap_fields_to_normalize = [
         "access_rights",
         "conforms_to",
+        "qualified_attribution",
         "has_version",
         "language",
         "theme",
@@ -303,6 +305,103 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         return []
 
+    def _extract_nested_string_values(self, value):
+        if value is None:
+            return []
+
+        if isinstance(value, str):
+            return [value]
+
+        if isinstance(value, list):
+            extracted = []
+            for item in value:
+                extracted.extend(self._extract_nested_string_values(item))
+            return extracted
+
+        if isinstance(value, dict):
+            extracted = []
+            for item in value.values():
+                extracted.extend(self._extract_nested_string_values(item))
+            return extracted
+
+        return []
+
+    def _parse_qualified_attribution(self, data_dict):
+        qualified_attribution = self._parse_json_if_possible(
+            data_dict.get("qualified_attribution")
+        )
+
+        if isinstance(qualified_attribution, dict):
+            qualified_attribution = [qualified_attribution]
+
+        roles = []
+        agent_names = []
+        pair_values = []
+
+        if not isinstance(qualified_attribution, list):
+            return roles, agent_names, pair_values
+
+        for attribution in qualified_attribution:
+            if not isinstance(attribution, dict):
+                continue
+
+            attribution_roles = _deduplicate_non_empty_strings(
+                self._extract_string_values(attribution.get("role"))
+            )
+            attribution_agent_names = self._parse_qualified_attribution_agent_names(
+                attribution.get("agent")
+            )
+
+            roles.extend(attribution_roles)
+            agent_names.extend(attribution_agent_names)
+            pair_values.extend(
+                self._build_qualified_attribution_pairs(
+                    attribution_roles, attribution_agent_names
+                )
+            )
+
+        return (
+            _deduplicate_non_empty_strings(roles),
+            _deduplicate_non_empty_strings(agent_names),
+            _deduplicate_non_empty_strings(pair_values),
+        )
+
+    def _parse_qualified_attribution_agent_names(self, agents):
+        if isinstance(agents, str):
+            try:
+                agents = json.loads(agents)
+            except json.JSONDecodeError:
+                agents = [{"name": agents}]
+
+        if isinstance(agents, dict):
+            agents = [agents]
+
+        if not isinstance(agents, list):
+            return []
+
+        names = []
+        for agent in agents:
+            if isinstance(agent, str):
+                names.append(agent)
+                continue
+
+            if not isinstance(agent, dict):
+                continue
+
+            names.extend(self._extract_nested_string_values(agent.get("name")))
+
+        return names
+
+    def _build_qualified_attribution_pairs(self, roles, agent_names):
+        pairs = []
+        for role in roles:
+            for agent_name in agent_names:
+                pairs.append(self._encode_qualified_attribution_pair(role, agent_name))
+        return pairs
+
+    def _encode_qualified_attribution_pair(self, role, agent_name):
+        return f"{quote(role, safe='')}||{quote(agent_name, safe='')}"
+
     def _parse_json_if_possible(self, value):
         if not isinstance(value, str):
             return value
@@ -481,58 +580,11 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         if data_dict.get("res_format"):
             data_dict["res_format"] = list(dict.fromkeys(data_dict.get("res_format")))
 
-        qualified_attribution_roles = []
-        qualified_attribution_agent_names = []
-        qualified_attribution = self._parse_json_if_possible(
-            data_dict.get("qualified_attribution")
-        )
-        if isinstance(qualified_attribution, dict):
-            qualified_attribution = [qualified_attribution]
-
-        if isinstance(qualified_attribution, list):
-            for attribution in qualified_attribution:
-                if not isinstance(attribution, dict):
-                    continue
-
-                qualified_attribution_roles.extend(
-                    self._extract_string_values(attribution.get("role"))
-                )
-
-                agents = attribution.get("agent")
-                if isinstance(agents, dict):
-                    agents = [agents]
-                if not isinstance(agents, list):
-                    continue
-
-                for agent in agents:
-                    if isinstance(agent, str):
-                        qualified_attribution_agent_names.append(agent)
-                        continue
-                    if not isinstance(agent, dict):
-                        continue
-
-                    agent_name = agent.get("name")
-                    if isinstance(agent_name, str):
-                        qualified_attribution_agent_names.append(agent_name)
-                    elif isinstance(agent_name, dict):
-                        qualified_attribution_agent_names.extend(
-                            [
-                                value
-                                for value in agent_name.values()
-                                if isinstance(value, str)
-                            ]
-                        )
-                    elif isinstance(agent_name, list):
-                        qualified_attribution_agent_names.extend(
-                            [value for value in agent_name if isinstance(value, str)]
-                        )
-
-        qualified_attribution_roles = _deduplicate_non_empty_strings(
-            qualified_attribution_roles
-        )
-        qualified_attribution_agent_names = _deduplicate_non_empty_strings(
-            qualified_attribution_agent_names
-        )
+        (
+            qualified_attribution_roles,
+            qualified_attribution_agent_names,
+            qualified_attribution_pair_values,
+        ) = self._parse_qualified_attribution(data_dict)
 
         if qualified_attribution_roles:
             data_dict["vocab_qualified_attribution_role"] = qualified_attribution_roles
@@ -542,6 +594,10 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             )
             data_dict["qualified_attribution_agent_name"] = (
                 qualified_attribution_agent_names
+            )
+        if qualified_attribution_pair_values:
+            data_dict["vocab_qualified_attribution_role_agent_name"] = (
+                qualified_attribution_pair_values
             )
 
         data_dict = self._parse_agent_name(data_dict, "publisher")

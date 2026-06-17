@@ -53,6 +53,7 @@ To temporary patch the CKAN configuration for the duration of a test you can use
 """
 import json
 from unittest.mock import MagicMock, patch
+from urllib.parse import quote
 
 import pytest
 
@@ -213,6 +214,62 @@ def test_before_dataset_index_adds_translated_search_fields():
     assert result["vocab_coding_system_search"] == [
         "https://www.wikidata.org/entity/P494",
         "ICD-10 identifier",
+    ]
+
+
+def test_before_dataset_index_indexes_qualified_attribution_roles_and_agents():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "extras_qualified_attribution": json.dumps(
+            [
+                {
+                    "role": "http://example.org/role/processor",
+                    "agent": [
+                        {"name": "Org A"},
+                        {"name": "Org B"},
+                    ],
+                },
+                {
+                    "role": "http://example.org/role/controller",
+                    "agent": {"name": "Org C"},
+                },
+            ]
+        )
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["qualified_attribution"] == [
+        {
+            "role": "http://example.org/role/processor",
+            "agent": [
+                {"name": "Org A"},
+                {"name": "Org B"},
+            ],
+        },
+        {
+            "role": "http://example.org/role/controller",
+            "agent": {"name": "Org C"},
+        },
+    ]
+    assert result["vocab_qualified_attribution_role"] == [
+        "http://example.org/role/processor",
+        "http://example.org/role/controller",
+    ]
+    assert result["vocab_qualified_attribution_agent_name"] == [
+        "Org A",
+        "Org B",
+        "Org C",
+    ]
+    assert result["qualified_attribution_agent_name"] == [
+        "Org A",
+        "Org B",
+        "Org C",
+    ]
+    assert result["vocab_qualified_attribution_role_agent_name"] == [
+        f"{quote('http://example.org/role/processor', safe='')}||{quote('Org A', safe='')}",
+        f"{quote('http://example.org/role/processor', safe='')}||{quote('Org B', safe='')}",
+        f"{quote('http://example.org/role/controller', safe='')}||{quote('Org C', safe='')}",
     ]
 
 
