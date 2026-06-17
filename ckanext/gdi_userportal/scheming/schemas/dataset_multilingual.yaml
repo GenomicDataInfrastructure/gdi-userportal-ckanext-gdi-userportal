@@ -198,6 +198,7 @@ dataset_fields:
 
   - field_name: in_series
     preset: dataset_series_in_series
+    help_text: Dataset series this dataset belongs to.
 
   - field_name: version
     label: Version
@@ -861,6 +862,7 @@ resource_fields:
 
       - field_name: title
         label: Title
+        help_text: A title for the data service.
 
       - field_name: description
         label: Description

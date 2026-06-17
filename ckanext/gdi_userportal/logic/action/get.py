@@ -77,13 +77,7 @@ def gdi_dataset_help_texts_show(context, data_dict=None) -> dict[str, str]:
         context, {"type": dataset_type}
     )
 
-    return _collect_help_texts(
-        schema,
-        "field_name",
-        ("help_text",),
-        requested_keys,
-        language,
-    )
+    return _collect_dataset_help_texts(schema, requested_keys, language)
 
 
 def _collect_help_texts(
@@ -104,6 +98,70 @@ def _collect_help_texts(
             help_texts[key] = help_text
 
     return help_texts
+
+
+def _collect_dataset_help_texts(
+    schema: dict[str, object],
+    requested_keys: set[str] | None,
+    language: str,
+) -> dict[str, str]:
+    help_texts = {}
+    help_texts.update(
+        _collect_field_help_texts(
+            schema.get("dataset_fields", []),
+            "",
+            requested_keys,
+            language,
+        )
+    )
+    help_texts.update(
+        _collect_field_help_texts(
+            schema.get("resource_fields", []),
+            "resource_fields",
+            requested_keys,
+            language,
+        )
+    )
+    return help_texts
+
+
+def _collect_field_help_texts(
+    fields: object,
+    prefix: str,
+    requested_keys: set[str] | None,
+    language: str,
+) -> dict[str, str]:
+    if not isinstance(fields, list):
+        return {}
+
+    help_texts = {}
+    for field in fields:
+        if not isinstance(field, dict):
+            continue
+
+        field_name = field.get("field_name")
+        if not isinstance(field_name, str) or not field_name:
+            continue
+
+        key = f"{prefix}.{field_name}" if prefix else field_name
+        help_text = _first_localized_text(field, ("help_text",), language)
+        if help_text is not None and _should_include_key(key, requested_keys):
+            help_texts[key] = help_text
+
+        help_texts.update(
+            _collect_field_help_texts(
+                field.get("repeating_subfields"),
+                key,
+                requested_keys,
+                language,
+            )
+        )
+
+    return help_texts
+
+
+def _should_include_key(key: str, requested_keys: set[str] | None) -> bool:
+    return requested_keys is None or key in requested_keys
 
 
 def _first_localized_text(

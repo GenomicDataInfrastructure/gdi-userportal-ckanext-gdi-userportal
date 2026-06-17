@@ -215,6 +215,40 @@ def _dataset_help_text_schema():
                 "field_name": "hidden_field",
                 "facet_key": "hidden_field",
             },
+            {
+                "field_name": "in_series",
+                "help_text": {
+                    "en": "Dataset series this dataset belongs to.",
+                    "nl": "Datasetreeksen waartoe deze dataset behoort.",
+                },
+            },
+        ],
+        "resource_fields": [
+            {
+                "field_name": "name_translated",
+                "help_text": {
+                    "en": "A descriptive title for the resource.",
+                    "nl": "Een beschrijvende titel voor de resource.",
+                },
+            },
+            {
+                "field_name": "format",
+                "help_text": "File format. If not provided it will be guessed.",
+            },
+            {
+                "field_name": "access_services",
+                "help_text": "A data service that gives access to the resource.",
+                "repeating_subfields": [
+                    {
+                        "field_name": "title",
+                        "help_text": "A title for the data service.",
+                    },
+                    {
+                        "field_name": "description",
+                        "help_text": "A free-text account of the data service.",
+                    },
+                ],
+            },
         ]
     }
 
@@ -482,6 +516,38 @@ def test_gdi_dataset_help_texts_show_uses_help_text_not_filter_help_text():
     result = _call_dataset_action({"keys": ["title_translated"]})
 
     assert result == {"title_translated": "A descriptive title for the dataset."}
+
+
+def test_gdi_dataset_help_texts_show_returns_resource_field_help_texts():
+    result = _call_dataset_action(
+        {
+            "keys": [
+                "resource_fields.name_translated",
+                "resource_fields.format",
+                "resource_fields.access_services",
+                "resource_fields.access_services.title",
+                "resource_fields.access_services.description",
+            ]
+        }
+    )
+
+    assert result == {
+        "resource_fields.name_translated": "A descriptive title for the resource.",
+        "resource_fields.format": "File format. If not provided it will be guessed.",
+        "resource_fields.access_services": (
+            "A data service that gives access to the resource."
+        ),
+        "resource_fields.access_services.title": "A title for the data service.",
+        "resource_fields.access_services.description": (
+            "A free-text account of the data service."
+        ),
+    }
+
+
+def test_gdi_dataset_help_texts_show_returns_in_series_help_text():
+    result = _call_dataset_action({"keys": ["in_series"]})
+
+    assert result == {"in_series": "Dataset series this dataset belongs to."}
 
 
 def test_gdi_dataset_help_texts_show_normalizes_multiline_help_text():
