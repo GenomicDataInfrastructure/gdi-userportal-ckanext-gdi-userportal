@@ -273,6 +273,90 @@ def test_before_dataset_index_indexes_qualified_attribution_roles_and_agents():
     ]
 
 
+def test_extract_nested_string_values_flattens_nested_dicts_and_lists():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance._extract_nested_string_values(
+        {
+            "primary": "Org A",
+            "aliases": [
+                "Org B",
+                {"secondary": ["Org C", None]},
+            ],
+            "ignored": 42,
+        }
+    )
+
+    assert result == ["Org A", "Org B", "Org C"]
+
+
+@pytest.mark.parametrize(
+    "agents, expected",
+    [
+        (None, []),
+        (42, []),
+        ("plain-org", ["plain-org"]),
+        ('{"name": ["Org D", {"nested": "Org E"}]}', ["Org D", "Org E"]),
+    ],
+)
+def test_parse_qualified_attribution_agent_names_normalizes_inputs(
+    agents, expected
+):
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance._parse_qualified_attribution_agent_names(agents)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "qualified_attribution, expected",
+    [
+        (123, ([], [], [])),
+        (
+            {
+                "role": "http://example.org/role/owner",
+                "agent": "Org A",
+            },
+            (
+                ["http://example.org/role/owner"],
+                ["Org A"],
+                [f"{quote('http://example.org/role/owner', safe='')}||{quote('Org A', safe='')}"],
+            ),
+        ),
+        (
+            [
+                "skip me",
+                {
+                    "role": "http://example.org/role/controller",
+                    "agent": {
+                        "name": {"primary": "Org B", "aliases": ["Org C"]},
+                    },
+                },
+            ],
+            (
+                ["http://example.org/role/controller"],
+                ["Org B", "Org C"],
+                [
+                    f"{quote('http://example.org/role/controller', safe='')}||{quote('Org B', safe='')}",
+                    f"{quote('http://example.org/role/controller', safe='')}||{quote('Org C', safe='')}",
+                ],
+            ),
+        ),
+    ],
+)
+def test_parse_qualified_attribution_handles_mixed_inputs(
+    qualified_attribution, expected
+):
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance._parse_qualified_attribution(
+        {"qualified_attribution": qualified_attribution}
+    )
+
+    assert result == expected
+
+
 def test_before_dataset_index_keeps_raw_values_when_translations_are_missing():
     plugin_instance = plugin.GdiUserPortalPlugin()
     input_data = {
