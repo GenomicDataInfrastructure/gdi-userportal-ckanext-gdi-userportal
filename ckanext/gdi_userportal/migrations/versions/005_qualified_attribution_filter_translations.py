@@ -21,22 +21,22 @@ description: str = (
 
 TRANSLATIONS: List[Tuple[str, str, str]] = [
     (
-        "vocab_qualified_attribution_role", 
+        "qualified_attribution_role", 
         "Other responsible organisation role", 
         "en"
     ),
     (
-        "vocab_qualified_attribution_role",
+        "qualified_attribution_role",
         "Overige verantwoordelijke organisatie rol",
         "nl",
     ),
     (
-        "vocab_qualified_attribution_agent_name",
+        "qualified_attribution_agent_name",
         "Other responsible organisation name",
         "en",
     ),
     (
-        "vocab_qualified_attribution_agent_name",
+        "qualified_attribution_agent_name",
         "Overige verantwoordelijke organisatie naam",
         "nl",
     ),
