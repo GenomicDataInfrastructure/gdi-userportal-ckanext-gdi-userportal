@@ -53,6 +53,7 @@ To temporary patch the CKAN configuration for the duration of a test you can use
 """
 import json
 from unittest.mock import MagicMock, patch
+from urllib.parse import quote
 
 import pytest
 
@@ -214,6 +215,146 @@ def test_before_dataset_index_adds_translated_search_fields():
         "https://www.wikidata.org/entity/P494",
         "ICD-10 identifier",
     ]
+
+
+def test_before_dataset_index_indexes_qualified_attribution_roles_and_agents():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "extras_qualified_attribution": json.dumps(
+            [
+                {
+                    "role": "http://example.org/role/processor",
+                    "agent": [
+                        {"name": "Org A"},
+                        {"name": "Org B"},
+                    ],
+                },
+                {
+                    "role": "http://example.org/role/controller",
+                    "agent": {"name": "Org C"},
+                },
+            ]
+        )
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["qualified_attribution"] == [
+        {
+            "role": "http://example.org/role/processor",
+            "agent": [
+                {"name": "Org A"},
+                {"name": "Org B"},
+            ],
+        },
+        {
+            "role": "http://example.org/role/controller",
+            "agent": {"name": "Org C"},
+        },
+    ]
+    assert result["vocab_qualified_attribution_role"] == [
+        "http://example.org/role/processor",
+        "http://example.org/role/controller",
+    ]
+    assert result["vocab_qualified_attribution_agent_name"] == [
+        "Org A",
+        "Org B",
+        "Org C",
+    ]
+    assert result["qualified_attribution_agent_name"] == [
+        "Org A",
+        "Org B",
+        "Org C",
+    ]
+    assert result["vocab_qualified_attribution_role_agent_name"] == [
+        f"{quote('http://example.org/role/processor', safe='')}||{quote('Org A', safe='')}",
+        f"{quote('http://example.org/role/processor', safe='')}||{quote('Org B', safe='')}",
+        f"{quote('http://example.org/role/controller', safe='')}||{quote('Org C', safe='')}",
+    ]
+
+
+def test_extract_nested_string_values_flattens_nested_dicts_and_lists():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance._extract_nested_string_values(
+        {
+            "primary": "Org A",
+            "aliases": [
+                "Org B",
+                {"secondary": ["Org C", None]},
+            ],
+            "ignored": 42,
+        }
+    )
+
+    assert result == ["Org A", "Org B", "Org C"]
+
+
+@pytest.mark.parametrize(
+    "agents, expected",
+    [
+        (None, []),
+        (42, []),
+        ("plain-org", ["plain-org"]),
+        ('{"name": ["Org D", {"nested": "Org E"}]}', ["Org D", "Org E"]),
+    ],
+)
+def test_parse_qualified_attribution_agent_names_normalizes_inputs(
+    agents, expected
+):
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance._parse_qualified_attribution_agent_names(agents)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "qualified_attribution, expected",
+    [
+        (123, ([], [], [])),
+        (
+            {
+                "role": "http://example.org/role/owner",
+                "agent": "Org A",
+            },
+            (
+                ["http://example.org/role/owner"],
+                ["Org A"],
+                [f"{quote('http://example.org/role/owner', safe='')}||{quote('Org A', safe='')}"],
+            ),
+        ),
+        (
+            [
+                "skip me",
+                {
+                    "role": "http://example.org/role/controller",
+                    "agent": {
+                        "name": {"primary": "Org B", "aliases": ["Org C"]},
+                    },
+                },
+            ],
+            (
+                ["http://example.org/role/controller"],
+                ["Org B", "Org C"],
+                [
+                    f"{quote('http://example.org/role/controller', safe='')}||{quote('Org B', safe='')}",
+                    f"{quote('http://example.org/role/controller', safe='')}||{quote('Org C', safe='')}",
+                ],
+            ),
+        ),
+    ],
+)
+def test_parse_qualified_attribution_handles_mixed_inputs(
+    qualified_attribution, expected
+):
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance._parse_qualified_attribution(
+        {"qualified_attribution": qualified_attribution}
+    )
+
+    assert result == expected
 
 
 def test_before_dataset_index_keeps_raw_values_when_translations_are_missing():
