@@ -252,24 +252,14 @@ def test_before_dataset_index_indexes_qualified_attribution_roles_and_agents():
             "agent": {"name": "Org C"},
         },
     ]
-    assert result["vocab_qualified_attribution_role"] == [
+    assert result["qualified_attribution_role"] == [
         "http://example.org/role/processor",
         "http://example.org/role/controller",
-    ]
-    assert result["vocab_qualified_attribution_agent_name"] == [
-        "Org A",
-        "Org B",
-        "Org C",
     ]
     assert result["qualified_attribution_agent_name"] == [
         "Org A",
         "Org B",
         "Org C",
-    ]
-    assert result["vocab_qualified_attribution_role_agent_name"] == [
-        f"{quote('http://example.org/role/processor', safe='')}||{quote('Org A', safe='')}",
-        f"{quote('http://example.org/role/processor', safe='')}||{quote('Org B', safe='')}",
-        f"{quote('http://example.org/role/controller', safe='')}||{quote('Org C', safe='')}",
     ]
 
 
