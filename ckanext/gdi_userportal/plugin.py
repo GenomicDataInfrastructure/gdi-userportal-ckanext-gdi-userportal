@@ -600,6 +600,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         if qualified_attribution_roles:
             data_dict["vocab_qualified_attribution_role"] = qualified_attribution_roles
+            data_dict["qualified_attribution_role"] = qualified_attribution_roles
         if qualified_attribution_agent_names:
             data_dict["vocab_qualified_attribution_agent_name"] = (
                 qualified_attribution_agent_names
