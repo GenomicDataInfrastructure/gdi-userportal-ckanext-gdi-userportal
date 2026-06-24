@@ -302,7 +302,7 @@ def test_parse_qualified_attribution_agent_names_normalizes_inputs(
 @pytest.mark.parametrize(
     "qualified_attribution, expected",
     [
-        (123, ([], [], [])),
+        (123, ([], [])),
         (
             {
                 "role": "http://example.org/role/owner",
