@@ -148,12 +148,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     def _update_facets(self, facets_dict):
         facets_dict.pop("groups", None)
         facets_dict["vocab_in_series_title"] = toolkit._("Dataset series")
-        facets_dict["vocab_qualified_attribution_role"] = toolkit._(
-            "Qualified attribution role"
-        )
-        facets_dict["vocab_qualified_attribution_agent_name"] = toolkit._(
-            "Qualified attribution organization"
-        )
         return facets_dict
 
     def dataset_facets(self, facets_dict, package_type):
@@ -396,16 +390,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             names.extend(self._extract_nested_string_values(agent.get("name")))
 
         return names
-
-    def _build_qualified_attribution_pairs(self, roles, agent_names):
-        pairs = []
-        for role in roles:
-            for agent_name in agent_names:
-                pairs.append(self._encode_qualified_attribution_pair(role, agent_name))
-        return pairs
-
-    def _encode_qualified_attribution_pair(self, role, agent_name):
-        return f"{quote(role, safe='')}||{quote(agent_name, safe='')}"
 
     def _parse_json_if_possible(self, value):
         if not isinstance(value, str):

@@ -311,7 +311,6 @@ def test_parse_qualified_attribution_agent_names_normalizes_inputs(
             (
                 ["http://example.org/role/owner"],
                 ["Org A"],
-                [f"{quote('http://example.org/role/owner', safe='')}||{quote('Org A', safe='')}"],
             ),
         ),
         (
@@ -327,10 +326,6 @@ def test_parse_qualified_attribution_agent_names_normalizes_inputs(
             (
                 ["http://example.org/role/controller"],
                 ["Org B", "Org C"],
-                [
-                    f"{quote('http://example.org/role/controller', safe='')}||{quote('Org B', safe='')}",
-                    f"{quote('http://example.org/role/controller', safe='')}||{quote('Org C', safe='')}",
-                ],
             ),
         ),
     ],
