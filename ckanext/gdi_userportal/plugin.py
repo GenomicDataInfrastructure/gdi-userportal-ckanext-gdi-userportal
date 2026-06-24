@@ -348,10 +348,9 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         roles = []
         agent_names = []
-        pair_values = []
 
         if not isinstance(qualified_attribution, list):
-            return roles, agent_names, pair_values
+            return roles, agent_names
 
         for attribution in qualified_attribution:
             if not isinstance(attribution, dict):
@@ -366,16 +365,10 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
             roles.extend(attribution_roles)
             agent_names.extend(attribution_agent_names)
-            pair_values.extend(
-                self._build_qualified_attribution_pairs(
-                    attribution_roles, attribution_agent_names
-                )
-            )
 
         return (
             _deduplicate_non_empty_strings(roles),
             _deduplicate_non_empty_strings(agent_names),
-            _deduplicate_non_empty_strings(pair_values),
         )
 
     def _parse_qualified_attribution_agent_names(self, agents):
@@ -595,22 +588,13 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         (
             qualified_attribution_roles,
             qualified_attribution_agent_names,
-            qualified_attribution_pair_values,
         ) = self._parse_qualified_attribution(data_dict)
 
         if qualified_attribution_roles:
-            data_dict["vocab_qualified_attribution_role"] = qualified_attribution_roles
             data_dict["qualified_attribution_role"] = qualified_attribution_roles
         if qualified_attribution_agent_names:
-            data_dict["vocab_qualified_attribution_agent_name"] = (
-                qualified_attribution_agent_names
-            )
             data_dict["qualified_attribution_agent_name"] = (
                 qualified_attribution_agent_names
-            )
-        if qualified_attribution_pair_values:
-            data_dict["vocab_qualified_attribution_role_agent_name"] = (
-                qualified_attribution_pair_values
             )
 
         data_dict = self._parse_agent_name(data_dict, "publisher")
