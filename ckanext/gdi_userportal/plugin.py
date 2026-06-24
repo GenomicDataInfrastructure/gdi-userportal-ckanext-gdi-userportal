@@ -148,12 +148,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     def _update_facets(self, facets_dict):
         facets_dict.pop("groups", None)
         facets_dict["vocab_in_series_title"] = toolkit._("Dataset series")
-        facets_dict["vocab_qualified_attribution_role"] = toolkit._(
-            "Qualified attribution role"
-        )
-        facets_dict["vocab_qualified_attribution_agent_name"] = toolkit._(
-            "Qualified attribution organization"
-        )
         return facets_dict
 
     def dataset_facets(self, facets_dict, package_type):
@@ -348,10 +342,9 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         roles = []
         agent_names = []
-        pair_values = []
 
         if not isinstance(qualified_attribution, list):
-            return roles, agent_names, pair_values
+            return roles, agent_names
 
         for attribution in qualified_attribution:
             if not isinstance(attribution, dict):
@@ -366,16 +359,10 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
             roles.extend(attribution_roles)
             agent_names.extend(attribution_agent_names)
-            pair_values.extend(
-                self._build_qualified_attribution_pairs(
-                    attribution_roles, attribution_agent_names
-                )
-            )
 
         return (
             _deduplicate_non_empty_strings(roles),
             _deduplicate_non_empty_strings(agent_names),
-            _deduplicate_non_empty_strings(pair_values),
         )
 
     def _parse_qualified_attribution_agent_names(self, agents):
@@ -403,16 +390,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             names.extend(self._extract_nested_string_values(agent.get("name")))
 
         return names
-
-    def _build_qualified_attribution_pairs(self, roles, agent_names):
-        pairs = []
-        for role in roles:
-            for agent_name in agent_names:
-                pairs.append(self._encode_qualified_attribution_pair(role, agent_name))
-        return pairs
-
-    def _encode_qualified_attribution_pair(self, role, agent_name):
-        return f"{quote(role, safe='')}||{quote(agent_name, safe='')}"
 
     def _parse_json_if_possible(self, value):
         if not isinstance(value, str):
@@ -595,21 +572,13 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         (
             qualified_attribution_roles,
             qualified_attribution_agent_names,
-            qualified_attribution_pair_values,
         ) = self._parse_qualified_attribution(data_dict)
 
         if qualified_attribution_roles:
-            data_dict["vocab_qualified_attribution_role"] = qualified_attribution_roles
+            data_dict["qualified_attribution_role"] = qualified_attribution_roles
         if qualified_attribution_agent_names:
-            data_dict["vocab_qualified_attribution_agent_name"] = (
-                qualified_attribution_agent_names
-            )
             data_dict["qualified_attribution_agent_name"] = (
                 qualified_attribution_agent_names
-            )
-        if qualified_attribution_pair_values:
-            data_dict["vocab_qualified_attribution_role_agent_name"] = (
-                qualified_attribution_pair_values
             )
 
         data_dict = self._parse_agent_name(data_dict, "publisher")
