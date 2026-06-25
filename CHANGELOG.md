@@ -12,6 +12,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.11.29] - 2026-06-24
+
+### Changed
+- Update test_plugin.py by @Quinten in 8289ca2
+- Update test_plugin.py by @Quinten in 8cb0d67
+- Add qual. attr. role in index & change type of name by @Quinten in 4c53141
+- Update 005_qualified_attribution_filter_translations.py by @Quinten in d2edd23
+- Update 005_qualified_attribution_filter_translations.py by @Quinten in a2552c3
+
+
+### Removed
+- Remove pairs in tests by @Quinten in 8617c31
+- Remove vocab_qualified_attribution_* by @Quinten in 79f99fa
+
+
 ## [v1.11.28] - 2026-06-22
 
 ### Changed
