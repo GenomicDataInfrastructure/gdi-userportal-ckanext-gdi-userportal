@@ -27,6 +27,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove vocab_qualified_attribution_* by @Quinten in 79f99fa
 
 
+## [v1.11.28] - 2026-06-22
+
+### Changed
+- Remove obsolete license file for qualified attribution filter translations by @Hans-christian in b335523
+- chore(deps): update botocore monorepo to v1.43.34 by @Renovate Bot in 6e39168
+- chore(deps): update actions/checkout action to v7 by @Renovate Bot in caad326
+- Add coverage for qualified attribution parsing by @Hans-christian in 6a2333f
+- Add REUSE metadata for qualified attribution translations by @Hans-christian in 5f7a103
+- Add qualified attribution indexing behavior by @Hans-christian in 8d32191
+- Expose nested dataset help texts by @Hans-christian in 7c5c34c
+- chore(deps): update botocore monorepo to v1.43.31 by @Renovate Bot in 29896b3
+- Clean up CHANGELOG by removing redundant entries by @Hans-Christian in fa650e5
+- Remove duplicate entry in CHANGELOG.md by @Hans-Christian in 7506ee0
+- Clarify help text normalization inputs by @Hans-christian in 34274e4
+- Update ckanext/gdi_userportal/tests/test_filter_help_texts.py by @Hans-Christian in 1d16593
+- Normalize multiline help text values by @Hans-christian in 22b4a07
+- doc: update CHANGELOG.md for v1.11.27 by @LNDS-Sysadmins in e7e8a7f
+- Add qualified attribution fields and indexing by @Quinten in e2877ef
+
+
 ## [v1.11.27] - 2026-06-16
 
 ### Changed
