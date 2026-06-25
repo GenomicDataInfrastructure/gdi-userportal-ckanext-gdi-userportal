@@ -33,6 +33,10 @@ jobs:
           persist-credentials: false
       - uses: oss-review-toolkit/ort-ci-github-action@086d928d24ef1653dc0777296b312fda5faaaf52 # v1.2.0
         with:
+          # Pinned below :latest/89.3.0 because that image ships /opt/ort/lib/kotlin-stdlib*.jar
+          # as mode 600 (owner-only), which breaks when the action runs the container as a
+          # non-root UID: java.lang.NoClassDefFoundError: kotlin/jvm/internal/Intrinsics.
+          image: "ghcr.io/oss-review-toolkit/ort:89.2.0"
           allow-dynamic-versions: "true"
           fail-on: "issues"
           run: "cache-dependencies,cache-scan-results,labels,analyzer,evaluator,advisor,reporter,upload-results"
