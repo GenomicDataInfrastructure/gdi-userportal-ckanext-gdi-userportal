@@ -23,8 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Removed
-- remove pairs and in tests by @Quinten in 8617c31
-- removed vocab_qualified_attribution_* by @Quinten in 79f99fa
+- Remove pairs in tests by @Quinten in 8617c31
+- Remove vocab_qualified_attribution_* by @Quinten in 79f99fa
 
 
 ## [v1.11.27] - 2026-06-16
