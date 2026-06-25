@@ -350,9 +350,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             if not isinstance(attribution, dict):
                 continue
 
-            attribution_roles = _deduplicate_non_empty_strings(
-                self._extract_string_values(attribution.get("role"))
-            )
+            attribution_roles = self._extract_string_values(attribution.get("role"))
             attribution_agent_names = self._parse_qualified_attribution_agent_names(
                 attribution.get("agent")
             )
