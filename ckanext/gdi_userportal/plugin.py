@@ -5,7 +5,9 @@
 
 import json
 import os
+from datetime import datetime
 from urllib.parse import quote
+from dateutil.parser import isoparse
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
@@ -14,6 +16,7 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
     get_all_translations,
     _deduplicate_non_empty_strings,
 )
+from ckanext.gdi_userportal.validation import enforce_utc_time
 from ckanext.gdi_userportal.logic.action.get import (
     gdi_dataset_help_texts_show,
     enhanced_package_search,
@@ -73,6 +76,13 @@ PUBLICATIONS_DATA_THEME_HTTP_PREFIX = (
 PUBLICATIONS_DATA_THEME_HTTPS_PREFIX = (
     "https://publications.europa.eu/resource/authority/data-theme/"
 )
+
+TEMPORAL_COVERAGE_SOLR_FIELD = "temporal_coverage_range"
+TEMPORAL_COVERAGE_MIN_FIELD = "temporal_coverage_min"
+TEMPORAL_COVERAGE_MAX_FIELD = "temporal_coverage_max"
+TEMPORAL_MIN_PARAM = "ext_temporal_min"
+TEMPORAL_MAX_PARAM = "ext_temporal_max"
+SOLR_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 def setup_opentelemetry():
@@ -238,10 +248,114 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         pass
 
     def before_dataset_search(self, search_params):
+        extras = search_params.get("extras") or {}
+        raw_min = extras.get(TEMPORAL_MIN_PARAM)
+        raw_max = extras.get(TEMPORAL_MAX_PARAM)
+
+        if not raw_min and not raw_max:
+            return search_params
+
+        min_value = self._to_solr_datetime(raw_min) if raw_min else None
+        max_value = self._to_solr_datetime(raw_max) if raw_max else None
+
+        if raw_min and min_value is None:
+            raise toolkit.ValidationError(
+                {"temporal_min": [toolkit._("Invalid date/time value")]}
+            )
+        if raw_max and max_value is None:
+            raise toolkit.ValidationError(
+                {"temporal_max": [toolkit._("Invalid date/time value")]}
+            )
+        if min_value and max_value and min_value > max_value:
+            raise toolkit.ValidationError(
+                {"temporal_min": [toolkit._("Must not be later than temporal_max")]}
+            )
+
+        fq_list = list(search_params.get("fq_list") or [])
+        fq_list.append(
+            f"{TEMPORAL_COVERAGE_SOLR_FIELD}:[{min_value or '*'} TO {max_value or '*'}]"
+        )
+        search_params["fq_list"] = fq_list
         return search_params
 
     def after_dataset_search(self, search_results, search_params):
         return search_results
+
+    def _to_solr_datetime(self, value):
+        """Normalize a datetime (or ISO 8601 string) to a Solr-compatible UTC timestamp."""
+        if isinstance(value, datetime):
+            date = value
+        elif value:
+            try:
+                date = isoparse(value)
+            except (TypeError, ValueError):
+                return None
+        else:
+            return None
+
+        return enforce_utc_time(date).strftime(SOLR_DATETIME_FORMAT)
+
+    def _build_temporal_coverage_ranges(self, data_dict):
+        """Turn the temporal_coverage repeating field into Solr DateRangeField values.
+
+        Each period becomes one entry of "[start TO end]" (using "*" for an
+        open/missing bound) in a multiValued field, so a single Solr range query can
+        match if it intersects *any* of a dataset's periods (the default operator for
+        this field type is "Intersects"), and datasets without temporal_coverage simply
+        have no value to match against.
+
+        A missing start or end bound is intentionally treated as open-ended/ongoing
+        (matches any date before/after the bound that is present), not as "unknown" -
+        e.g. a period with a start but no end represents coverage that continues
+        indefinitely and will intersect any filter range from that start date onward.
+
+        Also populates temporal_coverage_min/_max: the earliest start and latest end
+        across only the *bounded* periods (open bounds are skipped, since "*" has no
+        finite value). Solr's Stats Component does not support DateRangeField, so
+        these single-valued fields let enhanced_package_search compute a displayable
+        min/max range via sorted queries instead.
+        """
+        raw_periods = data_dict.pop("temporal_coverage", None)
+        if raw_periods is None:
+            return data_dict
+
+        if isinstance(raw_periods, str):
+            try:
+                raw_periods = json.loads(raw_periods)
+            except json.JSONDecodeError:
+                return data_dict
+
+        if not isinstance(raw_periods, list):
+            return data_dict
+
+        ranges, bounded_starts, bounded_ends = self._parse_temporal_periods(raw_periods)
+
+        if ranges:
+            data_dict[TEMPORAL_COVERAGE_SOLR_FIELD] = ranges
+        if bounded_starts:
+            data_dict[TEMPORAL_COVERAGE_MIN_FIELD] = min(bounded_starts)
+        if bounded_ends:
+            data_dict[TEMPORAL_COVERAGE_MAX_FIELD] = max(bounded_ends)
+        return data_dict
+
+    def _parse_temporal_periods(self, raw_periods):
+        """Build Solr range strings plus the bounded start/end values they contain."""
+        ranges = []
+        bounded_starts = []
+        bounded_ends = []
+        for period in raw_periods:
+            if not isinstance(period, dict):
+                continue
+            start = self._to_solr_datetime(period.get("start"))
+            end = self._to_solr_datetime(period.get("end"))
+            if not start and not end:
+                continue
+            ranges.append(f"[{start or '*'} TO {end or '*'}]")
+            if start:
+                bounded_starts.append(start)
+            if end:
+                bounded_ends.append(end)
+        return ranges, bounded_starts, bounded_ends
 
     def _parse_to_array(self, data_dict, field):
         extras_field = f"extras_{field}"
@@ -508,6 +622,8 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         return data_dict
 
     def before_dataset_index(self, data_dict):
+        data_dict = self._build_temporal_coverage_ranges(data_dict)
+
         publisher_name = data_dict.get('extras_publisher__name')
         creator_name = data_dict.get('extras_creator__name')
         
