@@ -50,6 +50,11 @@ attribute with the form `ckan-X.Y` -->
 
         <fieldType name="pdates" class="solr.DatePointField" positionIncrementGap="0"
             multiValued="true" />
+
+        <!-- Used for temporal_coverage: stores one or more start/end periods per dataset
+        and supports overlap ("Intersects", the default operator for this field type)
+        range queries, e.g. temporal_coverage_range:[2020-01-01T00:00:00Z TO *] -->
+        <fieldType name="tdaterange" class="solr.DateRangeField" />
         <fieldType name="booleans" class="solr.BoolField" sortMissingLast="true" multiValued="true" />
         <fieldType name="pints" class="solr.IntPointField" positionIncrementGap="0"
             multiValued="true" />
@@ -234,6 +239,22 @@ attribute with the form `ckan-X.Y` -->
 
         <field name="metadata_created" type="date" indexed="true" stored="true" multiValued="false" />
         <field name="metadata_modified" type="date" indexed="true" stored="true" multiValued="false" />
+
+        <!-- One range value per temporal_coverage period; populated by
+        GdiUserPortalPlugin.before_dataset_index. Queried via temporal_min/temporal_max. -->
+        <field name="temporal_coverage_range" type="tdaterange" indexed="true" stored="true"
+            multiValued="true" />
+
+        <!-- Per-dataset earliest start / latest end across only the *bounded*
+        (non-wildcard) temporal_coverage periods; populated alongside
+        temporal_coverage_range. Solr's Stats Component does not support
+        DateRangeField, and an open/missing bound has no finite value to report,
+        so these single-valued fields exist purely to let enhanced_package_search
+        compute a displayable min/max range via sorted queries. -->
+        <field name="temporal_coverage_min" type="date" indexed="true" stored="true"
+            multiValued="false" />
+        <field name="temporal_coverage_max" type="date" indexed="true" stored="true"
+            multiValued="false" />
 
         <field name="indexed_ts" type="date" indexed="true" stored="true" default="NOW"
             multiValued="false" />
