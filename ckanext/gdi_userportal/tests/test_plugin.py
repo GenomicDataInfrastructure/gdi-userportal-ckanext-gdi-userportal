@@ -52,6 +52,7 @@ To temporary patch the CKAN configuration for the duration of a test you can use
         pass
 """
 import json
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 from urllib.parse import quote
 
@@ -799,4 +800,214 @@ class TestMergeTagsTranslatedForIndexing:
         result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
 
         assert "single-tag" in result["tags"]
-        assert "translated-tag" in result["tags"]
+
+
+class TestBeforeDatasetSearchTemporalCoverage:
+    def test_returns_unchanged_when_no_temporal_extras(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        search_params = {"q": "test"}
+
+        result = plugin_instance.before_dataset_search(search_params.copy())
+
+        assert result == search_params
+        assert "fq_list" not in result
+
+    def test_adds_fq_for_min_and_max(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        search_params = {
+            "extras": {
+                "ext_temporal_min": "2020-01-01",
+                "ext_temporal_max": "2021-06-15",
+            }
+        }
+
+        result = plugin_instance.before_dataset_search(search_params)
+
+        assert result["fq_list"] == [
+            "temporal_coverage_range:[2020-01-01T00:00:00Z TO 2021-06-15T00:00:00Z]"
+        ]
+
+    def test_adds_fq_with_open_lower_bound(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        search_params = {"extras": {"ext_temporal_max": "2021-06-15"}}
+
+        result = plugin_instance.before_dataset_search(search_params)
+
+        assert result["fq_list"] == [
+            "temporal_coverage_range:[* TO 2021-06-15T00:00:00Z]"
+        ]
+
+    def test_adds_fq_with_open_upper_bound(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        search_params = {"extras": {"ext_temporal_min": "2020-01-01"}}
+
+        result = plugin_instance.before_dataset_search(search_params)
+
+        assert result["fq_list"] == [
+            "temporal_coverage_range:[2020-01-01T00:00:00Z TO *]"
+        ]
+
+    def test_appends_to_existing_fq_list(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        search_params = {
+            "fq_list": ["res_format:CSV"],
+            "extras": {"ext_temporal_min": "2020-01-01"},
+        }
+
+        result = plugin_instance.before_dataset_search(search_params)
+
+        assert result["fq_list"] == [
+            "res_format:CSV",
+            "temporal_coverage_range:[2020-01-01T00:00:00Z TO *]",
+        ]
+
+    def test_raises_validation_error_for_invalid_min(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        search_params = {"extras": {"ext_temporal_min": "not-a-date"}}
+
+        with pytest.raises(plugin.toolkit.ValidationError):
+            plugin_instance.before_dataset_search(search_params)
+
+    def test_raises_validation_error_for_invalid_max(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        search_params = {"extras": {"ext_temporal_max": "not-a-date"}}
+
+        with pytest.raises(plugin.toolkit.ValidationError):
+            plugin_instance.before_dataset_search(search_params)
+
+    def test_raises_validation_error_when_min_after_max(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        search_params = {
+            "extras": {
+                "ext_temporal_min": "2022-01-01",
+                "ext_temporal_max": "2021-01-01",
+            }
+        }
+
+        with pytest.raises(plugin.toolkit.ValidationError):
+            plugin_instance.before_dataset_search(search_params)
+
+
+class TestToSolrDatetime:
+    def test_converts_datetime_object(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+
+        result = plugin_instance._to_solr_datetime(
+            datetime(2020, 1, 1, 12, 30, 0)
+        )
+
+        assert result == "2020-01-01T12:30:00Z"
+
+    def test_converts_iso_string(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+
+        result = plugin_instance._to_solr_datetime("2020-01-01T12:30:00+02:00")
+
+        assert result == "2020-01-01T10:30:00Z"
+
+    def test_returns_none_for_invalid_string(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+
+        assert plugin_instance._to_solr_datetime("not-a-date") is None
+
+    def test_returns_none_for_empty_value(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+
+        assert plugin_instance._to_solr_datetime(None) is None
+        assert plugin_instance._to_solr_datetime("") is None
+
+
+class TestBuildTemporalCoverageRanges:
+    def test_returns_data_dict_unchanged_when_field_missing(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        data_dict = {"other_field": "value"}
+
+        result = plugin_instance._build_temporal_coverage_ranges(data_dict)
+
+        assert result == {"other_field": "value"}
+
+    def test_ignores_temporal_coverage_when_json_string_is_invalid(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        data_dict = {"temporal_coverage": "not-json"}
+
+        result = plugin_instance._build_temporal_coverage_ranges(data_dict)
+
+        assert "temporal_coverage_range" not in result
+        assert "temporal_coverage" not in result
+
+    def test_returns_data_dict_unchanged_when_not_a_list(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        data_dict = {"temporal_coverage": json.dumps({"start": "2020-01-01"})}
+
+        result = plugin_instance._build_temporal_coverage_ranges(data_dict)
+
+        assert "temporal_coverage_range" not in result
+
+    def test_builds_ranges_and_min_max_from_bounded_periods(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        data_dict = {
+            "temporal_coverage": [
+                {"start": "2015-01-01", "end": "2016-01-01"},
+                {"start": "2018-06-01", "end": "2020-01-01"},
+            ]
+        }
+
+        result = plugin_instance._build_temporal_coverage_ranges(data_dict)
+
+        assert result["temporal_coverage_range"] == [
+            "[2015-01-01T00:00:00Z TO 2016-01-01T00:00:00Z]",
+            "[2018-06-01T00:00:00Z TO 2020-01-01T00:00:00Z]",
+        ]
+        assert result["temporal_coverage_min"] == "2015-01-01T00:00:00Z"
+        assert result["temporal_coverage_max"] == "2020-01-01T00:00:00Z"
+        assert "temporal_coverage" not in result
+
+    def test_accepts_temporal_coverage_as_json_string(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        data_dict = {
+            "temporal_coverage": json.dumps(
+                [{"start": "2015-01-01", "end": "2016-01-01"}]
+            )
+        }
+
+        result = plugin_instance._build_temporal_coverage_ranges(data_dict)
+
+        assert result["temporal_coverage_range"] == [
+            "[2015-01-01T00:00:00Z TO 2016-01-01T00:00:00Z]"
+        ]
+
+    def test_open_ended_period_is_included_in_ranges_but_not_min_max(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        data_dict = {"temporal_coverage": [{"start": "2015-01-01"}]}
+
+        result = plugin_instance._build_temporal_coverage_ranges(data_dict)
+
+        assert result["temporal_coverage_range"] == ["[2015-01-01T00:00:00Z TO *]"]
+        assert result["temporal_coverage_min"] == "2015-01-01T00:00:00Z"
+        assert "temporal_coverage_max" not in result
+
+    def test_period_without_start_or_end_is_skipped(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        data_dict = {"temporal_coverage": [{}, {"start": "2015-01-01"}]}
+
+        result = plugin_instance._build_temporal_coverage_ranges(data_dict)
+
+        assert result["temporal_coverage_range"] == ["[2015-01-01T00:00:00Z TO *]"]
+
+    def test_non_dict_period_is_skipped(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        data_dict = {"temporal_coverage": ["not-a-dict", {"start": "2015-01-01"}]}
+
+        result = plugin_instance._build_temporal_coverage_ranges(data_dict)
+
+        assert result["temporal_coverage_range"] == ["[2015-01-01T00:00:00Z TO *]"]
+
+    def test_no_bounded_periods_results_in_no_range_fields(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        data_dict = {"temporal_coverage": [{}, "invalid"]}
+
+        result = plugin_instance._build_temporal_coverage_ranges(data_dict)
+
+        assert "temporal_coverage_range" not in result
+        assert "temporal_coverage_min" not in result
+        assert "temporal_coverage_max" not in result
