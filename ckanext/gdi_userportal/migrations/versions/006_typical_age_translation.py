@@ -22,12 +22,12 @@ description: str = (
 TRANSLATIONS: List[Tuple[str, str, str]] = [
     (
         "typical_age",
-        "Age range",
+        "Age Range",
         "en"
     ),
     (
         "typical_age",
-        "Leeftijdbereik",
+        "Leeftijdsbereik",
         "nl"
     )
 ]
