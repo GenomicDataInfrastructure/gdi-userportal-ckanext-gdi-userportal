@@ -18,14 +18,15 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
     replace_package,
     replace_search_facets,
 )
+from ckanext.gdi_userportal.temporal_coverage import (
+    TEMPORAL_COVERAGE_RANGE_FIELD,
+    TEMPORAL_COVERAGE_MIN_FIELD,
+    TEMPORAL_COVERAGE_MAX_FIELD,
+)
 
 
 STATS_PARAM = "stats"
 STATS_FIELD_PARAM = "stats.field"
-
-TEMPORAL_COVERAGE_RANGE_FIELD = "temporal_coverage_range"
-TEMPORAL_COVERAGE_MIN_FIELD = "temporal_coverage_min"
-TEMPORAL_COVERAGE_MAX_FIELD = "temporal_coverage_max"
 
 # term_translation_show key for this filter's label - same string CKAN uses as
 # the facet.field name (and therefore as the search_facets title) for filters
@@ -73,10 +74,11 @@ def enhanced_package_search(context, data_dict) -> dict:
             range_stats["label"] = get_translations(
                 [TEMPORAL_COVERAGE_LABEL_TERM], lang=lang
             ).get(TEMPORAL_COVERAGE_LABEL_TERM, TEMPORAL_COVERAGE_LABEL_TERM)
-            result["stats"] = {
-                "stats_fields": {TEMPORAL_COVERAGE_RANGE_FIELD: range_stats}
-            }
-
+            stats = result.get("stats") or {}
+            stats_fields_dict = stats.get("stats_fields") or {}
+            stats_fields_dict[TEMPORAL_COVERAGE_RANGE_FIELD] = range_stats
+            stats["stats_fields"] = stats_fields_dict
+            result["stats"] = stats
     return result
 
 

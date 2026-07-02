@@ -887,6 +887,21 @@ class TestBeforeDatasetSearchTemporalCoverage:
         with pytest.raises(plugin.toolkit.ValidationError):
             plugin_instance.before_dataset_search(search_params)
 
+    def test_allows_equal_min_and_max(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        search_params = {
+            "extras": {
+                "ext_temporal_min": "2022-01-01",
+                "ext_temporal_max": "2022-01-01",
+            }
+        }
+
+        result = plugin_instance.before_dataset_search(search_params)
+
+        assert result["fq_list"] == [
+            "temporal_coverage_range:[2022-01-01T00:00:00Z TO 2022-01-01T00:00:00Z]"
+        ]
+
 
 class TestToSolrDatetime:
     def test_converts_datetime_object(self):
@@ -1001,6 +1016,18 @@ class TestBuildTemporalCoverageRanges:
         result = plugin_instance._build_temporal_coverage_ranges(data_dict)
 
         assert result["temporal_coverage_range"] == ["[2015-01-01T00:00:00Z TO *]"]
+
+    def test_skips_periods_with_invalid_dates(self):
+        plugin_instance = plugin.GdiUserPortalPlugin()
+        data_dict = {
+            "temporal_coverage": [{"start": "not-a-date", "end": "also-bad"}]
+        }
+
+        result = plugin_instance._build_temporal_coverage_ranges(data_dict)
+
+        assert "temporal_coverage_range" not in result
+        assert "temporal_coverage_min" not in result
+        assert "temporal_coverage_max" not in result
 
     def test_no_bounded_periods_results_in_no_range_fields(self):
         plugin_instance = plugin.GdiUserPortalPlugin()

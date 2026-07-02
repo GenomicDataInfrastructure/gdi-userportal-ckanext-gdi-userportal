@@ -152,6 +152,28 @@ class TestTemporalCoverageRangeStats:
         )
         get_translations.assert_any_call(["temporal_coverage"], lang="nl")
 
+    def test_preserves_existing_stats_from_package_search(self):
+        result, _ = _call(
+            {"stats": "true", "stats.field": '["temporal_coverage_range"]'},
+            min_value="2015-02-02T00:00:00Z",
+            max_value="2024-12-31T00:00:00Z",
+            main_result={
+                "results": [],
+                "count": 0,
+                "stats": {"stats_fields": {"other_field": {"min": 1, "max": 2}}},
+            },
+        )
+        assert result["stats"] == {
+            "stats_fields": {
+                "other_field": {"min": 1, "max": 2},
+                "temporal_coverage_range": {
+                    "min": "2015-02-02T00:00:00Z",
+                    "max": "2024-12-31T00:00:00Z",
+                    "label": "temporal_coverage",
+                },
+            }
+        }
+
     def test_stats_field_as_plain_list_is_accepted(self):
         result, package_search = _call(
             {"stats": True, "stats.field": ["temporal_coverage_range"]},

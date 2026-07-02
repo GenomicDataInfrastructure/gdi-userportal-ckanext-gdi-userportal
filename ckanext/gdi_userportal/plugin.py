@@ -17,6 +17,13 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
     _deduplicate_non_empty_strings,
 )
 from ckanext.gdi_userportal.validation import enforce_utc_time
+from ckanext.gdi_userportal.temporal_coverage import (
+    TEMPORAL_COVERAGE_RANGE_FIELD as TEMPORAL_COVERAGE_SOLR_FIELD,
+    TEMPORAL_COVERAGE_MIN_FIELD,
+    TEMPORAL_COVERAGE_MAX_FIELD,
+    TEMPORAL_MIN_PARAM,
+    TEMPORAL_MAX_PARAM,
+)
 from ckanext.gdi_userportal.logic.action.get import (
     gdi_dataset_help_texts_show,
     enhanced_package_search,
@@ -77,11 +84,6 @@ PUBLICATIONS_DATA_THEME_HTTPS_PREFIX = (
     "https://publications.europa.eu/resource/authority/data-theme/"
 )
 
-TEMPORAL_COVERAGE_SOLR_FIELD = "temporal_coverage_range"
-TEMPORAL_COVERAGE_MIN_FIELD = "temporal_coverage_min"
-TEMPORAL_COVERAGE_MAX_FIELD = "temporal_coverage_max"
-TEMPORAL_MIN_PARAM = "ext_temporal_min"
-TEMPORAL_MAX_PARAM = "ext_temporal_max"
 SOLR_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
@@ -260,15 +262,19 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         if raw_min and min_value is None:
             raise toolkit.ValidationError(
-                {"temporal_min": [toolkit._("Invalid date/time value")]}
+                {TEMPORAL_MIN_PARAM: [toolkit._("Invalid date/time value")]}
             )
         if raw_max and max_value is None:
             raise toolkit.ValidationError(
-                {"temporal_max": [toolkit._("Invalid date/time value")]}
+                {TEMPORAL_MAX_PARAM: [toolkit._("Invalid date/time value")]}
             )
         if min_value and max_value and min_value > max_value:
             raise toolkit.ValidationError(
-                {"temporal_min": [toolkit._("Must not be later than temporal_max")]}
+                {
+                    TEMPORAL_MIN_PARAM: [
+                        toolkit._(f"Must not be later than {TEMPORAL_MAX_PARAM}")
+                    ]
+                }
             )
 
         fq_list = list(search_params.get("fq_list") or [])
@@ -323,6 +329,10 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             try:
                 raw_periods = json.loads(raw_periods)
             except json.JSONDecodeError:
+                log.warning(
+                    "Could not parse temporal_coverage as JSON, dropping value: %r",
+                    raw_periods,
+                )
                 return data_dict
 
         if not isinstance(raw_periods, list):
