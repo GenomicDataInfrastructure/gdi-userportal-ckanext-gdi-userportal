@@ -244,6 +244,10 @@ dataset_fields:
         label: End
         preset: datetime_flex
     help_text: The temporal period or periods the dataset covers.
+    filter_help_text:
+      en: Use this filter to search datasets by temporal coverage.
+      nl: Gebruik deze filter om datasets op temporele dekking te zoeken.
+    facet_key: temporal_coverage
 
   - field_name: temporal_resolution
     label: Temporal resolution
