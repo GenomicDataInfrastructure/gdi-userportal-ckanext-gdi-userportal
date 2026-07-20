@@ -12,6 +12,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.12.0] - 2026-07-06
+
+### Changed
+- Update 006_typical_age_translation.py by @Quinten in 5293ab3
+- chore: add nl and en translation by @SeanBerrieHRI in d682768
+- Update trivy_db_cache.yml by @Quinten in 73c3ced
+- Update test_plugin.py by @Quinten in 1411208
+- Feat: addition of temporal coverage indexing and filtering by @Quinten in 77cbd8d
+- Apply suggestions from code review by @Quinten in fb71484
+- Rename qualified_attribution_* Solr fields to vocab_qualified_attribution_* by @Quinten in bf50dad
+- doc: update CHANGELOG.md for v1.11.29 by @LNDS-Sysadmins in 8e7c30e
+- doc: update CHANGELOG.md for v1.11.28 by @LNDS-Sysadmins in 94499fa
+
+
+### Fixed
+- fix: align opentelemetry-instrumentation pins with 1.43.0 API/SDK bump by @Quinten in eeac830
+- fix sourcery comments by @Quinten in 1c360eb
+- fix test by @Quinten in 220a111
+- fix: vocab_ prefix by @Quinten in 51407c5
+
+
 ## [v1.11.29] - 2026-06-24
 
 ### Changed
