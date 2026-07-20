@@ -15,24 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v1.12.0] - 2026-07-06
 
 ### Changed
-- chore(deps): update astral-sh/setup-uv action to v8.3.0 by @Renovate Bot in 20b1f94
-- chore(deps): update docker/login-action action to v4.4.0 by @Renovate Bot in d3cef99
-- chore(deps): update actions/cache action to v6.1.0 by @Renovate Bot in b9634fe
-- chore(deps): update botocore monorepo to v1.43.40 by @Renovate Bot in d31cabe
 - Update 006_typical_age_translation.py by @Quinten in 5293ab3
 - chore: add nl and en translation by @SeanBerrieHRI in d682768
-- chore(deps): update docker/metadata-action action to v6.2.0 by @Renovate Bot in da3821c
-- chore(deps): update docker/login-action action to v4.3.0 by @Renovate Bot in 3bcdd4d
-- chore(deps): update docker/build-push-action action to v7.3.0 by @Renovate Bot in 889f7c0
 - Update trivy_db_cache.yml by @Quinten in 73c3ced
 - Update test_plugin.py by @Quinten in 1411208
 - Feat: addition of temporal coverage indexing and filtering by @Quinten in 77cbd8d
-- chore(deps): update actions/cache digest to 55cc834 by @Renovate Bot in 476e77e
-- chore(deps): update opentelemetry monorepo to v1.43.0 by @Renovate Bot in c269d15
 - Apply suggestions from code review by @Quinten in fb71484
 - Rename qualified_attribution_* Solr fields to vocab_qualified_attribution_* by @Quinten in bf50dad
-- chore(deps): update actions/cache action to v6 by @Renovate Bot in a31dcd7
-- chore(deps): update botocore monorepo to v1.43.36 by @Renovate Bot in cdd11e5
 - doc: update CHANGELOG.md for v1.11.29 by @LNDS-Sysadmins in 8e7c30e
 - doc: update CHANGELOG.md for v1.11.28 by @LNDS-Sysadmins in 94499fa
 
