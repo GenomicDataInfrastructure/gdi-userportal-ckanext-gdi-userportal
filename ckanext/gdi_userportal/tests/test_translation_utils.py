@@ -81,7 +81,7 @@ def _base_package():
                 "target": "https://fair.healthdata.be/dataset/123",
             }
         ],
-        "provenance_activity": [
+        "was_generated_by": [
             {
                 "type": "http://example.com/activity-type",
                 "dct_type": "http://example.com/dct-activity-type",
@@ -132,15 +132,15 @@ def test_replace_package_prefers_requested_language():
     attribution_agent = result["qualified_attribution"][0]["agent"][0]
     assert attribution_agent["name"] == "Nederlandse agent"
 
-    provenance_activity = result["provenance_activity"][0]
-    assert provenance_activity["type"] == {
+    was_generated_by = result["was_generated_by"][0]
+    assert was_generated_by["type"] == {
         "name": "http://example.com/activity-type",
         "display_name": "http://example.com/activity-type",
         "count": None,
     }
-    assert provenance_activity["dct_type"] == "http://example.com/dct-activity-type"
-    assert provenance_activity["label"] == "http://example.com/dct-activity-type"
-    associated_agent = provenance_activity["wasAssociatedWith"][0]
+    assert was_generated_by["dct_type"] == "http://example.com/dct-activity-type"
+    assert was_generated_by["label"] == "http://example.com/dct-activity-type"
+    associated_agent = was_generated_by["wasAssociatedWith"][0]
     assert associated_agent["type"] == {
         "name": "http://example.com/agent-type",
         "display_name": "http://example.com/agent-type",
@@ -152,15 +152,15 @@ def test_replace_package_prefers_requested_language():
         "count": None,
     }
 
-    empty_provenance_activity = result["provenance_activity"][1]
-    assert empty_provenance_activity["type"] == {
+    empty_was_generated_by = result["was_generated_by"][1]
+    assert empty_was_generated_by["type"] == {
         "name": "",
         "display_name": "",
         "count": None,
     }
-    assert empty_provenance_activity["dct_type"] == ""
-    assert "label" not in empty_provenance_activity
-    empty_associated_agent = empty_provenance_activity["wasAssociatedWith"][0]
+    assert empty_was_generated_by["dct_type"] == ""
+    assert "label" not in empty_was_generated_by
+    empty_associated_agent = empty_was_generated_by["wasAssociatedWith"][0]
     assert empty_associated_agent["type"] == {
         "name": "",
         "display_name": "",
@@ -338,11 +338,11 @@ def test_replace_package_translates_nested_values():
         "count": None,
     }
 
-    provenance_activity = result["provenance_activity"][0]
-    assert provenance_activity["type"]["display_name"] == "Translated Activity Type"
-    assert provenance_activity["dct_type"] == "http://example.com/dct-activity-type"
-    assert provenance_activity["label"] == "Test data"
-    associated_agent = provenance_activity["wasAssociatedWith"][0]
+    was_generated_by = result["was_generated_by"][0]
+    assert was_generated_by["type"]["display_name"] == "Translated Activity Type"
+    assert was_generated_by["dct_type"] == "http://example.com/dct-activity-type"
+    assert was_generated_by["label"] == "Test data"
+    associated_agent = was_generated_by["wasAssociatedWith"][0]
     assert associated_agent["type"]["display_name"] == "Translated Agent Type"
     assert associated_agent["actedOnBehalfOf"][0]["type"]["display_name"] == "Translated Org Type"
 

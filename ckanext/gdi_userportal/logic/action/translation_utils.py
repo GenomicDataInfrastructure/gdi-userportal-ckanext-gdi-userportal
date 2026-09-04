@@ -28,7 +28,7 @@ PACKAGE_REPLACE_FIELDS = [
     "language",
     "legal_basis",
     "personal_data",
-    "provenance_activity",
+    "was_generated_by",
     "publisher",
     "publisher_type",
     "purpose",
@@ -74,7 +74,7 @@ NESTED_FIELD_TRANSLATIONS = {
     "spatial_coverage": {"uri"},
     "creator": {"publisher_type", "type"},
     "publisher": {"publisher_type", "type"},
-    "provenance_activity": {"type", "wasAssociatedWith"},
+    "was_generated_by": {"type", "wasAssociatedWith"},
     "wasAssociatedWith": {"type", "actedOnBehalfOf"},
     "actedOnBehalfOf": {"type"},
 }
@@ -246,8 +246,8 @@ def _collect_values_for_field(field: str, value: Any, target_list: List) -> List
                         target_list = _collect_values_for_field(
                             nested_field, item[nested_field], target_list
                         )
-                if field == "provenance_activity":
-                    target_list = _collect_provenance_activity_dct_type(
+                if field == "was_generated_by":
+                    target_list = _collect_was_generated_by_dct_type(
                         item, target_list
                     )
             else:
@@ -266,9 +266,9 @@ def _collect_values_for_field(field: str, value: Any, target_list: List) -> List
     return _append_atomic_value(value, target_list)
 
 
-def _collect_provenance_activity_dct_type(item: Dict, target_list: List) -> List:
+def _collect_was_generated_by_dct_type(item: Dict, target_list: List) -> List:
     """dct_type isn't a NESTED_FIELD_TRANSLATIONS entry (it stays a raw URI,
-    see _apply_provenance_activity_dct_type_label), but its value still needs
+    see _apply_was_generated_by_dct_type_label), but its value still needs
     to reach term_translation_show so a label can be resolved for it."""
     dct_type = item.get("dct_type")
     if isinstance(dct_type, str) and dct_type:
@@ -456,8 +456,8 @@ def _translate_nested_field(field: str, value: Any, translation_dict: Dict[str, 
                     translated[nested_field] = _translate_atomic_or_collection(
                         nested_value, translation_dict
                     )
-        if field == "provenance_activity":
-            translated = _apply_provenance_activity_dct_type_label(
+        if field == "was_generated_by":
+            translated = _apply_was_generated_by_dct_type_label(
                 translated, translation_dict
             )
         return translated
@@ -465,7 +465,7 @@ def _translate_nested_field(field: str, value: Any, translation_dict: Dict[str, 
     return _translate_atomic_value(value, translation_dict)
 
 
-def _apply_provenance_activity_dct_type_label(
+def _apply_was_generated_by_dct_type_label(
     item: Dict, translation_dict: Dict[str, str]
 ) -> Dict:
     """dct_type stays the raw controlled-vocabulary URI; label is overwritten
