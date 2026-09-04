@@ -199,6 +199,43 @@ def test_parse_agent_name_parses_json_string_payload():
     assert result["creator_country"] == ["creator-country"]
 
 
+def test_parse_agent_name_falls_back_to_flattened_extras_when_field_already_popped():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "extras_publisher__name": "Health-RI",
+        "extras_publisher__identifier": "https://ror.org/05sk8w809",
+        "extras_publisher__country": "http://publications.europa.eu/resource/authority/country/NLD",
+    }
+
+    result = plugin_instance._parse_agent_name(data_dict, "publisher")
+
+    assert result["publisher_name"] == ["Health-RI"]
+    assert result["publisher_identifier"] == ["https://ror.org/05sk8w809"]
+    assert result["publisher_country"] == [
+        "http://publications.europa.eu/resource/authority/country/NLD"
+    ]
+
+
+def test_parse_agent_name_fallback_omits_missing_flattened_subfields():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"extras_creator__name": "Creator Org"}
+
+    result = plugin_instance._parse_agent_name(data_dict, "creator")
+
+    assert result["creator_name"] == ["Creator Org"]
+    assert "creator_identifier" not in result
+    assert "creator_country" not in result
+
+
+def test_parse_agent_name_returns_data_dict_unchanged_when_nothing_available():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"unrelated": "value"}
+
+    result = plugin_instance._parse_agent_name(data_dict, "publisher")
+
+    assert result == {"unrelated": "value"}
+
+
 def test_before_dataset_index_indexes_publisher_and_creator_identifier_and_country():
     plugin_instance = plugin.GdiUserPortalPlugin()
     input_data = {

@@ -397,6 +397,14 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
                 )
                 if subfield_values:
                     data_dict[f"{field}_{subfield}"] = subfield_values
+        else:
+            # dcat's before_dataset_index may run first and pop data_dict[field] after
+            # flattening it into extras_{field}__*. publisher/creator are repeating_once,
+            # so a single flattened value can be used as-is without split ambiguity.
+            for subfield in ("name", "identifier", "country"):
+                value = data_dict.get(f"extras_{field}__{subfield}")
+                if value:
+                    data_dict[f"{field}_{subfield}"] = [value]
         return data_dict
 
     def _parse_series_ids(self, in_series):
