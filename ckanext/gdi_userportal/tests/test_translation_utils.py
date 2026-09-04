@@ -139,6 +139,7 @@ def test_replace_package_prefers_requested_language():
         "count": None,
     }
     assert provenance_activity["dct_type"] == "http://example.com/dct-activity-type"
+    assert provenance_activity["label"] == "http://example.com/dct-activity-type"
     associated_agent = provenance_activity["wasAssociatedWith"][0]
     assert associated_agent["type"] == {
         "name": "http://example.com/agent-type",
@@ -158,6 +159,7 @@ def test_replace_package_prefers_requested_language():
         "count": None,
     }
     assert empty_provenance_activity["dct_type"] == ""
+    assert "label" not in empty_provenance_activity
     empty_associated_agent = empty_provenance_activity["wasAssociatedWith"][0]
     assert empty_associated_agent["type"] == {
         "name": "",
@@ -315,6 +317,7 @@ def test_replace_package_translates_nested_values():
         "http://www.iana.org/assignments/relation/related": "Related Resource",
         "https://acertificateserver.eu/mycertificate": "My Special Certificate",
         "http://example.com/activity-type": "Translated Activity Type",
+        "http://example.com/dct-activity-type": "Test data",
         "http://example.com/agent-type": "Translated Agent Type",
         "http://example.com/org-type": "Translated Org Type",
     }
@@ -338,6 +341,7 @@ def test_replace_package_translates_nested_values():
     provenance_activity = result["provenance_activity"][0]
     assert provenance_activity["type"]["display_name"] == "Translated Activity Type"
     assert provenance_activity["dct_type"] == "http://example.com/dct-activity-type"
+    assert provenance_activity["label"] == "Test data"
     associated_agent = provenance_activity["wasAssociatedWith"][0]
     assert associated_agent["type"]["display_name"] == "Translated Agent Type"
     assert associated_agent["actedOnBehalfOf"][0]["type"]["display_name"] == "Translated Org Type"
@@ -364,6 +368,7 @@ def test_collect_values_to_translate_includes_nested_fields():
     assert "http://www.iana.org/assignments/relation/related" in values
     assert "https://acertificateserver.eu/mycertificate" in values
     assert "http://example.com/activity-type" in values
+    assert "http://example.com/dct-activity-type" in values
     assert "http://example.com/agent-type" in values
     assert "http://example.com/org-type" in values
 
