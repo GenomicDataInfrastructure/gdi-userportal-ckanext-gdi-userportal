@@ -113,6 +113,160 @@ def test_before_dataset_index_normalizes_multi_value_fields(field, values):
     assert f"extras_{field}" not in result
 
 
+@pytest.mark.parametrize(
+    "field",
+    ["publisher", "creator"],
+)
+def test_parse_agent_name_extracts_identifier_and_country(field):
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        field: [
+            {
+                "name": "Health-RI",
+                "identifier": "https://ror.org/05sk8w809",
+                "country": "http://publications.europa.eu/resource/authority/country/NLD",
+            }
+        ]
+    }
+
+    result = plugin_instance._parse_agent_name(data_dict, field)
+
+    assert result[f"{field}_name"] == ["Health-RI"]
+    assert result[f"{field}_identifier"] == ["https://ror.org/05sk8w809"]
+    assert result[f"{field}_country"] == [
+        "http://publications.europa.eu/resource/authority/country/NLD"
+    ]
+
+
+def test_parse_agent_name_deduplicates_identifier_and_country_values():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "creator": [
+            {"name": "Org 1", "identifier": "same-id", "country": "same-country"},
+            {"name": "Org 2", "identifier": "same-id", "country": "same-country"},
+        ]
+    }
+
+    result = plugin_instance._parse_agent_name(data_dict, "creator")
+
+    assert result["creator_identifier"] == ["same-id"]
+    assert result["creator_country"] == ["same-country"]
+
+
+def test_parse_agent_name_collects_multiple_distinct_identifier_and_country_values():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "publisher": [
+            {"name": "Org 1", "identifier": "id-1", "country": "country-1"},
+            {"name": "Org 2", "identifier": "id-2", "country": "country-2"},
+        ]
+    }
+
+    result = plugin_instance._parse_agent_name(data_dict, "publisher")
+
+    assert sorted(result["publisher_identifier"]) == ["id-1", "id-2"]
+    assert sorted(result["publisher_country"]) == ["country-1", "country-2"]
+
+
+def test_parse_agent_name_omits_identifier_and_country_when_absent():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"publisher": [{"name": "Org without extra fields"}]}
+
+    result = plugin_instance._parse_agent_name(data_dict, "publisher")
+
+    assert result["publisher_name"] == ["Org without extra fields"]
+    assert "publisher_identifier" not in result
+    assert "publisher_country" not in result
+
+
+def test_parse_agent_name_parses_json_string_payload():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "creator": json.dumps(
+            [
+                {
+                    "name": "Creator Org",
+                    "identifier": "creator-id",
+                    "country": "creator-country",
+                }
+            ]
+        )
+    }
+
+    result = plugin_instance._parse_agent_name(data_dict, "creator")
+
+    assert result["creator_identifier"] == ["creator-id"]
+    assert result["creator_country"] == ["creator-country"]
+
+
+def test_parse_agent_name_falls_back_to_flattened_extras_when_field_already_popped():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "extras_publisher__name": "Health-RI",
+        "extras_publisher__identifier": "https://ror.org/05sk8w809",
+        "extras_publisher__country": "http://publications.europa.eu/resource/authority/country/NLD",
+    }
+
+    result = plugin_instance._parse_agent_name(data_dict, "publisher")
+
+    assert result["publisher_name"] == ["Health-RI"]
+    assert result["publisher_identifier"] == ["https://ror.org/05sk8w809"]
+    assert result["publisher_country"] == [
+        "http://publications.europa.eu/resource/authority/country/NLD"
+    ]
+
+
+def test_parse_agent_name_fallback_omits_missing_flattened_subfields():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"extras_creator__name": "Creator Org"}
+
+    result = plugin_instance._parse_agent_name(data_dict, "creator")
+
+    assert result["creator_name"] == ["Creator Org"]
+    assert "creator_identifier" not in result
+    assert "creator_country" not in result
+
+
+def test_parse_agent_name_returns_data_dict_unchanged_when_nothing_available():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"unrelated": "value"}
+
+    result = plugin_instance._parse_agent_name(data_dict, "publisher")
+
+    assert result == {"unrelated": "value"}
+
+
+def test_before_dataset_index_indexes_publisher_and_creator_identifier_and_country():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "publisher": [
+            {
+                "name": "Health-RI",
+                "identifier": "https://ror.org/05sk8w809",
+                "country": "http://publications.europa.eu/resource/authority/country/NLD",
+            }
+        ],
+        "creator": [
+            {
+                "name": "Dr. Jane Doe",
+                "identifier": "https://orcid.org/0000-0002-9095-9201",
+                "country": "http://publications.europa.eu/resource/authority/country/BEL",
+            }
+        ],
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["publisher_identifier"] == ["https://ror.org/05sk8w809"]
+    assert result["publisher_country"] == [
+        "http://publications.europa.eu/resource/authority/country/NLD"
+    ]
+    assert result["creator_identifier"] == ["https://orcid.org/0000-0002-9095-9201"]
+    assert result["creator_country"] == [
+        "http://publications.europa.eu/resource/authority/country/BEL"
+    ]
+
+
 def test_before_dataset_index_canonicalizes_http_https_theme_uris():
     plugin_instance = plugin.GdiUserPortalPlugin()
     input_data = {

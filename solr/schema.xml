@@ -197,6 +197,8 @@ attribute with the form `ckan-X.Y` -->
         <field name="creator_type" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="creator_identifier" type="string" indexed="true" stored="true"
             multiValued="true" />
+        <field name="creator_country" type="string" indexed="true" stored="true"
+            multiValued="true" />
 
         <field name="publisher_uri" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="publisher_name" type="string" indexed="true" stored="true" multiValued="true" />
@@ -204,6 +206,8 @@ attribute with the form `ckan-X.Y` -->
         <field name="publisher_url" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="publisher_type" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="publisher_identifier" type="string" indexed="true" stored="true"
+            multiValued="true" />
+        <field name="publisher_country" type="string" indexed="true" stored="true"
             multiValued="true" />
 
         <field name="vocab_qualified_attribution_role" type="string" indexed="true" stored="true" multiValued="true" />

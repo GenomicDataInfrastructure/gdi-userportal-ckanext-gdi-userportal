@@ -379,17 +379,32 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
     def _parse_agent_name(self, data_dict, field):
         if data_dict.get(field):
-            values = data_dict[field]            
+            values = data_dict[field]
             if isinstance(values, str):
                 try:
                     values = json.loads(values)
                 except json.JSONDecodeError:
-                    values = [{"name": values}]            
+                    values = [{"name": values}]
             if isinstance(values, dict):
                 values = [values]
-            
+
             names = list(set(value.get("name") for value in values if value.get("name")))
             data_dict[f"{field}_name"] = names
+
+            for subfield in ("identifier", "country"):
+                subfield_values = list(
+                    {value.get(subfield) for value in values if value.get(subfield)}
+                )
+                if subfield_values:
+                    data_dict[f"{field}_{subfield}"] = subfield_values
+        else:
+            # dcat's before_dataset_index may run first and pop data_dict[field] after
+            # flattening it into extras_{field}__*. publisher/creator are repeating_once,
+            # so a single flattened value can be used as-is without split ambiguity.
+            for subfield in ("name", "identifier", "country"):
+                value = data_dict.get(f"extras_{field}__{subfield}")
+                if value:
+                    data_dict[f"{field}_{subfield}"] = [value]
         return data_dict
 
     def _parse_series_ids(self, in_series):
