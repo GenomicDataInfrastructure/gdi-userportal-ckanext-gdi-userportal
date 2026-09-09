@@ -1,0 +1,21 @@
+term,term_translation,lang_code
+http://publications.europa.eu/resource/authority/dataset-status/COMPLETED,Completed,en
+http://publications.europa.eu/resource/authority/dataset-status/COMPLETED,Voltooid,nl
+http://publications.europa.eu/resource/authority/dataset-status/DEPRECATED,Deprecated,en
+http://publications.europa.eu/resource/authority/dataset-status/DEPRECATED,Verouderd,nl
+http://publications.europa.eu/resource/authority/dataset-status/DEVELOP,Under Development,en
+http://publications.europa.eu/resource/authority/dataset-status/DEVELOP,In ontwikkeling,nl
+http://publications.europa.eu/resource/authority/dataset-status/DISCONT,Discontinued,en
+http://publications.europa.eu/resource/authority/dataset-status/DISCONT,Stopgezet,nl
+http://publications.europa.eu/resource/authority/dataset-status/OP_DATPRO,Provisional data,en
+http://publications.europa.eu/resource/authority/dataset-status/OP_DATPRO,Voorlopige gegevens,nl
+http://publications.europa.eu/resource/authority/dataset-status/WITHDRAWN,Withdrawn,en
+http://publications.europa.eu/resource/authority/dataset-status/WITHDRAWN,Ingetrokken,nl
+http://publications.europa.eu/resource/authority/distribution-status/COMPLETED,Completed,en
+http://publications.europa.eu/resource/authority/distribution-status/COMPLETED,Voltooid,nl
+http://publications.europa.eu/resource/authority/distribution-status/DEVELOP,Under Development,en
+http://publications.europa.eu/resource/authority/distribution-status/DEVELOP,In ontwikkeling,nl
+http://publications.europa.eu/resource/authority/distribution-status/DEPRECATED,Deprecated,en
+http://publications.europa.eu/resource/authority/distribution-status/DEPRECATED,Verouderd,nl
+http://publications.europa.eu/resource/authority/distribution-status/WITHDRAWN,Withdrawn,en
+http://publications.europa.eu/resource/authority/distribution-status/WITHDRAWN,Ingetrokken,nl

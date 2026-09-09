@@ -20,6 +20,7 @@ PACKAGE_REPLACE_FIELDS = [
     "coding_system",
     "creator",
     "conforms_to",
+    "dataset_status",
     "dcat_type",
     "has_version",
     "health_category",

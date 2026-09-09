@@ -211,7 +211,7 @@ dataset_fields:
     help_text: A description of the differences between this version and a previous version of the dataset.
 
   - field_name: dataset_status
-    label: Status
+    label: Dataset status
     preset: select
     validators: ignore_missing scheming_choices
     choices:
@@ -303,6 +303,15 @@ dataset_fields:
       en: Use this filter to search datasets by access rights.
       nl: Gebruik deze filter om datasets op toegangsrechten te zoeken.
     facet_key: access_rights
+
+  - field_name: dataset_status
+    label: Dataset status
+    validators: ignore_missing unicode_safe
+    help_text: The status of the dataset in the context of the maturity lifecycle, as submitted by the data holder (DCAT-AP-NL).
+    filter_help_text:
+      en: Use this filter to search datasets by status.
+      nl: Gebruik deze filter om datasets op status te zoeken.
+    facet_key: dataset_status
 
   - field_name: alternate_identifier
     label: Other identifier
@@ -626,6 +635,10 @@ dataset_fields:
           - field_name: name
             label: Name
 
+          - field_name: name_translated
+            label: Name (translations)
+            help_text: Agent name in each language.
+
           - field_name: email
             label: Email
             display_snippet: email.html
@@ -640,6 +653,17 @@ dataset_fields:
 
           - field_name: type
             label: Type
+
+          - field_name: publisher_note
+            label: Publisher note
+            preset: fluent_markdown
+            help_text: A description of the agent's activities.
+
+          - field_name: publisher_type
+            label: Publisher type
+            preset: multiple_text
+            validators: ignore_missing scheming_multiple_text
+            help_text: A type of organisation that makes the Dataset available.
 
           - field_name: identifier
             label: Identifier
