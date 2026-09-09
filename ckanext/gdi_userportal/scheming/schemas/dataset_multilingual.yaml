@@ -630,10 +630,6 @@ dataset_fields:
           - field_name: name
             label: Name
 
-          - field_name: name_translated
-            label: Name (translations)
-            help_text: Agent name in each language.
-
           - field_name: email
             label: Email
             display_snippet: email.html
