@@ -228,6 +228,10 @@ dataset_fields:
       - value: http://publications.europa.eu/resource/authority/dataset-status/WITHDRAWN
         label: Withdrawn
     help_text: The status of the dataset as submitted by the data holder, in the context of maturity lifecycle. This is distinct from CKAN's internal dataset state.
+    filter_help_text:
+      en: Use this filter to search datasets by status.
+      nl: Gebruik deze filter om datasets op status te zoeken.
+    facet_key: dataset_status
 
   # Note: CKAN will generate a unique identifier for each dataset
   - field_name: identifier
@@ -644,17 +648,6 @@ dataset_fields:
 
           - field_name: type
             label: Type
-
-          - field_name: publisher_note
-            label: Publisher note
-            preset: fluent_markdown
-            help_text: A description of the agent's activities.
-
-          - field_name: publisher_type
-            label: Publisher type
-            preset: multiple_text
-            validators: ignore_missing scheming_multiple_text
-            help_text: A type of organisation that makes the Dataset available.
 
           - field_name: identifier
             label: Identifier

@@ -84,16 +84,13 @@ def bulk_insert_translations(translations: List[Tuple[str, str, str]]) -> int:
     count = 0
     with engine.begin() as conn:
         for term, translation, lang_code in translations:
-            try:
-                conn.execute(upsert_sql, {
-                    "term": term,
-                    "translation": translation,
-                    "lang_code": lang_code
-                })
-                count += 1
-            except Exception as e:
-                log.error(f"Failed to insert translation for '{term}' ({lang_code}): {e}")
-    
+            conn.execute(upsert_sql, {
+                "term": term,
+                "translation": translation,
+                "lang_code": lang_code
+            })
+            count += 1
+
     log.info(f"Inserted/updated {count} translations")
     return count
 
@@ -121,15 +118,12 @@ def bulk_delete_translations(removals: List[Tuple[str, str]]) -> int:
     count = 0
     with engine.begin() as conn:
         for term, lang_code in removals:
-            try:
-                result = conn.execute(delete_sql, {
-                    "term": term,
-                    "lang_code": lang_code
-                })
-                count += result.rowcount
-            except Exception as e:
-                log.error(f"Failed to delete translation for '{term}' ({lang_code}): {e}")
-    
+            result = conn.execute(delete_sql, {
+                "term": term,
+                "lang_code": lang_code
+            })
+            count += result.rowcount
+
     log.info(f"Deleted {count} translations")
     return count
 
