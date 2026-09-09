@@ -304,15 +304,6 @@ dataset_fields:
       nl: Gebruik deze filter om datasets op toegangsrechten te zoeken.
     facet_key: access_rights
 
-  - field_name: dataset_status
-    label: Dataset status
-    validators: ignore_missing unicode_safe
-    help_text: The status of the dataset in the context of the maturity lifecycle, as submitted by the data holder (DCAT-AP-NL).
-    filter_help_text:
-      en: Use this filter to search datasets by status.
-      nl: Gebruik deze filter om datasets op status te zoeken.
-    facet_key: dataset_status
-
   - field_name: alternate_identifier
     label: Other identifier
     preset: multiple_text
