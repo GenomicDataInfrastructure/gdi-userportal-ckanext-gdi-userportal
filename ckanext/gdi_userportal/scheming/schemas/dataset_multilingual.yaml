@@ -230,7 +230,7 @@ dataset_fields:
     help_text: The status of the dataset as submitted by the data holder, in the context of maturity lifecycle. This is distinct from CKAN's internal dataset state.
     filter_help_text:
       en: Use this filter to search datasets by status.
-      nl: Gebruik deze filter om datasets op status te zoeken.
+      nl: Gebruik dit filter om datasets te filteren op status.
     facet_key: dataset_status
 
   # Note: CKAN will generate a unique identifier for each dataset
