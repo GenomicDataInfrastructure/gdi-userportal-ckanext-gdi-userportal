@@ -228,11 +228,6 @@ def test_parse_agent_name_fallback_omits_missing_flattened_subfields():
 
 
 def test_parse_agent_name_fallback_reflects_dcats_space_joined_multi_creator_corruption():
-    # Known limitation, not a bug in this fallback: creator is not repeating_once,
-    # so a dataset with more than one creator can reach this fallback with dcat's
-    # own before_dataset_index having already space-joined every entry's name into
-    # a single extras_creator__name string. This test pins that documented
-    # behaviour so a future change doesn't silently assume it's been solved.
     plugin_instance = plugin.GdiUserPortalPlugin()
     data_dict = {"extras_creator__name": "Org 1 Org 2"}
 
@@ -327,10 +322,6 @@ def test_before_dataset_index_indexes_contact_point_fields():
 
 
 def test_before_dataset_index_flattens_json_encoded_contact_url_list():
-    # contact.url is itself a scheming multiple_text preset, so CKAN can hand it back
-    # as a JSON-encoded list string rather than a plain string - this must be decoded
-    # and flattened, not indexed as a literal '["..."]' string (regression test for a
-    # real bug caught by indexing an actual dataset against a live Solr core).
     plugin_instance = plugin.GdiUserPortalPlugin()
     input_data = {
         "contact": [
@@ -381,10 +372,6 @@ def test_parse_contact_point_falls_back_to_flattened_extras_when_field_already_p
 
 
 def test_parse_contact_point_fallback_reflects_dcats_space_joined_multi_contact_corruption():
-    # Known limitation, not a bug in this fallback: contact is not repeating_once,
-    # so a dataset with more than one contact point can reach this fallback with
-    # dcat's own before_dataset_index having already space-joined every entry's
-    # name into a single extras_contact__name string.
     plugin_instance = plugin.GdiUserPortalPlugin()
     data_dict = {"extras_contact__name": "General enquiries Data access requests"}
 
@@ -458,11 +445,6 @@ def test_parse_repeating_field_falls_back_to_flattened_extras_when_field_already
 
 
 def test_parse_repeating_field_fallback_reflects_dcats_space_joined_multi_entry_corruption():
-    # Known limitation, not a bug in this fallback: none of qualified_relation,
-    # quality_annotation, retention_period are repeating_once, so a dataset with
-    # more than one entry can reach this fallback with dcat's own
-    # before_dataset_index having already space-joined every entry's values
-    # together into a single extras_{field}__{subfield} string.
     plugin_instance = plugin.GdiUserPortalPlugin()
     data_dict = {
         "extras_qualified_relation__uri": (
@@ -539,18 +521,10 @@ def test_before_dataset_index_indexes_qualified_relation_single_entry():
     assert result["qualified_relation_role"] == [
         "http://www.iana.org/assignments/relation/related"
     ]
-    # the raw nested field must not survive to reach ckanext-dcat's own
-    # before_dataset_index, which would otherwise space-join it if it still
-    # found the field present
     assert "qualified_relation" not in result
 
 
 def test_before_dataset_index_does_not_space_join_multiple_qualified_relation_entries():
-    # Regression test: before the fix, stock ckanext-dcat's before_dataset_index
-    # would concatenate every entry's values into a single space-joined string
-    # per subfield once there was more than one entry, destroying the
-    # correlation between uri/relation/role for a given entry. Our own
-    # flattening must run first and produce clean, separate list values instead.
     plugin_instance = plugin.GdiUserPortalPlugin()
     input_data = {
         "qualified_relation": [
