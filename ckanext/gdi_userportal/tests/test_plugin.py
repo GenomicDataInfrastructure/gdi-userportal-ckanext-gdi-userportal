@@ -227,6 +227,20 @@ def test_parse_agent_name_fallback_omits_missing_flattened_subfields():
     assert "creator_country" not in result
 
 
+def test_parse_agent_name_fallback_reflects_dcats_space_joined_multi_creator_corruption():
+    # Known limitation, not a bug in this fallback: creator is not repeating_once,
+    # so a dataset with more than one creator can reach this fallback with dcat's
+    # own before_dataset_index having already space-joined every entry's name into
+    # a single extras_creator__name string. This test pins that documented
+    # behaviour so a future change doesn't silently assume it's been solved.
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"extras_creator__name": "Org 1 Org 2"}
+
+    result = plugin_instance._parse_agent_name(data_dict, "creator")
+
+    assert result["creator_name"] == ["Org 1 Org 2"]
+
+
 def test_parse_agent_name_returns_data_dict_unchanged_when_nothing_available():
     plugin_instance = plugin.GdiUserPortalPlugin()
     data_dict = {"unrelated": "value"}
@@ -353,6 +367,67 @@ def test_before_dataset_index_indexes_multiple_contact_points():
     }
 
 
+def test_parse_contact_point_falls_back_to_flattened_extras_when_field_already_popped():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "extras_contact__name": "Health-RI service desk",
+        "extras_contact__email": "mailto:servicedesk@health-ri.nl",
+    }
+
+    result = plugin_instance._parse_contact_point(data_dict)
+
+    assert result["contact_point_name"] == ["Health-RI service desk"]
+    assert result["contact_point_email"] == ["mailto:servicedesk@health-ri.nl"]
+
+
+def test_parse_contact_point_fallback_reflects_dcats_space_joined_multi_contact_corruption():
+    # Known limitation, not a bug in this fallback: contact is not repeating_once,
+    # so a dataset with more than one contact point can reach this fallback with
+    # dcat's own before_dataset_index having already space-joined every entry's
+    # name into a single extras_contact__name string.
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"extras_contact__name": "General enquiries Data access requests"}
+
+    result = plugin_instance._parse_contact_point(data_dict)
+
+    assert result["contact_point_name"] == ["General enquiries Data access requests"]
+
+
+def test_parse_contact_point_parses_non_json_string_payload():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"contact": "Health-RI service desk"}
+
+    result = plugin_instance._parse_contact_point(data_dict)
+
+    assert result["contact_point_name"] == ["Health-RI service desk"]
+
+
+def test_parse_contact_point_accepts_single_dict_payload():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "contact": {"name": "Health-RI service desk", "email": "mailto:sd@health-ri.nl"}
+    }
+
+    result = plugin_instance._parse_contact_point(data_dict)
+
+    assert result["contact_point_name"] == ["Health-RI service desk"]
+    assert result["contact_point_email"] == ["mailto:sd@health-ri.nl"]
+
+
+def test_flatten_contact_subfield_value_returns_list_value_as_is():
+    result = plugin.GdiUserPortalPlugin._flatten_contact_subfield_value(
+        ["https://www.example.com/a", "https://www.example.com/b"]
+    )
+
+    assert result == ["https://www.example.com/a", "https://www.example.com/b"]
+
+
+def test_flatten_contact_subfield_value_wraps_malformed_json_looking_string():
+    result = plugin.GdiUserPortalPlugin._flatten_contact_subfield_value("[not-json")
+
+    assert result == ["[not-json"]
+
+
 def test_parse_repeating_field_returns_unchanged_when_field_missing():
     plugin_instance = plugin.GdiUserPortalPlugin()
     data_dict = {"unrelated": "value"}
@@ -362,6 +437,85 @@ def test_parse_repeating_field_returns_unchanged_when_field_missing():
     )
 
     assert result == {"unrelated": "value"}
+
+
+def test_parse_repeating_field_falls_back_to_flattened_extras_when_field_already_popped():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "extras_qualified_relation__uri": "https://example.org/relation/1",
+        "extras_qualified_relation__relation": "https://example.org/related-resource/1",
+    }
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result["qualified_relation_uri"] == ["https://example.org/relation/1"]
+    assert result["qualified_relation_relation"] == [
+        "https://example.org/related-resource/1"
+    ]
+    assert "qualified_relation_role" not in result
+
+
+def test_parse_repeating_field_fallback_reflects_dcats_space_joined_multi_entry_corruption():
+    # Known limitation, not a bug in this fallback: none of qualified_relation,
+    # quality_annotation, retention_period are repeating_once, so a dataset with
+    # more than one entry can reach this fallback with dcat's own
+    # before_dataset_index having already space-joined every entry's values
+    # together into a single extras_{field}__{subfield} string.
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "extras_qualified_relation__uri": (
+            "https://example.org/relation/1 https://example.org/relation/2"
+        )
+    }
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result["qualified_relation_uri"] == [
+        "https://example.org/relation/1 https://example.org/relation/2"
+    ]
+
+
+def test_parse_repeating_field_returns_unchanged_for_non_json_string_value():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"qualified_relation": "not valid json"}
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result == {"qualified_relation": "not valid json"}
+
+
+def test_parse_repeating_field_accepts_single_dict_payload():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "qualified_relation": {
+            "uri": "https://example.org/relation/1",
+            "relation": "https://example.org/related-resource/1",
+            "role": "http://www.iana.org/assignments/relation/related",
+        }
+    }
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result["qualified_relation_uri"] == ["https://example.org/relation/1"]
+
+
+def test_parse_repeating_field_returns_unchanged_for_non_list_non_dict_value():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"qualified_relation": 42}
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result == {"qualified_relation": 42}
 
 
 def test_before_dataset_index_indexes_qualified_relation_single_entry():

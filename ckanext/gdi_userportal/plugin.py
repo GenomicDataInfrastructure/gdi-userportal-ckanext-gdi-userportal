@@ -402,17 +402,36 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
                     data_dict[f"{field}_{subfield}"] = subfield_values
         else:
             # dcat's before_dataset_index may run first and pop data_dict[field] after
-            # flattening it into extras_{field}__*. publisher/creator are repeating_once,
-            # so a single flattened value can be used as-is without split ambiguity.
+            # flattening it into extras_{field}__*. publisher is repeating_once, so its
+            # flattened value is always unambiguous. creator is not repeating_once: if
+            # a dataset has more than one creator, dcat's own flattening already
+            # space-joined every entry's values together before we ever see them, so
+            # the single value recovered here may already be that corrupted
+            # concatenation. That's a pre-existing dcat limitation on this hook-order
+            # path, not something this fallback can detect or undo.
             for subfield in ("name",) + self._agent_subfields:
                 value = data_dict.get(f"extras_{field}__{subfield}")
                 if value:
                     data_dict[f"{field}_{subfield}"] = [value]
         return data_dict
 
+    _contact_subfields = ("uri", "name", "email", "identifier", "url")
+
     def _parse_contact_point(self, data_dict):
         values = data_dict.get("contact")
         if not values:
+            # dcat's before_dataset_index may run first and pop data_dict["contact"]
+            # after flattening it into extras_contact__*. contact is not
+            # repeating_once: if a dataset has more than one contact point, dcat's
+            # own flattening already space-joined every entry's values together
+            # before we ever see them, so the single value recovered here may
+            # already be that corrupted concatenation. That's a pre-existing dcat
+            # limitation on this hook-order path, not something this fallback can
+            # detect or undo.
+            for subfield in self._contact_subfields:
+                value = data_dict.get(f"extras_contact__{subfield}")
+                if value:
+                    data_dict[f"contact_point_{subfield}"] = [value]
             return data_dict
 
         if isinstance(values, str):
@@ -423,7 +442,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         if isinstance(values, dict):
             values = [values]
 
-        for subfield in ("uri", "name", "email", "identifier", "url"):
+        for subfield in self._contact_subfields:
             subfield_values = set()
             for value in values:
                 raw = value.get(subfield)
@@ -453,6 +472,18 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     def _parse_repeating_field(self, data_dict, field, subfields):
         values = data_dict.get(field)
         if not values:
+            # dcat's before_dataset_index may run first and pop data_dict[field] after
+            # flattening it into extras_{field}__*. None of the fields that use this
+            # method are repeating_once: if a dataset has more than one entry, dcat's
+            # own flattening already space-joined every entry's values together
+            # before we ever see them, so the single value recovered here may
+            # already be that corrupted concatenation. That's a pre-existing dcat
+            # limitation on this hook-order path, not something this fallback can
+            # detect or undo.
+            for subfield in subfields:
+                value = data_dict.get(f"extras_{field}__{subfield}")
+                if value:
+                    data_dict[f"{field}_{subfield}"] = [value]
             return data_dict
 
         if isinstance(values, str):
