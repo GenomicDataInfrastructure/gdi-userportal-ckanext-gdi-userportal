@@ -169,25 +169,33 @@ attribute with the form `ckan-X.Y` -->
         <field name="access_rights" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="conforms_to" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="has_version" type="string" indexed="true" stored="true" multiValued="true" />
-        <field name="identifier" type="string" indexed="false" stored="true" multiValued="false" />
+        <field name="identifier" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="language" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="uri" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="provenance" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="spatial_uri" type="string" indexed="true" stored="true" multiValued="false" />
+        <field name="spatial_coverage_uri" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="documentation" type="string" indexed="false" stored="true" multiValued="true" />
         <field name="distribution" type="string" indexed="false" stored="true" multiValued="true" />
+        <field name="analytics" type="string" indexed="false" stored="true" multiValued="true" />
+        <field name="sample" type="string" indexed="false" stored="true" multiValued="true" />
         <field name="purpose" type="string" indexed="true" stored="true" multiValued="true" />
-        <field name="resources_formats" type="string" indexed="true" stored="true"
-            multiValued="true" />
+        <field name="resources_formats" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="applicable_legislation" type="string" indexed="false" stored="true" multiValued="true"/>
-        <field name="number_of_unique_individuals" type="long" indexed="true" stored="false" multiValued="false"/>
-        <field name="number_of_records" type="long" indexed="true" stored="false" multiValued="false"/>
+        <field name="number_of_unique_individuals" type="long" indexed="true" stored="false" multiValued="false" docValues="true"/>
+        <field name="number_of_records" type="long" indexed="true" stored="false" multiValued="false" docValues="true"/>
+        <field name="min_typical_age" type="pint" indexed="true" stored="false" multiValued="false" docValues="true"/>
+        <field name="max_typical_age" type="pint" indexed="true" stored="false" multiValued="false" docValues="true"/>
 
         <field name="contact_point_uri" type="string" indexed="true" stored="true"
             multiValued="true" />
         <field name="contact_point_name" type="string" indexed="true" stored="true"
             multiValued="true" />
         <field name="contact_point_email" type="string" indexed="true" stored="true"
+            multiValued="true" />
+        <field name="contact_point_url" type="string" indexed="true" stored="true"
+            multiValued="true" />
+        <field name="contact_point_identifier" type="string" indexed="true" stored="true"
             multiValued="true" />
 
         <field name="creator_uri" type="string" indexed="true" stored="true" multiValued="true" />
@@ -213,6 +221,17 @@ attribute with the form `ckan-X.Y` -->
         <field name="vocab_qualified_attribution_role" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="vocab_qualified_attribution_agent_name" type="string" indexed="true" stored="true" multiValued="true" />
         <field name="vocab_qualified_attribution_agent_name_ngram" type="text_ngram" indexed="true" stored="false" multiValued="true" />
+
+        <field name="qualified_relation_uri" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="qualified_relation_relation" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="qualified_relation_role" type="string" indexed="true" stored="true" multiValued="true" />
+
+        <field name="quality_annotation_body" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="quality_annotation_target" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="quality_annotation_motivated_by" type="string" indexed="true" stored="true" multiValued="true" />
+
+        <field name="retention_period_start" type="string" indexed="true" stored="true" multiValued="true" />
+        <field name="retention_period_end" type="string" indexed="true" stored="true" multiValued="true" />
 
         <field name="capacity" type="string" indexed="true" stored="true" multiValued="false" />
         <field name="permission_labels" type="string" indexed="true" stored="false"
@@ -245,6 +264,9 @@ attribute with the form `ckan-X.Y` -->
 
         <field name="metadata_created" type="date" indexed="true" stored="true" multiValued="false" />
         <field name="metadata_modified" type="date" indexed="true" stored="true" multiValued="false" />
+
+        <field name="issued" type="date" indexed="true" stored="true" multiValued="false" docValues="true" />
+        <field name="modified" type="date" indexed="true" stored="true" multiValued="false" docValues="true" />
 
         <!-- One range value per temporal_coverage period; populated by
         GdiUserPortalPlugin.before_dataset_index. Queried via temporal_min/temporal_max. -->
@@ -308,7 +330,7 @@ attribute with the form `ckan-X.Y` -->
     <copyField source="maintainer" dest="text" />
     <copyField source="author" dest="text" />
     <copyField source="creator_name" dest="text" />
-    <copyField source="contact_name" dest="text" />
+    <copyField source="contact_point_name" dest="text" />
     <copyField source="publisher_name" dest="text" />
     <copyField source="vocab_qualified_attribution_agent_name" dest="vocab_qualified_attribution_agent_name_ngram" />
 </schema>

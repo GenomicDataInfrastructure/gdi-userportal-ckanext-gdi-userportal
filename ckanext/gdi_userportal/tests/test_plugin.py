@@ -227,6 +227,15 @@ def test_parse_agent_name_fallback_omits_missing_flattened_subfields():
     assert "creator_country" not in result
 
 
+def test_parse_agent_name_fallback_reflects_dcats_space_joined_multi_creator_corruption():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"extras_creator__name": "Org 1 Org 2"}
+
+    result = plugin_instance._parse_agent_name(data_dict, "creator")
+
+    assert result["creator_name"] == ["Org 1 Org 2"]
+
+
 def test_parse_agent_name_returns_data_dict_unchanged_when_nothing_available():
     plugin_instance = plugin.GdiUserPortalPlugin()
     data_dict = {"unrelated": "value"}
@@ -242,6 +251,10 @@ def test_before_dataset_index_indexes_publisher_and_creator_identifier_and_count
         "publisher": [
             {
                 "name": "Health-RI",
+                "uri": "internalURI:publisher0",
+                "email": "mailto:info@health-ri.nl",
+                "url": "https://www.health-ri.nl",
+                "type": "http://purl.org/adms/publishertype/NonProfitOrganisation",
                 "identifier": "https://ror.org/05sk8w809",
                 "country": "http://publications.europa.eu/resource/authority/country/NLD",
             }
@@ -249,6 +262,10 @@ def test_before_dataset_index_indexes_publisher_and_creator_identifier_and_count
         "creator": [
             {
                 "name": "Dr. Jane Doe",
+                "uri": "https://example.org/agents/jane-doe",
+                "email": "mailto:jane.doe@example.org",
+                "url": "https://example.org/jane-doe",
+                "type": "http://xmlns.com/foaf/0.1/Person",
                 "identifier": "https://orcid.org/0000-0002-9095-9201",
                 "country": "http://publications.europa.eu/resource/authority/country/BEL",
             }
@@ -257,14 +274,325 @@ def test_before_dataset_index_indexes_publisher_and_creator_identifier_and_count
 
     result = plugin_instance.before_dataset_index(input_data.copy())
 
+    assert result["publisher_uri"] == ["internalURI:publisher0"]
+    assert result["publisher_email"] == ["mailto:info@health-ri.nl"]
+    assert result["publisher_url"] == ["https://www.health-ri.nl"]
+    assert result["publisher_type"] == [
+        "http://purl.org/adms/publishertype/NonProfitOrganisation"
+    ]
     assert result["publisher_identifier"] == ["https://ror.org/05sk8w809"]
     assert result["publisher_country"] == [
         "http://publications.europa.eu/resource/authority/country/NLD"
     ]
+    assert result["creator_uri"] == ["https://example.org/agents/jane-doe"]
+    assert result["creator_email"] == ["mailto:jane.doe@example.org"]
+    assert result["creator_url"] == ["https://example.org/jane-doe"]
+    assert result["creator_type"] == ["http://xmlns.com/foaf/0.1/Person"]
     assert result["creator_identifier"] == ["https://orcid.org/0000-0002-9095-9201"]
     assert result["creator_country"] == [
         "http://publications.europa.eu/resource/authority/country/BEL"
     ]
+
+
+def test_before_dataset_index_indexes_contact_point_fields():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "extras_contact": json.dumps(
+            [
+                {
+                    "uri": "internalURI:contactPoint0",
+                    "name": "Health-RI service desk",
+                    "email": "mailto:servicedesk@health-ri.nl",
+                    "identifier": "https://ror.org/05sk8w809",
+                    "url": "https://www.health-ri.nl/contact",
+                }
+            ]
+        )
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["contact_point_uri"] == ["internalURI:contactPoint0"]
+    assert result["contact_point_name"] == ["Health-RI service desk"]
+    assert result["contact_point_email"] == ["mailto:servicedesk@health-ri.nl"]
+    assert result["contact_point_identifier"] == ["https://ror.org/05sk8w809"]
+    assert result["contact_point_url"] == ["https://www.health-ri.nl/contact"]
+    # contact is not repeating_once, so it must not collapse to a single flattened value
+    assert "extras_contact" not in result
+
+
+def test_before_dataset_index_flattens_json_encoded_contact_url_list():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "contact": [
+            {
+                "name": "Contact Point",
+                "url": json.dumps(["https://www.example.com/website_contactPoint1"]),
+            }
+        ]
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["contact_point_url"] == ["https://www.example.com/website_contactPoint1"]
+
+
+def test_before_dataset_index_indexes_multiple_contact_points():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "contact": [
+            {"name": "General enquiries", "email": "mailto:info@example.org"},
+            {"name": "Data access requests", "email": "mailto:dar@example.org"},
+        ]
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert set(result["contact_point_name"]) == {
+        "General enquiries",
+        "Data access requests",
+    }
+    assert set(result["contact_point_email"]) == {
+        "mailto:info@example.org",
+        "mailto:dar@example.org",
+    }
+
+
+def test_parse_contact_point_falls_back_to_flattened_extras_when_field_already_popped():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "extras_contact__name": "Health-RI service desk",
+        "extras_contact__email": "mailto:servicedesk@health-ri.nl",
+    }
+
+    result = plugin_instance._parse_contact_point(data_dict)
+
+    assert result["contact_point_name"] == ["Health-RI service desk"]
+    assert result["contact_point_email"] == ["mailto:servicedesk@health-ri.nl"]
+
+
+def test_parse_contact_point_fallback_reflects_dcats_space_joined_multi_contact_corruption():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"extras_contact__name": "General enquiries Data access requests"}
+
+    result = plugin_instance._parse_contact_point(data_dict)
+
+    assert result["contact_point_name"] == ["General enquiries Data access requests"]
+
+
+def test_parse_contact_point_parses_non_json_string_payload():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"contact": "Health-RI service desk"}
+
+    result = plugin_instance._parse_contact_point(data_dict)
+
+    assert result["contact_point_name"] == ["Health-RI service desk"]
+
+
+def test_parse_contact_point_accepts_single_dict_payload():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "contact": {"name": "Health-RI service desk", "email": "mailto:sd@health-ri.nl"}
+    }
+
+    result = plugin_instance._parse_contact_point(data_dict)
+
+    assert result["contact_point_name"] == ["Health-RI service desk"]
+    assert result["contact_point_email"] == ["mailto:sd@health-ri.nl"]
+
+
+def test_flatten_contact_subfield_value_returns_list_value_as_is():
+    result = plugin.GdiUserPortalPlugin._flatten_contact_subfield_value(
+        ["https://www.example.com/a", "https://www.example.com/b"]
+    )
+
+    assert result == ["https://www.example.com/a", "https://www.example.com/b"]
+
+
+def test_flatten_contact_subfield_value_wraps_malformed_json_looking_string():
+    result = plugin.GdiUserPortalPlugin._flatten_contact_subfield_value("[not-json")
+
+    assert result == ["[not-json"]
+
+
+def test_parse_repeating_field_returns_unchanged_when_field_missing():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"unrelated": "value"}
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result == {"unrelated": "value"}
+
+
+def test_parse_repeating_field_falls_back_to_flattened_extras_when_field_already_popped():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "extras_qualified_relation__uri": "https://example.org/relation/1",
+        "extras_qualified_relation__relation": "https://example.org/related-resource/1",
+    }
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result["qualified_relation_uri"] == ["https://example.org/relation/1"]
+    assert result["qualified_relation_relation"] == [
+        "https://example.org/related-resource/1"
+    ]
+    assert "qualified_relation_role" not in result
+
+
+def test_parse_repeating_field_fallback_reflects_dcats_space_joined_multi_entry_corruption():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "extras_qualified_relation__uri": (
+            "https://example.org/relation/1 https://example.org/relation/2"
+        )
+    }
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result["qualified_relation_uri"] == [
+        "https://example.org/relation/1 https://example.org/relation/2"
+    ]
+
+
+def test_parse_repeating_field_returns_unchanged_for_non_json_string_value():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"qualified_relation": "not valid json"}
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result == {"qualified_relation": "not valid json"}
+
+
+def test_parse_repeating_field_accepts_single_dict_payload():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {
+        "qualified_relation": {
+            "uri": "https://example.org/relation/1",
+            "relation": "https://example.org/related-resource/1",
+            "role": "http://www.iana.org/assignments/relation/related",
+        }
+    }
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result["qualified_relation_uri"] == ["https://example.org/relation/1"]
+
+
+def test_parse_repeating_field_returns_unchanged_for_non_list_non_dict_value():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    data_dict = {"qualified_relation": 42}
+
+    result = plugin_instance._parse_repeating_field(
+        data_dict, "qualified_relation", ("uri", "relation", "role")
+    )
+
+    assert result == {"qualified_relation": 42}
+
+
+def test_before_dataset_index_indexes_qualified_relation_single_entry():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "qualified_relation": [
+            {
+                "uri": "https://example.org/relation/1",
+                "relation": "https://example.org/related-resource/1",
+                "role": "http://www.iana.org/assignments/relation/related",
+            }
+        ]
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["qualified_relation_uri"] == ["https://example.org/relation/1"]
+    assert result["qualified_relation_relation"] == [
+        "https://example.org/related-resource/1"
+    ]
+    assert result["qualified_relation_role"] == [
+        "http://www.iana.org/assignments/relation/related"
+    ]
+    assert "qualified_relation" not in result
+
+
+def test_before_dataset_index_does_not_space_join_multiple_qualified_relation_entries():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "qualified_relation": [
+            {
+                "uri": "https://example.org/relation/1",
+                "relation": "https://example.org/related-resource/1",
+                "role": "http://www.iana.org/assignments/relation/related",
+            },
+            {
+                "uri": "https://example.org/relation/2",
+                "relation": "https://example.org/related-resource/2",
+                "role": "http://www.iana.org/assignments/relation/references",
+            },
+        ]
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert sorted(result["qualified_relation_uri"]) == [
+        "https://example.org/relation/1",
+        "https://example.org/relation/2",
+    ]
+    assert sorted(result["qualified_relation_relation"]) == [
+        "https://example.org/related-resource/1",
+        "https://example.org/related-resource/2",
+    ]
+    assert sorted(result["qualified_relation_role"]) == [
+        "http://www.iana.org/assignments/relation/references",
+        "http://www.iana.org/assignments/relation/related",
+    ]
+    assert " " not in result["qualified_relation_uri"][0]
+
+
+def test_before_dataset_index_indexes_quality_annotation_fields():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "quality_annotation": [
+            {
+                "body": "https://example.org/quality-certificate/1",
+                "target": "https://example.org/dataset/test",
+                "motivated_by": "http://www.w3.org/ns/oa#assessing",
+            }
+        ]
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["quality_annotation_body"] == [
+        "https://example.org/quality-certificate/1"
+    ]
+    assert result["quality_annotation_target"] == ["https://example.org/dataset/test"]
+    assert result["quality_annotation_motivated_by"] == [
+        "http://www.w3.org/ns/oa#assessing"
+    ]
+
+
+def test_before_dataset_index_indexes_retention_period_fields():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    input_data = {
+        "retention_period": [
+            {"start": "2026-01-01T00:00:00Z", "end": "2030-01-01T00:00:00Z"}
+        ]
+    }
+
+    result = plugin_instance.before_dataset_index(input_data.copy())
+
+    assert result["retention_period_start"] == ["2026-01-01T00:00:00Z"]
+    assert result["retention_period_end"] == ["2030-01-01T00:00:00Z"]
 
 
 def test_before_dataset_index_canonicalizes_http_https_theme_uris():

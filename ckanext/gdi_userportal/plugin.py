@@ -133,6 +133,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         "legal_basis",
         "personal_data",
         "publisher_type",
+        "contact",
     ]
 
     # IConfigurer
@@ -377,6 +378,8 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             del data_dict[extras_field]
         return data_dict
 
+    _agent_subfields = ("uri", "email", "url", "type", "identifier", "country")
+
     def _parse_agent_name(self, data_dict, field):
         if data_dict.get(field):
             values = data_dict[field]
@@ -388,23 +391,99 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             if isinstance(values, dict):
                 values = [values]
 
-            names = list(set(value.get("name") for value in values if value.get("name")))
+            names = list({value.get("name") for value in values if value.get("name")})
             data_dict[f"{field}_name"] = names
 
-            for subfield in ("identifier", "country"):
+            for subfield in self._agent_subfields:
                 subfield_values = list(
                     {value.get(subfield) for value in values if value.get(subfield)}
                 )
                 if subfield_values:
                     data_dict[f"{field}_{subfield}"] = subfield_values
         else:
-            # dcat's before_dataset_index may run first and pop data_dict[field] after
-            # flattening it into extras_{field}__*. publisher/creator are repeating_once,
-            # so a single flattened value can be used as-is without split ambiguity.
-            for subfield in ("name", "identifier", "country"):
+            for subfield in ("name",) + self._agent_subfields:
                 value = data_dict.get(f"extras_{field}__{subfield}")
                 if value:
                     data_dict[f"{field}_{subfield}"] = [value]
+        return data_dict
+
+    _contact_subfields = ("uri", "name", "email", "identifier", "url")
+
+    def _parse_contact_point(self, data_dict):
+        values = data_dict.get("contact")
+        if not values:
+            for subfield in self._contact_subfields:
+                value = data_dict.get(f"extras_contact__{subfield}")
+                if value:
+                    data_dict[f"contact_point_{subfield}"] = [value]
+            return data_dict
+
+        if isinstance(values, str):
+            try:
+                values = json.loads(values)
+            except json.JSONDecodeError:
+                values = [{"name": values}]
+        if isinstance(values, dict):
+            values = [values]
+
+        for subfield in self._contact_subfields:
+            subfield_values = set()
+            for value in values:
+                raw = value.get(subfield)
+                if raw:
+                    subfield_values.update(self._flatten_contact_subfield_value(raw))
+            if subfield_values:
+                data_dict[f"contact_point_{subfield}"] = list(subfield_values)
+
+        return data_dict
+
+    @staticmethod
+    def _flatten_contact_subfield_value(raw):
+        """`contact.url` is itself a scheming `multiple_text` preset, so a single
+        contact entry's url can be a JSON-encoded list of URLs rather than a plain
+        string, unlike the other contact subfields (uri/name/email/identifier)."""
+        if isinstance(raw, list):
+            return raw
+        if isinstance(raw, str) and raw.startswith("["):
+            try:
+                decoded = json.loads(raw)
+            except json.JSONDecodeError:
+                return [raw]
+            if isinstance(decoded, list):
+                return decoded
+        return [raw]
+
+    def _parse_repeating_field(self, data_dict, field, subfields):
+        values = data_dict.get(field)
+        if not values:
+            for subfield in subfields:
+                value = data_dict.get(f"extras_{field}__{subfield}")
+                if value:
+                    data_dict[f"{field}_{subfield}"] = [value]
+            return data_dict
+
+        if isinstance(values, str):
+            try:
+                values = json.loads(values)
+            except json.JSONDecodeError:
+                return data_dict
+        if isinstance(values, dict):
+            values = [values]
+        if not isinstance(values, list):
+            return data_dict
+
+        for subfield in subfields:
+            subfield_values = list(
+                {
+                    value.get(subfield)
+                    for value in values
+                    if isinstance(value, dict) and value.get(subfield)
+                }
+            )
+            if subfield_values:
+                data_dict[f"{field}_{subfield}"] = subfield_values
+
+        data_dict.pop(field, None)
         return data_dict
 
     def _parse_series_ids(self, in_series):
@@ -561,7 +640,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             for item in theme_value
         ]
 
-        # Keep first occurrence order while removing duplicates.
         deduplicated = []
         seen = set()
         for item in normalized:
@@ -722,8 +800,17 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         data_dict = self._parse_agent_name(data_dict, "publisher")
         data_dict = self._parse_agent_name(data_dict, "creator")
+        data_dict = self._parse_contact_point(data_dict)
+        data_dict = self._parse_repeating_field(
+            data_dict, "qualified_relation", ("uri", "relation", "role")
+        )
+        data_dict = self._parse_repeating_field(
+            data_dict, "quality_annotation", ("body", "target", "motivated_by")
+        )
+        data_dict = self._parse_repeating_field(
+            data_dict, "retention_period", ("start", "end")
+        )
 
-        # Merge tags from tags_translated into tags for Solr indexing
         data_dict = self._merge_tags_translated_for_indexing(data_dict)
         data_dict = self._add_translated_search_fields(data_dict)
 
@@ -746,12 +833,10 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         if not isinstance(tags_translated, dict):
             return data_dict
 
-        # Get existing tags
         existing_tags = data_dict.get('tags', [])
         if isinstance(existing_tags, str):
             existing_tags = [existing_tags]
 
-        # Collect all tags from tags_translated (all languages)
         seen = set(existing_tags)
         merged_tags = list(existing_tags)
 
