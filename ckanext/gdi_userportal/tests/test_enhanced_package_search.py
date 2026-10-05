@@ -186,3 +186,100 @@ class TestTemporalCoverageRangeStats:
             "max": "2024-12-31T00:00:00Z",
             "label": "temporal_coverage",
         }
+
+
+# --- label translation of search results and filter options ---
+
+IANA_RELATED = "http://www.iana.org/assignments/relation/related"
+THEME_URI = "http://www.wikidata.org/entity/Q7907952"
+
+
+def _search_result():
+    return {
+        "count": 1,
+        "results": [
+            {
+                "title": "Dataset",
+                "qualified_relation": [
+                    {"relation": "http://example.com/dataset", "role": IANA_RELATED}
+                ],
+            }
+        ],
+        "search_facets": {
+            "health_theme": {
+                "title": "health_theme",
+                "items": [
+                    {"name": THEME_URI, "count": 3},
+                    {"name": "http://www.wikidata.org/entity/Q58624061", "count": 1},
+                ],
+            }
+        },
+    }
+
+
+def test_collect_search_values_to_translate_covers_results_and_facet_items():
+    from ckanext.gdi_userportal.logic.action.translation_utils import (
+        collect_search_values_to_translate,
+        collect_values_to_translate,
+    )
+
+    result = _search_result()
+
+    values = collect_search_values_to_translate(result)
+
+    assert IANA_RELATED in values
+    assert THEME_URI in values
+    assert "http://www.wikidata.org/entity/Q58624061" in values
+    assert len(values) == len(set(values))
+    # collecting from the whole response (the old behaviour) found nothing
+    assert collect_values_to_translate(result) == []
+
+
+def _run_search_action(action, module, data_dict):
+    translations = {THEME_URI: "Health theme label", IANA_RELATED: "Related"}
+    package_search = MagicMock(return_value=_search_result())
+    with patch(
+        f"ckanext.gdi_userportal.logic.action.{module}.toolkit.get_action",
+        return_value=package_search,
+    ), patch(
+        f"ckanext.gdi_userportal.logic.action.{module}.get_request_language",
+        return_value="en",
+    ), patch(
+        f"ckanext.gdi_userportal.logic.action.{module}.get_translations",
+        return_value=translations,
+    ) as get_translations, patch(
+        "ckanext.gdi_userportal.logic.action.translation_utils.get_translations",
+        return_value={},
+    ):
+        result = action({}, data_dict)
+    return result, get_translations.call_args[0][0]
+
+
+def _assert_search_labels_resolved(result, requested_terms):
+    assert IANA_RELATED in requested_terms
+    assert THEME_URI in requested_terms
+    items = result["search_facets"]["health_theme"]["items"]
+    labels = {item["name"]: item["display_name"] for item in items}
+    assert labels[THEME_URI] == "Health theme label"
+    relation = result["results"][0]["qualified_relation"][0]
+    assert relation["role"]["display_name"] == "Related"
+
+
+def test_get_enhanced_package_search_translates_results_and_facet_items():
+    result, requested_terms = _run_search_action(
+        enhanced_package_search, "get", {"q": "test"}
+    )
+
+    _assert_search_labels_resolved(result, requested_terms)
+
+
+def test_post_enhanced_package_search_translates_results_and_facet_items():
+    from ckanext.gdi_userportal.logic.action.post import (
+        enhanced_package_search as post_enhanced_package_search,
+    )
+
+    result, requested_terms = _run_search_action(
+        post_enhanced_package_search, "post", {"q": "test"}
+    )
+
+    _assert_search_labels_resolved(result, requested_terms)
