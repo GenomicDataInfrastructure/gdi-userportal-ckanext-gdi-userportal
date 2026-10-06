@@ -649,34 +649,7 @@ dataset_fields:
         label: Agent
         repeating_label: Agent
         repeating_once: true
-        repeating_subfields:
-          - field_name: uri
-            label: URI
-
-          - field_name: name
-            label: Name
-
-          - field_name: name_translated
-            label: Name (translations)
-            help_text: Agent name in each language.
-
-          - field_name: email
-            label: Email
-            display_snippet: email.html
-
-          - field_name: url
-            label: URL
-            display_snippet: link.html
-
-          - field_name: homepage
-            label: Homepage
-            display_snippet: link.html
-
-          - field_name: type
-            label: Type
-
-          - field_name: identifier
-            label: Identifier
+        repeating_subfields: *agent_subfields
 
       - field_name: role
         label: Role

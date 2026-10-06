@@ -2,9 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Country and identifier of agents (publisher, creator) hold several values."""
+"""Country and identifier of agents (publisher, creator, qualified attribution) hold several values."""
+
+from pathlib import Path
 
 import pytest
+import yaml
 
 from ckanext.gdi_userportal import plugin
 from ckanext.gdi_userportal.logic.action.translation_utils import (
@@ -95,3 +98,38 @@ class TestReadTimeTranslation:
         values = collect_values_to_translate(package)
 
         assert NLD in values and DEU in values
+
+
+class TestQualifiedAttributionAgentSchema:
+    """A qualified attribution agent is an agent like a publisher or a creator."""
+
+    SCHEMA = Path(plugin.__file__).parent / "scheming" / "schemas" / "dataset_multilingual.yaml"
+
+    @staticmethod
+    def _subfields(field):
+        return [subfield["field_name"] for subfield in field["repeating_subfields"]]
+
+    def _fields(self):
+        schema = yaml.safe_load(self.SCHEMA.read_text())
+        return {field["field_name"]: field for field in schema["dataset_fields"]}
+
+    def test_qualified_attribution_agent_has_the_subfields_of_a_publisher_and_a_creator(self):
+        fields = self._fields()
+        agent = next(
+            subfield
+            for subfield in fields["qualified_attribution"]["repeating_subfields"]
+            if subfield["field_name"] == "agent"
+        )
+
+        assert self._subfields(agent) == self._subfields(fields["publisher"])
+        assert self._subfields(agent) == self._subfields(fields["creator"])
+
+    def test_qualified_attribution_agent_stores_country_and_identifier(self):
+        fields = self._fields()
+        agent = next(
+            subfield
+            for subfield in fields["qualified_attribution"]["repeating_subfields"]
+            if subfield["field_name"] == "agent"
+        )
+
+        assert {"country", "identifier"} <= set(self._subfields(agent))
