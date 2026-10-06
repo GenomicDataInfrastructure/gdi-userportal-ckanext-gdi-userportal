@@ -12,7 +12,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.14.0] - 2026-09-23
+
+### Changed
+- Update plugin.py by @Quinten in c97d351
+- Update test_plugin.py by @Quinten in 42962c2
+- Update schema.xml by @Quinten in b50d313
+- Handle flattened fallback for repeated fields by @Quinten in 4fcf715
+- Update dataset_multilingual.yaml by @Quinten in 071cc80
+- Update dataset_multilingual.yaml by @Quinten in 24e5a1e
+- Fail fast on translations and clean schema by @Quinten in c9e7a76
+- Update .github/workflows/release.yml by @Quinten in f1655ba
+- Update dataset_multilingual.yaml by @Quinten in 3c40e78
+- Add translations for dataset status terms by @Quinten in a693d4b
+- Update dataset_multilingual.yaml by @Quinten in 4ae6f69
+- Handle flattened publisher/creator fallback by @Quinten in a93fd45
+- Update test_plugin.py by @Quinten in f67f4a5
+- Update release.yml by @Quinten in db2d8ee
+- Update release.yml by @Quinten in ee8e43a
+- Index agent country metadata by @Quinten in 47db758
+- Update release.yml by @Quinten in ccea015
+- Rename provenance activity field by @Quinten in 179a71d
+- Feat: Translate provenance activity dct_type by @Quinten in 76fd1d6
+- Add dataset status field to schema by @Quinten in 4574679
+- Fix formatting in schema.xml for unique individuals field by @Quinten in 1495bed
+- Fix formatting of number_of_records field in schema by @Quinten in 72fd6da
+- Update schema.xml by @Quinten in f72c662
+- Update schema.xml by @Quinten in 300a37d
+- Update schema.xml by @Quinten in 9f8b1d5
+- move line by @Quinten in 2efec2d
+- Update requirements.txt by @Quinten in 626ea92
+- Clean up CHANGELOG by removing empty section by @Quinten in 82508f5
+- Update trivy_db_cache.yml by @Quinten in 9bb1c77
+- Clean up CHANGELOG by removing redundant entries by @Quinten in 01a3107
+- Update trivy_db_cache.yml by @Quinten in 88740a5
+- Update schema.xml by @Quinten in 056ba9c
+
+
+### Fixed
+- fix: suppress unpatched netty CVE-2026-75595 in solr image scan (#450) by @Quinten in 181d740
+- fix: resolve country as a label for creator and publisher by @Quinten in a021fde
+- fix: close Solr indexing gaps and multi-entry field corruption by @Quinten in 6963649
+
+
 ## [v1.13.0] - 2026-07-20
+
+## Changed
+- doc: update CHANGELOG.md for v1.13.0 by @LNDS-Sysadmins in 5d4cf91
+- chore(deps): update botocore monorepo to v1.43.51 by @Renovate Bot in 55f0385
+- chore(deps): update opentelemetry monorepo to v1.44.0 by @Renovate Bot in fbf526d
+- chore(deps): update sonarsource/sonarqube-scan-action action to v8.2.1 by @Renovate Bot in 329942d
+- chore(deps): update oras-project/setup-oras digest to 1d808f7 by @Renovate Bot in 34648e4
+- chore(deps): update astral-sh/setup-uv action to v8.3.2 by @Renovate Bot in 6b4ded7
+- doc: update CHANGELOG.md for v1.12.0 by @LNDS-Sysadmins in fbe987e
 
 
 ## [v1.12.0] - 2026-07-06
