@@ -85,7 +85,7 @@ dataset_fields:
 
       - field_name: name_translated
         label: Name (translations)
-        help_text: Name of the entity or person who published the dataset in each language.
+        help_text: Name of the entity or person in each language.
 
       - field_name: email
         label: Email
@@ -101,21 +101,21 @@ dataset_fields:
       - field_name: publisher_note
         label: Publisher note
         preset: fluent_markdown
-        help_text: A description of the publisher activities.
+        help_text: A description of the activities of the agent.
 
       - field_name: publisher_type
         label: Publisher type
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text
-        help_text: A type of organisation that makes the Dataset available.
+        help_text: Type of organisation of the agent.
 
       - field_name: identifier
         label: Identifier
-        help_text: Unique identifier for the publisher, such as a ROR ID.
+        help_text: Unique identifier for the agent, such as a ROR or ORCID ID.
 
       - field_name: country
         label: Country
-        help_text: Country of the publisher, per the EU Publications Office country authority table.
+        help_text: Country of the agent, per the EU Publications Office country authority table.
     help_text: Entity responsible for making the dataset available.
 
   - field_name: creator
