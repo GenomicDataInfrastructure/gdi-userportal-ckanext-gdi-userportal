@@ -70,7 +70,7 @@ ACCESS_SERVICES_REPLACE_FIELDS = [
 NESTED_FIELD_TRANSLATIONS = {
     "qualified_relation": {"role"},
     "qualified_attribution": {"role", "agent"},
-    "agent": {"type"},
+    "agent": {"publisher_type", "type", "country"},
     "quality_annotation": {"body"},
     "spatial_coverage": {"uri"},
     "creator": {"publisher_type", "type", "country"},

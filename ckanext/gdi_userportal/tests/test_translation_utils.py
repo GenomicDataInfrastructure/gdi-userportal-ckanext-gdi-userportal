@@ -457,6 +457,40 @@ def test_replace_package_translates_nested_values():
     assert associated_agent["actedOnBehalfOf"][0]["type"]["display_name"] == "Translated Org Type"
 
 
+def test_replace_package_translates_the_country_and_types_of_a_qualified_attribution_agent():
+    deu = "http://publications.europa.eu/resource/authority/country/DEU"
+    fra = "http://publications.europa.eu/resource/authority/country/FRA"
+    package = {
+        "qualified_attribution": [
+            {
+                "role": "http://example.com/role",
+                "agent": [
+                    {
+                        "name": "Agent",
+                        "type": "http://example.com/agent-type",
+                        "publisher_type": ["http://example.com/agent-publisher-type"],
+                        "country": [deu, fra],
+                    }
+                ],
+            }
+        ]
+    }
+    translation_dict = {
+        deu: "Germany",
+        fra: "France",
+        "http://example.com/agent-type": "Translated Agent Type",
+        "http://example.com/agent-publisher-type": "Translated Publisher Type",
+    }
+
+    agent = replace_package(package, translation_dict, lang="en")[
+        "qualified_attribution"
+    ][0]["agent"][0]
+
+    assert [country["display_name"] for country in agent["country"]] == ["Germany", "France"]
+    assert agent["type"]["display_name"] == "Translated Agent Type"
+    assert [t["display_name"] for t in agent["publisher_type"]] == ["Translated Publisher Type"]
+
+
 def test_replace_package_normalizes_tags_to_strings():
     package = deepcopy(_base_package())
     package["tags"] = [
