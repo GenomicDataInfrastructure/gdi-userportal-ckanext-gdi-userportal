@@ -16,6 +16,8 @@ for path in (ROOT_DIR, SRC_DIR):
 
 from unittest.mock import patch
 
+import pytest
+
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     _merge_tags_translated_into_tags,
     collect_values_to_translate,
@@ -334,6 +336,34 @@ def test_replace_search_facets_sort_is_deterministic_for_equal_labels():
             result = replace_search_facets(facets, translation_dict, lang="en")
 
         assert [i["name"] for i in result["theme"]["items"]] == ["x", "y"]
+
+
+def _facet_item_names(names, translation_dict):
+    facets = {"theme": {"title": "Theme", "items": [{"name": n} for n in names]}}
+    with patch(
+        "ckanext.gdi_userportal.logic.action.translation_utils.get_translations",
+        return_value={},
+    ):
+        result = replace_search_facets(facets, translation_dict, lang="en")
+
+    return [i["name"] for i in result["theme"]["items"]]
+
+
+def test_replace_search_facets_orders_identical_labels_by_name():
+    translation_dict = {"x": "Same", "y": "Same", "z": "Same"}
+
+    for names in (["x", "y", "z"], ["z", "y", "x"], ["y", "z", "x"]):
+        assert _facet_item_names(names, translation_dict) == ["x", "y", "z"]
+
+
+@pytest.mark.parametrize(
+    "upper, lower",
+    [("A", "a"), ("Ä", "ä"), ("Σ", "σ"), ("ẞ", "ß"), ("Ა", "ა")],
+)
+def test_replace_search_facets_puts_uppercase_first_in_any_alphabet(upper, lower):
+    # ß/ẞ and the Georgian pair have the lowercase letter on the lower code point
+    for names in ([lower, upper], [upper, lower]):
+        assert _facet_item_names(names, {}) == [upper, lower]
 
 
 def test_replace_search_facets_sorts_each_facet_and_keeps_counts():
