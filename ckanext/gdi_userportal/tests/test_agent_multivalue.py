@@ -4,6 +4,7 @@
 
 """Country and identifier of agents (publisher, creator, qualified attribution) hold several values."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -59,6 +60,19 @@ class TestSolrIndexing:
 
         assert "creator_country" not in result
         assert "creator_identifier" not in result
+
+    def test_values_of_the_flat_extras_are_indexed_one_by_one(self):
+        data_dict = {
+            "extras_publisher__name": "Org",
+            "extras_publisher__country": json.dumps([NLD, DEU]),
+            "extras_publisher__identifier": "id-1",
+        }
+
+        result = plugin.GdiUserPortalPlugin()._parse_agent_name(data_dict, "publisher")
+
+        assert result["publisher_name"] == ["Org"]
+        assert sorted(result["publisher_country"]) == sorted([NLD, DEU])
+        assert result["publisher_identifier"] == ["id-1"]
 
 
 class TestReadTimeTranslation:
