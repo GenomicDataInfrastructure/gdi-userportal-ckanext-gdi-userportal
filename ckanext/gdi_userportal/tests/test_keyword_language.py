@@ -65,7 +65,7 @@ class TestDatasetKeywords:
     def test_other_languages_are_not_mixed_in(self):
         package = _dataset(tags=["genomics"], tags_translated=TRANSLATED)
 
-        assert "genomics" not in _tags(package, "nl")
+        assert _tags(package, "nl") == ["genomica", "gezondheid"]
 
     def test_blank_and_duplicate_keywords_are_dropped(self):
         translated = {"nl": [" genomica ", "genomica", "", None]}
@@ -119,8 +119,12 @@ class TestAccessServiceKeywords:
             for service in resource["access_services"]
         ] == [["een"], ["twee"], ["three"]]
 
-    @pytest.mark.parametrize("resources", [None, [], [{}], [{"access_services": None}]])
-    def test_resources_without_access_services_are_left_alone(self, resources):
-        package = {} if resources is None else {"resources": resources}
+    def test_package_without_resources_gets_an_empty_list(self):
+        assert replace_package({}, {}, "nl")["resources"] == []
 
-        replace_package(package, {}, "nl")
+    @pytest.mark.parametrize("resources", [[], [{}], [{"access_services": None}]])
+    def test_resources_without_access_services_get_an_empty_list(self, resources):
+        result = replace_package({"resources": resources}, {}, "nl")
+
+        assert len(result["resources"]) == len(resources)
+        assert [r["access_services"] for r in result["resources"]] == [[]] * len(resources)
