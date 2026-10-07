@@ -70,7 +70,7 @@ ACCESS_SERVICES_REPLACE_FIELDS = [
 NESTED_FIELD_TRANSLATIONS = {
     "qualified_relation": {"role"},
     "qualified_attribution": {"role", "agent"},
-    "agent": {"type"},
+    "agent": {"publisher_type", "type", "country"},
     "quality_annotation": {"body"},
     "spatial_coverage": {"uri"},
     "creator": {"publisher_type", "type", "country"},
@@ -310,6 +310,17 @@ def collect_values_to_translate(data: Any) -> List:
                 values_to_translate = _select_and_append_values(
                     access_service, ACCESS_SERVICES_REPLACE_FIELDS, values_to_translate
                 )
+    return list(set(values_to_translate))
+
+
+def collect_search_values_to_translate(result: Dict) -> List:
+    """Values to translate for a package_search result: the labels used in the
+    returned packages plus the value of every facet item (filter option)."""
+    values_to_translate = collect_values_to_translate(result.get("results", []))
+    for facet in result.get("search_facets", {}).values():
+        values_to_translate.extend(
+            item["name"] for item in facet.get("items", []) if "name" in item
+        )
     return list(set(values_to_translate))
 
 

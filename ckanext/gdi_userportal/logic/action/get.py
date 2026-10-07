@@ -11,6 +11,7 @@ import json
 
 from ckan.plugins import toolkit
 from ckanext.gdi_userportal.logic.action.translation_utils import (
+    collect_search_values_to_translate,
     collect_values_to_translate,
     get_request_language,
     get_preferred_language,
@@ -56,7 +57,7 @@ def enhanced_package_search(context, data_dict) -> dict:
     stats_fields = _extract_requested_stats_fields(data_dict)
 
     result = toolkit.get_action("package_search")(context, data_dict)
-    values_to_translate = collect_values_to_translate(result)
+    values_to_translate = collect_search_values_to_translate(result)
     lang = get_request_language()
     translations = get_translations(values_to_translate, lang=lang)
     result["results"] = [

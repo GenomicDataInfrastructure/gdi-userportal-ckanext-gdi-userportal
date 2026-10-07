@@ -1,0 +1,220 @@
+term,term_translation,lang_code
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/resourceProvider,Resource Provider,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/resourceProvider,Gegevensaanbieder,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/resourceProvider,Resource Provider,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/resourceProvider,Gegevensaanbieder,nl
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/custodian,Custodian,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/custodian,Houder,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/custodian,Custodian,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/custodian,Houder,nl
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/owner,Owner,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/owner,Eigenaar,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/owner,Owner,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/owner,Eigenaar,nl
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/user,User,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/user,Gebruiker,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/user,User,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/user,Gebruiker,nl
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/distributor,Distributor,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/distributor,Distributeur,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/distributor,Distributor,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/distributor,Distributeur,nl
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/originator,Originator,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/originator,Originele maker,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/originator,Originator,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/originator,Originele maker,nl
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/pointOfContact,Point of Contact,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/pointOfContact,Contact,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/pointOfContact,Point of Contact,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/pointOfContact,Contact,nl
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/principalInvestigator,Principal Investigator,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/principalInvestigator,Hoofdonderzoeker,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/principalInvestigator,Principal Investigator,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/principalInvestigator,Hoofdonderzoeker,nl
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/processor,Processor,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/processor,Verwerker,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/processor,Processor,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/processor,Verwerker,nl
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/publisher,Publisher,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/publisher,Publicerende partij,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/publisher,Publisher,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/publisher,Publicerende partij,nl
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/author,Author,en
+http://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/author,Auteur,nl
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/author,Author,en
+https://inspire.ec.europa.eu/metadata-codelist/ResponsiblePartyRole/author,Auteur,nl
+http://www.iana.org/assignments/relation/about,About,en
+https://www.iana.org/assignments/relation/about,About,en
+http://www.iana.org/assignments/relation/alternate,Alternate,en
+https://www.iana.org/assignments/relation/alternate,Alternate,en
+http://www.iana.org/assignments/relation/appendix,Appendix,en
+https://www.iana.org/assignments/relation/appendix,Appendix,en
+http://www.iana.org/assignments/relation/archives,Archives,en
+https://www.iana.org/assignments/relation/archives,Archives,en
+http://www.iana.org/assignments/relation/author,Author,en
+https://www.iana.org/assignments/relation/author,Author,en
+http://www.iana.org/assignments/relation/bookmark,Bookmark,en
+https://www.iana.org/assignments/relation/bookmark,Bookmark,en
+http://www.iana.org/assignments/relation/canonical,Canonical,en
+https://www.iana.org/assignments/relation/canonical,Canonical,en
+http://www.iana.org/assignments/relation/chapter,Chapter,en
+https://www.iana.org/assignments/relation/chapter,Chapter,en
+http://www.iana.org/assignments/relation/cite-as,Cite As,en
+https://www.iana.org/assignments/relation/cite-as,Cite As,en
+http://www.iana.org/assignments/relation/collection,Collection,en
+https://www.iana.org/assignments/relation/collection,Collection,en
+http://www.iana.org/assignments/relation/contents,Contents,en
+https://www.iana.org/assignments/relation/contents,Contents,en
+http://www.iana.org/assignments/relation/copyright,Copyright,en
+https://www.iana.org/assignments/relation/copyright,Copyright,en
+http://www.iana.org/assignments/relation/create-form,Create Form,en
+https://www.iana.org/assignments/relation/create-form,Create Form,en
+http://www.iana.org/assignments/relation/current,Current,en
+https://www.iana.org/assignments/relation/current,Current,en
+http://www.iana.org/assignments/relation/describedby,Described By,en
+https://www.iana.org/assignments/relation/describedby,Described By,en
+http://www.iana.org/assignments/relation/describes,Describes,en
+https://www.iana.org/assignments/relation/describes,Describes,en
+http://www.iana.org/assignments/relation/disclosure,Disclosure,en
+https://www.iana.org/assignments/relation/disclosure,Disclosure,en
+http://www.iana.org/assignments/relation/dns-prefetch,DNS Prefetch,en
+https://www.iana.org/assignments/relation/dns-prefetch,DNS Prefetch,en
+http://www.iana.org/assignments/relation/duplicate,Duplicate,en
+https://www.iana.org/assignments/relation/duplicate,Duplicate,en
+http://www.iana.org/assignments/relation/edit,Edit,en
+https://www.iana.org/assignments/relation/edit,Edit,en
+http://www.iana.org/assignments/relation/edit-form,Edit Form,en
+https://www.iana.org/assignments/relation/edit-form,Edit Form,en
+http://www.iana.org/assignments/relation/edit-media,Edit Media,en
+https://www.iana.org/assignments/relation/edit-media,Edit Media,en
+http://www.iana.org/assignments/relation/enclosure,Enclosure,en
+https://www.iana.org/assignments/relation/enclosure,Enclosure,en
+http://www.iana.org/assignments/relation/first,First,en
+https://www.iana.org/assignments/relation/first,First,en
+http://www.iana.org/assignments/relation/glossary,Glossary,en
+https://www.iana.org/assignments/relation/glossary,Glossary,en
+http://www.iana.org/assignments/relation/help,Help,en
+https://www.iana.org/assignments/relation/help,Help,en
+http://www.iana.org/assignments/relation/hub,Hub,en
+https://www.iana.org/assignments/relation/hub,Hub,en
+http://www.iana.org/assignments/relation/icon,Icon,en
+https://www.iana.org/assignments/relation/icon,Icon,en
+http://www.iana.org/assignments/relation/index,Index,en
+https://www.iana.org/assignments/relation/index,Index,en
+http://www.iana.org/assignments/relation/item,Item,en
+https://www.iana.org/assignments/relation/item,Item,en
+http://www.iana.org/assignments/relation/last,Last,en
+https://www.iana.org/assignments/relation/last,Last,en
+http://www.iana.org/assignments/relation/latest-version,Latest Version,en
+https://www.iana.org/assignments/relation/latest-version,Latest Version,en
+http://www.iana.org/assignments/relation/license,License,en
+https://www.iana.org/assignments/relation/license,License,en
+http://www.iana.org/assignments/relation/lrdd,Link Resource Descriptor,en
+https://www.iana.org/assignments/relation/lrdd,Link Resource Descriptor,en
+http://www.iana.org/assignments/relation/mask-icon,Mask Icon,en
+https://www.iana.org/assignments/relation/mask-icon,Mask Icon,en
+http://www.iana.org/assignments/relation/media-feed,Media Feed,en
+https://www.iana.org/assignments/relation/media-feed,Media Feed,en
+http://www.iana.org/assignments/relation/memento,Memento,en
+https://www.iana.org/assignments/relation/memento,Memento,en
+http://www.iana.org/assignments/relation/monitor,Monitor,en
+https://www.iana.org/assignments/relation/monitor,Monitor,en
+http://www.iana.org/assignments/relation/monitor-group,Monitor Group,en
+https://www.iana.org/assignments/relation/monitor-group,Monitor Group,en
+http://www.iana.org/assignments/relation/next,Next,en
+https://www.iana.org/assignments/relation/next,Next,en
+http://www.iana.org/assignments/relation/next-archive,Next Archive,en
+https://www.iana.org/assignments/relation/next-archive,Next Archive,en
+http://www.iana.org/assignments/relation/nofollow,No Follow,en
+https://www.iana.org/assignments/relation/nofollow,No Follow,en
+http://www.iana.org/assignments/relation/noreferrer,No Referrer,en
+https://www.iana.org/assignments/relation/noreferrer,No Referrer,en
+http://www.iana.org/assignments/relation/opener,Opener,en
+https://www.iana.org/assignments/relation/opener,Opener,en
+http://www.iana.org/assignments/relation/original,Original,en
+https://www.iana.org/assignments/relation/original,Original,en
+http://www.iana.org/assignments/relation/payment,Payment,en
+https://www.iana.org/assignments/relation/payment,Payment,en
+http://www.iana.org/assignments/relation/preconnect,Preconnect,en
+https://www.iana.org/assignments/relation/preconnect,Preconnect,en
+http://www.iana.org/assignments/relation/predecessor-version,Predecessor Version,en
+https://www.iana.org/assignments/relation/predecessor-version,Predecessor Version,en
+http://www.iana.org/assignments/relation/prefetch,Prefetch,en
+https://www.iana.org/assignments/relation/prefetch,Prefetch,en
+http://www.iana.org/assignments/relation/preload,Preload,en
+https://www.iana.org/assignments/relation/preload,Preload,en
+http://www.iana.org/assignments/relation/prerender,Prerender,en
+https://www.iana.org/assignments/relation/prerender,Prerender,en
+http://www.iana.org/assignments/relation/prev,Previous,en
+https://www.iana.org/assignments/relation/prev,Previous,en
+http://www.iana.org/assignments/relation/prev-archive,Previous Archive,en
+https://www.iana.org/assignments/relation/prev-archive,Previous Archive,en
+http://www.iana.org/assignments/relation/preview,Preview,en
+https://www.iana.org/assignments/relation/preview,Preview,en
+http://www.iana.org/assignments/relation/previous,Previous,en
+https://www.iana.org/assignments/relation/previous,Previous,en
+http://www.iana.org/assignments/relation/privacy-policy,Privacy Policy,en
+https://www.iana.org/assignments/relation/privacy-policy,Privacy Policy,en
+http://www.iana.org/assignments/relation/profile,Profile,en
+https://www.iana.org/assignments/relation/profile,Profile,en
+http://www.iana.org/assignments/relation/publication,Publication,en
+https://www.iana.org/assignments/relation/publication,Publication,en
+http://www.iana.org/assignments/relation/related,Related,en
+https://www.iana.org/assignments/relation/related,Related,en
+http://www.iana.org/assignments/relation/replies,Replies,en
+https://www.iana.org/assignments/relation/replies,Replies,en
+http://www.iana.org/assignments/relation/restconf,RESTCONF,en
+https://www.iana.org/assignments/relation/restconf,RESTCONF,en
+http://www.iana.org/assignments/relation/search,Search,en
+https://www.iana.org/assignments/relation/search,Search,en
+http://www.iana.org/assignments/relation/section,Section,en
+https://www.iana.org/assignments/relation/section,Section,en
+http://www.iana.org/assignments/relation/self,Self,en
+https://www.iana.org/assignments/relation/self,Self,en
+http://www.iana.org/assignments/relation/service,Service,en
+https://www.iana.org/assignments/relation/service,Service,en
+http://www.iana.org/assignments/relation/service-desc,Service Descriptor,en
+https://www.iana.org/assignments/relation/service-desc,Service Descriptor,en
+http://www.iana.org/assignments/relation/service-meta,Service Metadata,en
+https://www.iana.org/assignments/relation/service-meta,Service Metadata,en
+http://www.iana.org/assignments/relation/successor-version,Successor Version,en
+https://www.iana.org/assignments/relation/successor-version,Successor Version,en
+http://www.iana.org/assignments/relation/sunset,Sunset,en
+https://www.iana.org/assignments/relation/sunset,Sunset,en
+http://www.iana.org/assignments/relation/tag,Tag,en
+https://www.iana.org/assignments/relation/tag,Tag,en
+http://www.iana.org/assignments/relation/terms-of-service,Terms of Service,en
+https://www.iana.org/assignments/relation/terms-of-service,Terms of Service,en
+http://www.iana.org/assignments/relation/timegate,Time Gate,en
+https://www.iana.org/assignments/relation/timegate,Time Gate,en
+http://www.iana.org/assignments/relation/timemap,Time Map,en
+https://www.iana.org/assignments/relation/timemap,Time Map,en
+http://www.iana.org/assignments/relation/type,Type,en
+https://www.iana.org/assignments/relation/type,Type,en
+http://www.iana.org/assignments/relation/ugc,User Generated Content,en
+https://www.iana.org/assignments/relation/ugc,User Generated Content,en
+http://www.iana.org/assignments/relation/up,Up,en
+https://www.iana.org/assignments/relation/up,Up,en
+http://www.iana.org/assignments/relation/version-history,Version History,en
+https://www.iana.org/assignments/relation/version-history,Version History,en
+http://www.iana.org/assignments/relation/via,Via,en
+https://www.iana.org/assignments/relation/via,Via,en
+http://www.iana.org/assignments/relation/webmention,Webmention,en
+https://www.iana.org/assignments/relation/webmention,Webmention,en
+http://spdx.org/rdf/terms#checksumAlgorithm_adler32,ADLER32,en
+http://spdx.org/rdf/terms#checksumAlgorithm_blake2b256,BLAKE2b-256,en
+http://spdx.org/rdf/terms#checksumAlgorithm_blake2b384,BLAKE2b-384,en
+http://spdx.org/rdf/terms#checksumAlgorithm_blake2b512,BLAKE2b-512,en
+http://spdx.org/rdf/terms#checksumAlgorithm_blake3,BLAKE3,en
+http://spdx.org/rdf/terms#checksumAlgorithm_md2,MD2,en
+http://spdx.org/rdf/terms#checksumAlgorithm_md4,MD4,en
+http://spdx.org/rdf/terms#checksumAlgorithm_md5,MD5,en
+http://spdx.org/rdf/terms#checksumAlgorithm_md6,MD6,en
+http://spdx.org/rdf/terms#checksumAlgorithm_sha1,SHA-1,en
+http://spdx.org/rdf/terms#checksumAlgorithm_sha224,SHA-224,en
+http://spdx.org/rdf/terms#checksumAlgorithm_sha256,SHA-256,en
+http://spdx.org/rdf/terms#checksumAlgorithm_sha384,SHA-384,en
+http://spdx.org/rdf/terms#checksumAlgorithm_sha512,SHA-512,en
+http://spdx.org/rdf/terms#checksumAlgorithm_sha3_256,SHA3-256,en
+http://spdx.org/rdf/terms#checksumAlgorithm_sha3_384,SHA3-384,en
+http://spdx.org/rdf/terms#checksumAlgorithm_sha3_512,SHA3-512,en
