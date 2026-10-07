@@ -971,6 +971,10 @@ resource_fields:
         form_placeholder: eg. economy, mental health, government
         help_text: Keywords or tags describing the data service. Use commas to separate multiple values.
 
+      - field_name: keyword_translated
+        label: Keywords (translations)
+        help_text: Keywords describing the data service in each language.
+
       - field_name: applicable_legislation
         label: Applicable legislation
         preset: multiple_text

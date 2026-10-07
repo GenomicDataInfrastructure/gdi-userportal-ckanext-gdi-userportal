@@ -317,7 +317,7 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
     preferred_lang = get_preferred_language(lang)
 
     _apply_translated_properties(data, preferred_lang)
-    _merge_tags_translated_into_tags(data)
+    _select_keywords_in_language(data, "tags", "tags_translated", preferred_lang)
     _normalize_tags_field(data)
 
     data = _translate_fields(data, PACKAGE_REPLACE_FIELDS, translation_dict)
@@ -325,7 +325,11 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
 
     for resource in resources:
         resource = _translate_fields(resource, RESOURCE_REPLACE_FIELDS, translation_dict)
-        access_services = resource.get("access_services", [])
+        access_services = resource.get("access_services") or []
+        for access_service in access_services:
+            _select_keywords_in_language(
+                access_service, "keyword", "keyword_translated", preferred_lang
+            )
         resource["access_services"] = [
             _translate_fields(access_service, ACCESS_SERVICES_REPLACE_FIELDS, translation_dict)
             for access_service in access_services
@@ -335,52 +339,37 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
     return data
 
 
-def _merge_tags_translated_into_tags(data: Any) -> None:
+def _keywords_of(values: Any) -> List[str]:
+    if not isinstance(values, list):
+        return []
+    keywords = []
+    for value in values:
+        if isinstance(value, str) and value.strip() and value.strip() not in keywords:
+            keywords.append(value.strip())
+    return keywords
+
+
+def _select_keywords_in_language(
+    data: Any, field: str, translated_field: str, lang: str
+) -> None:
     """
-    Merges tags from tags_translated into the standard tags field.
-    
-    tags_translated is a multilingual dict like {"en": ["tag1", "tag2"], "nl": ["tag3"]}.
-    This function extracts all tag values and merges them into the tags field,
-    ensuring tags are searchable via CKAN's standard tag filtering.
+    Replace the keywords in `field` by the ones of `translated_field` in the preferred
+    language, falling back to English and then to any language. `translated_field` is a
+    multilingual dict like {"en": ["tag1"], "nl": ["tag2"]}. Without usable translations
+    the plain keywords stay as they are.
     """
     if not isinstance(data, dict):
         return
 
-    tags_translated = data.get("tags_translated")
-    if not tags_translated or not isinstance(tags_translated, dict):
+    translated = data.get(translated_field)
+    if not isinstance(translated, dict):
         return
 
-    # Get existing tags
-    existing_tags = data.get("tags")
-    if not isinstance(existing_tags, list):
-        existing_tags = []
-
-    # Collect all tags from tags_translated (all languages)
-    translated_tags = set()
-    for lang_tags in tags_translated.values():
-        if isinstance(lang_tags, list):
-            for tag in lang_tags:
-                if isinstance(tag, str) and tag.strip():
-                    translated_tags.add(tag.strip())
-
-    # Merge with existing tags, preserving order and removing duplicates
-    seen = set()
-    merged_tags = []
-    
-    # First add existing tags
-    for tag in existing_tags:
-        tag_str = tag if isinstance(tag, str) else (tag.get("name") if isinstance(tag, dict) else None)
-        if tag_str and tag_str not in seen:
-            seen.add(tag_str)
-            merged_tags.append(tag)
-    
-    # Then add translated tags that aren't already present
-    for tag in translated_tags:
-        if tag not in seen:
-            seen.add(tag)
-            merged_tags.append(tag)
-
-    data["tags"] = merged_tags
+    for code in (lang, DEFAULT_FALLBACK_LANG, *translated):
+        keywords = _keywords_of(translated.get(code))
+        if keywords:
+            data[field] = keywords
+            return
 
 
 def _normalize_tags_field(data: Any) -> None:
