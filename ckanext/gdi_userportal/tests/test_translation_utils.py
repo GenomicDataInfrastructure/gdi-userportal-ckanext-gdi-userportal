@@ -16,6 +16,8 @@ for path in (ROOT_DIR, SRC_DIR):
 
 from unittest.mock import patch
 
+import pytest
+
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     _merge_tags_translated_into_tags,
     collect_values_to_translate,
@@ -275,6 +277,115 @@ def test_replace_search_facets_falls_back_to_term_name():
     format_facet = result["format"]
     assert format_facet["title"] == "Format"
     assert format_facet["items"][0]["display_name"] == "csv"
+
+
+def _display_names(result, facet):
+    return [item["display_name"] for item in result[facet]["items"]]
+
+
+def test_replace_search_facets_sorts_items_ascending_ignoring_case():
+    # CKAN core hands the items over reversed and case-sensitive (z..aZ..A)
+    facets = {
+        "theme": {
+            "title": "Theme",
+            "items": [{"name": n} for n in ["z", "b", "C", "a", "B", "A", "c"]],
+        }
+    }
+
+    with patch(
+        "ckanext.gdi_userportal.logic.action.translation_utils.get_translations",
+        return_value={},
+    ):
+        result = replace_search_facets(facets, {}, lang="en")
+
+    assert _display_names(result, "theme") == ["A", "a", "B", "b", "C", "c", "z"]
+
+
+def test_replace_search_facets_sorts_on_translated_label():
+    facets = {
+        "theme": {
+            "title": "Theme",
+            "items": [{"name": "science"}, {"name": "health"}, {"name": "land"}],
+        }
+    }
+    translation_dict = {
+        "science": "Wetenschap",
+        "health": "Gezondheid",
+        "land": "Landbouw",
+    }
+
+    with patch(
+        "ckanext.gdi_userportal.logic.action.translation_utils.get_translations",
+        return_value={"Theme": "Thema"},
+    ):
+        result = replace_search_facets(facets, translation_dict, lang="nl")
+
+    # raw names would sort health, land, science; labels sort differently
+    assert _display_names(result, "theme") == ["Gezondheid", "Landbouw", "Wetenschap"]
+
+
+def test_replace_search_facets_sort_is_deterministic_for_equal_labels():
+    translation_dict = {"x": "Same", "y": "same"}
+
+    for names in (["x", "y"], ["y", "x"]):
+        facets = {"theme": {"title": "Theme", "items": [{"name": n} for n in names]}}
+        with patch(
+            "ckanext.gdi_userportal.logic.action.translation_utils.get_translations",
+            return_value={},
+        ):
+            result = replace_search_facets(facets, translation_dict, lang="en")
+
+        assert [i["name"] for i in result["theme"]["items"]] == ["x", "y"]
+
+
+def _facet_item_names(names, translation_dict):
+    facets = {"theme": {"title": "Theme", "items": [{"name": n} for n in names]}}
+    with patch(
+        "ckanext.gdi_userportal.logic.action.translation_utils.get_translations",
+        return_value={},
+    ):
+        result = replace_search_facets(facets, translation_dict, lang="en")
+
+    return [i["name"] for i in result["theme"]["items"]]
+
+
+def test_replace_search_facets_orders_identical_labels_by_name():
+    translation_dict = {"x": "Same", "y": "Same", "z": "Same"}
+
+    for names in (["x", "y", "z"], ["z", "y", "x"], ["y", "z", "x"]):
+        assert _facet_item_names(names, translation_dict) == ["x", "y", "z"]
+
+
+@pytest.mark.parametrize(
+    "upper, lower",
+    [("A", "a"), ("Ä", "ä"), ("Σ", "σ"), ("ẞ", "ß"), ("Ა", "ა")],
+)
+def test_replace_search_facets_puts_uppercase_first_in_any_alphabet(upper, lower):
+    # ß/ẞ and the Georgian pair have the lowercase letter on the lower code point
+    for names in ([lower, upper], [upper, lower]):
+        assert _facet_item_names(names, {}) == [upper, lower]
+
+
+def test_replace_search_facets_sorts_each_facet_and_keeps_counts():
+    facets = {
+        "theme": {
+            "title": "Theme",
+            "items": [{"name": "b", "count": 2}, {"name": "a", "count": 5}],
+        },
+        "format": {"title": "Format", "items": []},
+    }
+
+    with patch(
+        "ckanext.gdi_userportal.logic.action.translation_utils.get_translations",
+        return_value={},
+    ):
+        result = replace_search_facets(facets, {}, lang="en")
+
+    assert [(i["name"], i["count"]) for i in result["theme"]["items"]] == [
+        ("a", 5),
+        ("b", 2),
+    ]
+    assert result["format"]["items"] == []
 
 
 def test_replace_package_falls_back_to_default_language():

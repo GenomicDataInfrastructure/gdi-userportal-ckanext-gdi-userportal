@@ -519,6 +519,18 @@ def _change_facet(facet, translation_dict):
     return facet
 
 
+def _facet_sort_key(item):
+    # CKAN core sorts facet items on the raw name, case-sensitive and in
+    # reverse; sort on the translated label instead, ignoring case. Labels
+    # that differ only in case order uppercase first (AaBbCc). That is decided
+    # per character, so it also holds where the lowercase letter has the lower
+    # code point (ß/ẞ, Georgian). The item name settles identical labels, so the
+    # order does not depend on the order CKAN returned the items in.
+    display_name = str(item["display_name"])
+    uppercase_first = tuple(0 if char.lower() != char else 1 for char in display_name)
+    return display_name.casefold(), uppercase_first, display_name, str(item.get("name", ""))
+
+
 def replace_search_facets(data, translation_dict, lang):
     preferred_lang = get_preferred_language(lang)
     new_facets = {}
@@ -527,9 +539,10 @@ def replace_search_facets(data, translation_dict, lang):
         new_facets[key] = {
             "title": get_translations([title], lang=preferred_lang).get(title, title)
         }
-        new_facets[key]["items"] = [
-            _change_facet(item, translation_dict) for item in facet["items"]
-        ]
+        new_facets[key]["items"] = sorted(
+            (_change_facet(item, translation_dict) for item in facet["items"]),
+            key=_facet_sort_key,
+        )
     return new_facets
 
 
