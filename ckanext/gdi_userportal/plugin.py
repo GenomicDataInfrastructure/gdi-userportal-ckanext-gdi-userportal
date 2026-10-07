@@ -395,17 +395,25 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             data_dict[f"{field}_name"] = names
 
             for subfield in self._agent_subfields:
-                subfield_values = list(
-                    {value.get(subfield) for value in values if value.get(subfield)}
-                )
+                subfield_values = set()
+                for value in values:
+                    raw = value.get(subfield)
+                    if raw:
+                        subfield_values.update(self._flatten_contact_subfield_value(raw))
                 if subfield_values:
-                    data_dict[f"{field}_{subfield}"] = subfield_values
+                    data_dict[f"{field}_{subfield}"] = list(subfield_values)
         else:
-            for subfield in ("name",) + self._agent_subfields:
-                value = data_dict.get(f"extras_{field}__{subfield}")
-                if value:
-                    data_dict[f"{field}_{subfield}"] = [value]
+            self._parse_flat_agent_extras(data_dict, field)
         return data_dict
+
+    def _parse_flat_agent_extras(self, data_dict, field):
+        for subfield in ("name",) + self._agent_subfields:
+            value = data_dict.get(f"extras_{field}__{subfield}")
+            if not value:
+                continue
+            # a country or identifier can hold several values
+            values = [value] if subfield == "name" else self._flatten_contact_subfield_value(value)
+            data_dict[f"{field}_{subfield}"] = values
 
     _contact_subfields = ("uri", "name", "email", "identifier", "url")
 
