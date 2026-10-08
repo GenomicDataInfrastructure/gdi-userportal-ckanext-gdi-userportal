@@ -12,6 +12,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.14.1] - 2026-10-08
+
+### Added
+- feat: support several countries and identifiers per agent (#458) by @Quinten in e327b2f
+
+
+### Changed
+- chore(deps): update botocore monorepo to v1.43.109 by @Renovate Bot in 558d9e9
+- chore(deps): update botocore monorepo to v1.43.108 by @Renovate Bot in e6c3de3
+- chore(deps): update sonarsource/sonarqube-scan-action action to v8.3.0 by @Renovate Bot in 6b8aa1d
+- chore(deps): update oras-project/setup-oras action to v2.0.2 by @Renovate Bot in 28d0d58
+- doc: update CHANGELOG.md for v1.14.0 by @LNDS-Sysadmins in 072457b
+
+
+### Fixed
+- Merge pull request #459 from GenomicDataInfrastructure/fix/resolve-labels by @Quinten in 3751b37
+- fix: return keywords in the language of the request (#457) by @Quinten in 4dd3a52
+- fix: sort facet items alphabetically, ignoring case (#456) by @Quinten in 4c3f0df
+
+
+### Removed
+- Clean up CHANGELOG and remove outdated entries by @Quinten in a4dc5ca
+
+
 ## [v1.14.0] - 2026-09-23
 
 ### Changed
