@@ -491,6 +491,104 @@ def test_replace_package_translates_the_country_and_types_of_a_qualified_attribu
     assert [t["display_name"] for t in agent["publisher_type"]] == ["Translated Publisher Type"]
 
 
+def test_replace_package_gives_agents_without_identifier_an_empty_list():
+    package = {
+        "publisher": [{"name": "Publisher"}],
+        "creator": [{"name": "Creator 1"}, {"name": "Creator 2", "identifier": None}],
+        "hdab": [{"name": "HDAB", "identifier": ""}],
+    }
+
+    result = replace_package(package, {}, lang="en")
+
+    assert [a["identifier"] for a in result["publisher"]] == [[]]
+    assert [a["identifier"] for a in result["creator"]] == [[], []]
+    assert [a["identifier"] for a in result["hdab"]] == [[]]
+
+
+def test_replace_package_keeps_the_identifiers_of_an_agent_as_a_list():
+    package = {
+        "publisher": [{"name": "Publisher", "identifier": "https://ror.org/05wg1m734"}],
+        "creator": [{"name": "Creator", "identifier": ["ORCID: abc-123", "ROR: abc-123"]}],
+    }
+
+    result = replace_package(package, {}, lang="en")
+
+    assert result["publisher"][0]["identifier"] == ["https://ror.org/05wg1m734"]
+    assert result["creator"][0]["identifier"] == ["ORCID: abc-123", "ROR: abc-123"]
+
+
+def test_replace_package_gives_nested_agents_an_identifier_list():
+    package = {
+        "publisher": [{"name": "Publisher", "actedOnBehalfOf": [{"name": "Parent"}]}],
+        "qualified_attribution": [{"role": "http://example.com/role", "agent": [{"name": "A"}]}],
+        "was_generated_by": [
+            {
+                "label": "Activity",
+                "wasAssociatedWith": [
+                    {"name": "Associated", "actedOnBehalfOf": [{"name": "Principal"}]}
+                ],
+            }
+        ],
+        "resources": [
+            {
+                "access_services": [
+                    {"title": "Service", "creator": [{"name": "C"}], "publisher": [{"name": "P"}]}
+                ]
+            }
+        ],
+    }
+
+    result = replace_package(package, {}, lang="en")
+
+    access_service = result["resources"][0]["access_services"][0]
+    activity_agent = result["was_generated_by"][0]["wasAssociatedWith"][0]
+    assert result["publisher"][0]["actedOnBehalfOf"][0]["identifier"] == []
+    assert result["qualified_attribution"][0]["agent"][0]["identifier"] == []
+    assert activity_agent["identifier"] == []
+    assert activity_agent["actedOnBehalfOf"][0]["identifier"] == []
+    assert access_service["creator"][0]["identifier"] == []
+    assert access_service["publisher"][0]["identifier"] == []
+
+
+def test_replace_package_gives_an_agent_returned_as_a_dict_an_identifier_list():
+    package = {
+        "publisher": {"name": "Publisher", "actedOnBehalfOf": {"name": "Parent"}},
+        "was_generated_by": {"wasAssociatedWith": {"name": "Associated", "identifier": "x"}},
+    }
+
+    result = replace_package(package, {}, lang="en")
+
+    assert result["publisher"]["identifier"] == []
+    assert result["publisher"]["actedOnBehalfOf"]["identifier"] == []
+    assert result["was_generated_by"]["wasAssociatedWith"]["identifier"] == ["x"]
+
+
+def test_replace_package_does_not_add_agents_or_identifiers_to_a_package_without_them():
+    result = replace_package({"title": "No agents"}, {}, lang="en")
+
+    assert not result.get("publisher")
+    assert not result.get("creator")
+    assert not result.get("hdab")
+
+
+def test_replace_package_keeps_every_country_and_place_of_an_agent():
+    nld = "http://publications.europa.eu/resource/authority/country/NLD"
+    ams = "http://publications.europa.eu/resource/authority/place/AMS"
+    deu = "http://publications.europa.eu/resource/authority/country/DEU"
+    ber = "http://publications.europa.eu/resource/authority/place/BER"
+    package = {"publisher": [{"name": "Publisher", "country": [nld, ams, deu, ber]}]}
+    translation_dict = {nld: "Netherlands", ams: "Amsterdam", deu: "Germany", ber: "Berlin"}
+
+    result = replace_package(package, translation_dict, lang="en")
+
+    assert [(c["name"], c["display_name"]) for c in result["publisher"][0]["country"]] == [
+        (nld, "Netherlands"),
+        (ams, "Amsterdam"),
+        (deu, "Germany"),
+        (ber, "Berlin"),
+    ]
+
+
 def test_replace_package_normalizes_tags_to_strings():
     package = deepcopy(_base_package())
     package["tags"] = [
