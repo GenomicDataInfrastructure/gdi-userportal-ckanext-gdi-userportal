@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.14.1] - 2026-10-08
+
+### Added
+- feat: support several countries and identifiers per agent (#458) by @Quinten in e327b2f
+
+
+### Fixed
+- Merge pull request #459 from GenomicDataInfrastructure/fix/resolve-labels by @Quinten in 3751b37
+- fix: return keywords in the language of the request (#457) by @Quinten in 4dd3a52
+- fix: sort facet items alphabetically, ignoring case (#456) by @Quinten in 4c3f0df
+
+
 ## [v1.14.0] - 2026-09-23
 
 ### Changed
