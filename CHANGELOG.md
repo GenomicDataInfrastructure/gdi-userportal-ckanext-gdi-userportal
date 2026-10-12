@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.14.2] - 2026-10-12
+
+### Changed
+- chore: update changelog for v1.14.1 (#462) by @github-actions[bot] in 47521fd
+- chore(deps): update astral-sh/setup-uv action to v10.3.0 by @Renovate Bot in afc4d0a
+- chore(deps): update botocore monorepo to v1.43.111 by @Renovate Bot in e53a286
+
+
+### Fixed
+- fix: always return the identifier of an agent as a list (#465) by @Quinten in 112f9af
+
+
 ## [v1.14.1] - 2026-10-08
 
 ### Added
