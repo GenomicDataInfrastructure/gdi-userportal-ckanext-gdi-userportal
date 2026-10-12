@@ -550,6 +550,19 @@ def test_replace_package_gives_nested_agents_an_identifier_list():
     assert access_service["publisher"][0]["identifier"] == []
 
 
+def test_replace_package_gives_an_agent_returned_as_a_dict_an_identifier_list():
+    package = {
+        "publisher": {"name": "Publisher", "actedOnBehalfOf": {"name": "Parent"}},
+        "was_generated_by": {"wasAssociatedWith": {"name": "Associated", "identifier": "x"}},
+    }
+
+    result = replace_package(package, {}, lang="en")
+
+    assert result["publisher"]["identifier"] == []
+    assert result["publisher"]["actedOnBehalfOf"]["identifier"] == []
+    assert result["was_generated_by"]["wasAssociatedWith"]["identifier"] == ["x"]
+
+
 def test_replace_package_does_not_add_agents_or_identifiers_to_a_package_without_them():
     result = replace_package({"title": "No agents"}, {}, lang="en")
 

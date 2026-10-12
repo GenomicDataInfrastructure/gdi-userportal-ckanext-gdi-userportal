@@ -387,6 +387,8 @@ def _normalize_agents(agents: Any) -> None:
 
 
 def _dicts(values: Any) -> List[dict]:
+    if isinstance(values, dict):
+        return [values]
     return [value for value in values if isinstance(value, dict)] if isinstance(values, list) else []
 
 
