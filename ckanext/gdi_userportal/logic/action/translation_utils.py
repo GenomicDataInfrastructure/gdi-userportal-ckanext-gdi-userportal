@@ -80,6 +80,10 @@ NESTED_FIELD_TRANSLATIONS = {
     "actedOnBehalfOf": {"type"},
 }
 
+# Fields holding agents, besides the agents nested in other fields
+AGENT_FIELDS = ("publisher", "creator", "hdab")
+ACCESS_SERVICE_AGENT_FIELDS = ("creator", "publisher")
+
 TRANSLATED_SUFFIX = "_translated"
 LANGUAGE_VALUE_FIELDS = {
     "population_coverage",
@@ -346,8 +350,44 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
             for access_service in access_services
         ]
     data["resources"] = resources
+    _normalize_agent_identifiers(data)
 
     return data
+
+
+def _normalize_agent_identifiers(package: dict) -> None:
+    """
+    Makes the identifier of every agent a list, also when the agent has no identifier,
+    so that clients get one shape for all agents, whatever the way they were created.
+    """
+    for field in AGENT_FIELDS:
+        _normalize_agents(package.get(field))
+
+    for activity in _dicts(package.get("was_generated_by")):
+        _normalize_agents(activity.get("wasAssociatedWith"))
+
+    for attribution in _dicts(package.get("qualified_attribution")):
+        _normalize_agents(attribution.get("agent"))
+
+    for resource in _dicts(package.get("resources")):
+        for access_service in _dicts(resource.get("access_services")):
+            for field in ACCESS_SERVICE_AGENT_FIELDS:
+                _normalize_agents(access_service.get(field))
+
+
+def _normalize_agents(agents: Any) -> None:
+    for agent in _dicts(agents):
+        identifier = agent.get("identifier")
+        if identifier is None or identifier == "":
+            agent["identifier"] = []
+        elif not isinstance(identifier, list):
+            agent["identifier"] = [identifier]
+
+        _normalize_agents(agent.get("actedOnBehalfOf"))
+
+
+def _dicts(values: Any) -> List[dict]:
+    return [value for value in values if isinstance(value, dict)] if isinstance(values, list) else []
 
 
 def _keywords_of(values: Any) -> List[str]:

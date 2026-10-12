@@ -91,7 +91,7 @@ class TestReadTimeTranslation:
         agent = replace_package(package, TRANSLATIONS, "en")["creator"][0]
 
         assert agent["country"] == _label(NLD)
-        assert agent["identifier"] == "a"
+        assert agent["identifier"] == ["a"]
 
     def test_missing_and_empty_values_stay_as_they_are(self):
         package = {
