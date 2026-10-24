@@ -86,6 +86,7 @@ do:
     git clone https://github.com/GenomicDataInfrastructure/ckanext-gdi-userportal.git
     cd ckanext-gdi-userportal
     python setup.py develop
+    pip install -r requirements.txt
     pip install -r dev-requirements.txt
 
 Add needed docker images:
