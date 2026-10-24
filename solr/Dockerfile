@@ -13,10 +13,14 @@ RUN microdnf update -y ca-certificates && microdnf clean all
 
 FROM eclipse-temurin:21-jdk@sha256:23cc5734ff46e776f51ce66eb9ee08444fd47caabec0a95b7eb6e94be2d3696d AS truststore
 COPY --from=rhel-ca /etc/pki/ca-trust/extracted/java/cacerts /tmp/cacerts
-RUN keytool -list -v -keystore /tmp/cacerts -storepass changeit \
-    | awk '/^Alias name: /{a=substr($0,13)} /^Owner: CN=(emSign ECC Root CA - G3|AAA Certificate Services),/{print a}' > /tmp/distrust \
+# keytool output goes to a file first, so a keytool failure fails the build
+# instead of being masked by the pipeline (sh has no pipefail).
+RUN keytool -list -v -keystore /tmp/cacerts -storepass changeit > /tmp/list \
+ && awk '/^Alias name: /{a=substr($0,13)} /^Owner: CN=(emSign ECC Root CA - G3|AAA Certificate Services),/{print a}' /tmp/list > /tmp/distrust \
  && while IFS= read -r a; do keytool -delete -keystore /tmp/cacerts -storepass changeit -alias "$a"; done < /tmp/distrust \
- && ! keytool -list -v -keystore /tmp/cacerts -storepass changeit | grep -qE "^Owner: CN=(emSign ECC Root CA - G3|AAA Certificate Services),"
+ && keytool -list -v -keystore /tmp/cacerts -storepass changeit > /tmp/list \
+ && [ "$(grep -c '^Alias name: ' /tmp/list)" -ge 100 ] \
+ && ! grep -qE "^Owner: CN=(emSign ECC Root CA - G3|AAA Certificate Services)," /tmp/list
 
 FROM docker.io/solr:10.0.0-slim
 
@@ -29,7 +33,10 @@ USER root
 
 # Replace the JRE trust store with the curated one and check that the JVM uses it
 COPY --from=truststore --chmod=644 /tmp/cacerts $JAVA_HOME/lib/security/cacerts
-RUN ! keytool -list -v -cacerts -storepass changeit | grep -qE "^Owner: CN=(emSign ECC Root CA - G3|AAA Certificate Services),"
+RUN keytool -list -v -cacerts -storepass changeit > /tmp/cacerts.txt \
+ && [ "$(grep -c '^Alias name: ' /tmp/cacerts.txt)" -ge 100 ] \
+ && ! grep -qE "^Owner: CN=(emSign ECC Root CA - G3|AAA Certificate Services)," /tmp/cacerts.txt \
+ && rm /tmp/cacerts.txt
 
 # Create a CKAN configset by copying the default one
 RUN cp -R $SOLR_CONFIG_DIR/_default $SOLR_CONFIG_DIR/ckan
