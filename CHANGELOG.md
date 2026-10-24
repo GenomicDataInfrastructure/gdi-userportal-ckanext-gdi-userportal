@@ -12,6 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v1.14.3] - 2026-10-24
+
+### Changed
+- chore(deps): update astral-sh/setup-uv action to v10.3.2 (#468) by @LNDS-Sysadmins in 28a2850
+- doc: update CHANGELOG.md for v1.14.2 (#466) by @github-actions[bot] in a2f19f3
+
+
+### Fixed
+- fix: remediate eMudhra/emSign distrust in Solr image and certifi (CVE-2026-91403) (#470) by @Bruno Pacheco in 015f975
+
+
 ## [v1.14.2] - 2026-10-12
 
 ### Changed
