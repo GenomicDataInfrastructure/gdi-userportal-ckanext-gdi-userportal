@@ -38,6 +38,11 @@ RUN keytool -list -v -cacerts -storepass changeit > /tmp/cacerts.txt \
  && ! grep -qE "^Owner: CN=(emSign ECC Root CA - G3|AAA Certificate Services)," /tmp/cacerts.txt \
  && rm /tmp/cacerts.txt
 
+# Remove gosu (a Go binary, built with go1.22.2 in solr:10.0.0-slim). Nothing uses it: the image runs
+# as solr, Solr's scripts never call it, and upstream dropped it in Solr 9.11/10 (SOLR-17353); only the
+# 10.0 image still installs it.
+RUN dpkg --purge gosu && ! command -v gosu
+
 # Create a CKAN configset by copying the default one
 RUN cp -R $SOLR_CONFIG_DIR/_default $SOLR_CONFIG_DIR/ckan
 
