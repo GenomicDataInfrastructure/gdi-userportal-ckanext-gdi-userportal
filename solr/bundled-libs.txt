@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Jars that replace the ones bundled in solr:10.0.0-slim, until an official Solr release ships fixed
+# versions. Each line: <sha256> <path under https://repo1.maven.org/maven2/> <dir under /opt/solr> <jar it replaces>
+# Hashes were checked against Maven Central's .sha1/.sha512 files and the release signatures
+# (Jetty: Olivier Lamy; Jackson: Tatu Saloranta; Netty: Netty Project Bot; ZooKeeper: Andor Molnar, Apache KEYS).
+1372f5a5dcb75a944db7a233f062533273a9abc524bfbd2e3de1ea768d9cba49  org/eclipse/jetty/jetty-http/12.0.40/jetty-http-12.0.40.jar  server/lib/ext  jetty-http-12.0.27.jar
+547075239043be0ff6aea6eb846425229bc637506db98948da25cd31fc5a895b  org/eclipse/jetty/http2/jetty-http2-common/12.0.40/jetty-http2-common-12.0.40.jar  server/lib/ext  jetty-http2-common-12.0.27.jar
+567e2dd6cb12ef3d32bf42ac715d99b459ea49ecabe155cedcd887c358a4b832  org/eclipse/jetty/http2/jetty-http2-hpack/12.0.40/jetty-http2-hpack-12.0.40.jar  server/lib/ext  jetty-http2-hpack-12.0.27.jar
+cb4a28acefd7d940ed1d9c468e53df4311eed5f4b3179da0b19a40f4a40fd912  org/eclipse/jetty/jetty-io/12.0.40/jetty-io-12.0.40.jar  server/lib/ext  jetty-io-12.0.27.jar
+f8ed44faaa7dfd61b6e00807151b514c09840cd2f9a24815e55ba324815bfd4d  org/eclipse/jetty/jetty-server/12.0.40/jetty-server-12.0.40.jar  server/lib/ext  jetty-server-12.0.27.jar
+d80f61a7a85cdefaf1a92f85883c5358e5d8cefe60fba2408ba6082eab058d69  org/eclipse/jetty/jetty-util/12.0.40/jetty-util-12.0.40.jar  server/lib/ext  jetty-util-12.0.27.jar
+61df1fe23810e53fd462f032428b5e1602c73b18cb60df55ba2deb6153f5f58a  org/eclipse/jetty/jetty-alpn-java-server/12.0.40/jetty-alpn-java-server-12.0.40.jar  server/lib  jetty-alpn-java-server-12.0.27.jar
+f562be12b100140480ab764e0c1cebfc9aae1b2ffae9dadcaa5ce7908ce83f7d  org/eclipse/jetty/jetty-alpn-server/12.0.40/jetty-alpn-server-12.0.40.jar  server/lib  jetty-alpn-server-12.0.27.jar
+0a0bbbb4df0d8e82550cb7259217373e15dda8f79bce76599aa1878b59085622  org/eclipse/jetty/jetty-deploy/12.0.40/jetty-deploy-12.0.40.jar  server/lib  jetty-deploy-12.0.27.jar
+0e329772ad258d18e7eefe6c97c4aa8d8158bdd38d7d81065edeb5dafbdccb14  org/eclipse/jetty/ee10/jetty-ee10-servlet/12.0.40/jetty-ee10-servlet-12.0.40.jar  server/lib  jetty-ee10-servlet-12.0.27.jar
+bbcb8ebfc0ea5b1f6b65a31ce559715261d087c452560f9f935ef17d68111cdc  org/eclipse/jetty/ee10/jetty-ee10-servlets/12.0.40/jetty-ee10-servlets-12.0.40.jar  server/lib  jetty-ee10-servlets-12.0.27.jar
+e28a0070c86d2fcb156e98463413506f13b2e7a5ab28c72b3b3fbdd59bd0ebda  org/eclipse/jetty/ee10/jetty-ee10-webapp/12.0.40/jetty-ee10-webapp-12.0.40.jar  server/lib  jetty-ee10-webapp-12.0.27.jar
+ff55127a81bdcc06cc149e7bc667cd116ad52821fe28358cbf76589b15751b0b  org/eclipse/jetty/jetty-ee/12.0.40/jetty-ee-12.0.40.jar  server/lib  jetty-ee-12.0.27.jar
+57845c9a3fc918bf2c4ee4e5db24262e0ccadc6655b52484fef7864eea57857d  org/eclipse/jetty/http2/jetty-http2-server/12.0.40/jetty-http2-server-12.0.40.jar  server/lib  jetty-http2-server-12.0.27.jar
+dbe1caf6a37ba1f0a29d032b47a2183afaef38bcfdcc8fd4945e9fab18595df8  org/eclipse/jetty/jetty-jmx/12.0.40/jetty-jmx-12.0.40.jar  server/lib  jetty-jmx-12.0.27.jar
+056d4f3b27dc1a5b915f73679ce60e0e14a9af9b96da09d5219825bbbd474b1e  org/eclipse/jetty/jetty-rewrite/12.0.40/jetty-rewrite-12.0.40.jar  server/lib  jetty-rewrite-12.0.27.jar
+da883e1f220080b106f5201c028051df23e84a961d538e7bd208b2a412bec450  org/eclipse/jetty/jetty-security/12.0.40/jetty-security-12.0.40.jar  server/lib  jetty-security-12.0.27.jar
+4dd4d421f54a7fd03782df2e373dae1054c0a25dec255d2760803f28f678802e  org/eclipse/jetty/jetty-session/12.0.40/jetty-session-12.0.40.jar  server/lib  jetty-session-12.0.27.jar
+4b40581b407fa8746300b4bfe3fd8117df3cda34d7d36651c5269a1640ecc659  org/eclipse/jetty/jetty-xml/12.0.40/jetty-xml-12.0.40.jar  server/lib  jetty-xml-12.0.27.jar
+25ce2e78c4b01994596df6826c9a8d88a9984f2b9ed1b1a907a8e396e4da672e  org/eclipse/jetty/jetty-alpn-client/12.0.40/jetty-alpn-client-12.0.40.jar  server/solr-webapp/webapp/WEB-INF/lib  jetty-alpn-client-12.0.27.jar
+4d924ccee5df60a52752176d2e5ab0a1445682e25df13d1163ad8af0ecd23e26  org/eclipse/jetty/jetty-alpn-java-client/12.0.40/jetty-alpn-java-client-12.0.40.jar  server/solr-webapp/webapp/WEB-INF/lib  jetty-alpn-java-client-12.0.27.jar
+106d67e38d1a68e0bc883d1e98f6cda611c252ba7c61e7f11f502446bd3757f4  org/eclipse/jetty/jetty-client/12.0.40/jetty-client-12.0.40.jar  server/solr-webapp/webapp/WEB-INF/lib  jetty-client-12.0.27.jar
+a6f516f9feb7226e0e8ec7ba0a17780adcf9418109e4214b2ae41f9a82f7ca82  org/eclipse/jetty/http2/jetty-http2-client/12.0.40/jetty-http2-client-12.0.40.jar  server/solr-webapp/webapp/WEB-INF/lib  jetty-http2-client-12.0.27.jar
+873e101340f70ac92cb42692d80f1426ed96a8941e78b5d1b2e2b57e4a4babad  org/eclipse/jetty/http2/jetty-http2-client-transport/12.0.40/jetty-http2-client-transport-12.0.40.jar  server/solr-webapp/webapp/WEB-INF/lib  jetty-http2-client-transport-12.0.27.jar
+53ca085f4a150f703f49e1aabd935bd03b43e1ea3d55d135438292af22cef56b  com/fasterxml/jackson/core/jackson-annotations/2.21/jackson-annotations-2.21.jar  server/solr-webapp/webapp/WEB-INF/lib  jackson-annotations-2.20.jar
+604ef7765013daf5cde192e40bc4c8412c4ca93f4aaf7bf8e9a62fad1e1026bb  com/fasterxml/jackson/core/jackson-core/2.21.8/jackson-core-2.21.8.jar  server/solr-webapp/webapp/WEB-INF/lib  jackson-core-2.20.0.jar
+ad77f2285717e2f34c319d988b7c85783a47d0b33f33a501d1fcbf196e61bbaa  com/fasterxml/jackson/core/jackson-databind/2.21.8/jackson-databind-2.21.8.jar  server/solr-webapp/webapp/WEB-INF/lib  jackson-databind-2.20.0.jar
+e0adc690d27aa73a7563726c9ed5d33c018f3eb6f16a0f139d315b54f71b53fa  com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.21.8/jackson-dataformat-cbor-2.21.8.jar  server/solr-webapp/webapp/WEB-INF/lib  jackson-dataformat-cbor-2.20.0.jar
+bfb990ea7681b3084db5c4d5a294ad69e7bdcab9577f9522849faac81218f570  com/fasterxml/jackson/dataformat/jackson-dataformat-smile/2.21.8/jackson-dataformat-smile-2.21.8.jar  server/solr-webapp/webapp/WEB-INF/lib  jackson-dataformat-smile-2.20.0.jar
+28a7067567dc8b63b346ddba58df9c34c49257900c84f52e01b8e5411764cf2b  com/fasterxml/jackson/module/jackson-module-jakarta-xmlbind-annotations/2.21.8/jackson-module-jakarta-xmlbind-annotations-2.21.8.jar  server/solr-webapp/webapp/WEB-INF/lib  jackson-module-jakarta-xmlbind-annotations-2.20.0.jar
+863f09b46cfe7d83872c9499086b9681cd9878c30a319d9f1f3a681bbfb0b12f  io/netty/netty-buffer/4.2.19.Final/netty-buffer-4.2.19.Final.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-buffer-4.2.6.Final.jar
+5702c8097cc81e939dd12e5b39ac2e81f83737c320f6f4d88553577842f9ceb6  io/netty/netty-codec-base/4.2.19.Final/netty-codec-base-4.2.19.Final.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-codec-base-4.2.6.Final.jar
+22fa74761f6e35c8c88972f35cf65664566b922dd73d3424528e97c34278fa79  io/netty/netty-common/4.2.19.Final/netty-common-4.2.19.Final.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-common-4.2.6.Final.jar
+8b469cf23ddf21ba84291f4dff470d2277a28deac95e7084b0ff2ce853e58276  io/netty/netty-handler/4.2.19.Final/netty-handler-4.2.19.Final.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-handler-4.2.6.Final.jar
+3ded47536faeb3c4c544a84871d82f461511589afb2a892a180ca425f281363e  io/netty/netty-resolver/4.2.19.Final/netty-resolver-4.2.19.Final.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-resolver-4.2.6.Final.jar
+d82d4e200456b8c5d8a1647a3724603f80616e5b35b9ada6e7a20d048f175075  io/netty/netty-transport/4.2.19.Final/netty-transport-4.2.19.Final.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-transport-4.2.6.Final.jar
+4d96ba8dd98ace998f6ae7bfe53ae9e581bd92ad2f7ebe5bd994d1a24306db7e  io/netty/netty-transport-classes-epoll/4.2.19.Final/netty-transport-classes-epoll-4.2.19.Final.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-transport-classes-epoll-4.2.6.Final.jar
+3dd01532f34540676c9e0153f96a44c78a73f2b0118ef46cb14247e512dde76b  io/netty/netty-transport-native-epoll/4.2.19.Final/netty-transport-native-epoll-4.2.19.Final-linux-x86_64.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-transport-native-epoll-4.2.6.Final-linux-x86_64.jar
+341e91b8e69e6b7d92c353c845ffd91f34e921b7186254c176a64c7089b3e721  io/netty/netty-transport-native-unix-common/4.2.19.Final/netty-transport-native-unix-common-4.2.19.Final.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-transport-native-unix-common-4.2.6.Final.jar
+15fe111906d28b1075da6362db6b76590b232dd400e1401cf4af36fc4f321add  io/netty/netty-tcnative-boringssl-static/2.0.84.Final/netty-tcnative-boringssl-static-2.0.84.Final.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-tcnative-boringssl-static-2.0.70.Final.jar
+7a4437abf98b0cec053af4443fe321177d2cfccfec7bcad4e7d8b75571bbec4d  io/netty/netty-tcnative-classes/2.0.84.Final/netty-tcnative-classes-2.0.84.Final.jar  server/solr-webapp/webapp/WEB-INF/lib  netty-tcnative-classes-2.0.70.Final.jar
+09bdf93be7c0b5b7cd9fe51bee6abe424796cd5aaf75cf0c10bbd6f1273562ee  org/apache/zookeeper/zookeeper/3.9.6/zookeeper-3.9.6.jar  server/solr-webapp/webapp/WEB-INF/lib  zookeeper-3.9.4.jar
+74f9cb1e4ba899ecc4b816201b4afd1c63c256705bd9176393fac4071597c75f  org/apache/zookeeper/zookeeper-jute/3.9.6/zookeeper-jute-3.9.6.jar  server/solr-webapp/webapp/WEB-INF/lib  zookeeper-jute-3.9.4.jar
