@@ -491,8 +491,8 @@ def _write_atomically(path, text):
 def generate(raw_profiles, raw_main, output_dir, root=PACK_ROOT, installed=None):
     """The whole start-up step. ``installed`` (RDF profile names) enables the entry point check."""
     profiles = parse_profiles(raw_profiles)
+    build = build_schema(profiles, root)  # first: an unknown pack is the root cause of a main profile mismatch
     main = parse_main_profile(raw_main, profiles)
-    build = build_schema(profiles, root)
     if installed is not None:
         check_rdf_profiles(build, installed)
     schema_path = write_outputs(build, main, output_dir)

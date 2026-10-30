@@ -537,6 +537,16 @@ def test_the_command_line_reads_the_environment(generator, tmp_path, capsys):
     assert "unknown metadata profile 'nope'. Known profiles: gdi_current" in capsys.readouterr().err
 
 
+def test_an_unknown_profile_is_reported_before_the_main_profile(generator, tmp_path, capsys):
+    status = generator.main(
+        ["--output-dir", str(tmp_path), "--skip-entry-point-check"],
+        environ={"GDI_METADATA_PROFILES": "nope", "GDI_METADATA_MAIN_PROFILE": "gdi_current"},
+    )
+
+    assert status == 1
+    assert "unknown metadata profile 'nope'" in capsys.readouterr().err
+
+
 def test_empty_environment_values_mean_the_default(generator, tmp_path, capsys):
     status = generator.main(
         ["--output-dir", str(tmp_path), "--skip-entry-point-check"],
