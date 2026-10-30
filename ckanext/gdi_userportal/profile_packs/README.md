@@ -63,6 +63,8 @@ name: gdi_current          # must equal the file name
 fragments: [core, ...]     # the schema; order matters (see below)
 rdf_profiles: [a, b]       # ckan.rdf.profiles entry points, in order
 redefines: []              # "<section>.<field_name>" this pack defines differently from another pack
+conformance: conformance/<name>.json   # optional: mandatory properties per access layer (generated)
+keep_extras: []            # optional: dataset fields that stay when this pack is retired (see Pruning)
 ```
 
 **Fragment**: header keys (`scheming_version`, `form_languages`, ...), `dataset_fields` and
@@ -80,6 +82,37 @@ redefines: []              # "<section>.<field_name>" this pack defines differen
   keys that differ.
 - `provenance.json` records which enabled packs define each field.
 
+## Conformance
+
+`conformance.py` (standard library only) says which enabled packs a dataset satisfies at its
+access layer; the API action `gdi_metadata_profile_conformance` and the harvest-log warning of
+ckanext-fairdatapoint use it. A pack with no `conformance` file has no mandatory properties.
+
+The file of `healthdcat_r8` is **generated** from R8's cardinality rules, never edited by hand:
+
+```
+conformance/healthdcat_r8_fields.yaml     R8 property label -> the CKAN fields that carry it (hand-written)
+conformance/healthdcat_r8.json            generated: the properties that are Mandatory per layer
+```
+
+```
+python3 profile_packs/conformance_build.py --rules path/to/healthdcat-cardinality-rules.json [--check]
+```
+
+The build fails when a mandatory property has no fields in the mapping, a mapped property is not
+mandatory in any layer, or a rule contradicts itself. `--check` exits 1 when the committed file is
+out of date; the host test `test_the_committed_file_is_what_the_real_rules_produce` does the same
+when `HEALTHDCAT_RULES_JSON` points at the rules file. The generated file records the SHA-256 of
+the rules it came from.
+
+## Pruning
+
+`generator.retired_fields(enabled)` lists the fields that only packs outside `enabled` define. The
+command `ckan gdi-userportal profiles prune` (a dry run unless `--delete`) uses it to find the
+extras to remove; see `prune.py`. A field a pack lists under `keep_extras` is never retired: use it
+for a field whose key the shared RDF code also keeps as a free extra in every profile
+(`related_resource` and `source` in `healthdcat_r8`).
+
 ## Running it
 
 ```
@@ -89,8 +122,8 @@ python3 -m ckanext.gdi_userportal.profile_packs.generator --output-dir /srv/app/
 It writes `dataset.yaml` and `provenance.json` there and prints the CKAN config options to apply.
 The start scripts feed those to `ckan config-tool`.
 
-Tests need only PyYAML and pytest, and run on the host:
+Tests need only PyYAML, SQLAlchemy and pytest, and run on the host:
 
 ```
-uv run --no-project --with pyyaml --with pytest python -I -m pytest ckanext/gdi_userportal/tests/profile_packs
+uv run --no-project --with pyyaml --with sqlalchemy --with pytest python -I -m pytest ckanext/gdi_userportal/tests/profile_packs
 ```
