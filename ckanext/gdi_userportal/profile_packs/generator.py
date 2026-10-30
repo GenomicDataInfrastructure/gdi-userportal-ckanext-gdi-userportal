@@ -37,6 +37,7 @@ import os
 import re
 import sys
 import tempfile
+import typing
 from pathlib import Path
 
 import yaml
@@ -48,6 +49,10 @@ PACK_ROOT = Path(__file__).resolve().parent
 DEFAULT_PROFILE = "gdi_current"
 ENV_PROFILES = "GDI_METADATA_PROFILES"
 ENV_MAIN_PROFILE = "GDI_METADATA_MAIN_PROFILE"
+
+# The CKAN config options the generator writes, and runtime code reads instead of the environment.
+OPTION_PROFILES = "ckanext.dcat.metadata_profiles"
+OPTION_MAIN_PROFILE = "ckanext.dcat.metadata_profiles.main"
 
 RDF_PROFILE_ENTRY_POINT_GROUP = "ckan.rdf.profiles"
 
@@ -68,12 +73,15 @@ SCHEMING_PRESETS = (
     "ckanext.dataset_series.schemas:presets.yaml",
 )
 
+# The access layers a conformance file carries rules for (see conformance.py).
+ACCESS_LAYERS = ("PUBLIC", "RESTRICTED", "NON_PUBLIC")
+
 SCHEMA_FILENAME = "dataset.yaml"
 PROVENANCE_FILENAME = "provenance.json"
 
 _NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 _SEPARATORS = re.compile(r"[,\s]+")
-_MANIFEST_KEYS = {"name", "fragments", "rdf_profiles", "redefines"}
+_MANIFEST_KEYS = {"name", "fragments", "rdf_profiles", "redefines", "conformance", "keep_extras"}
 
 
 class ProfileError(Exception):
@@ -112,6 +120,12 @@ class Pack:
     fragments: tuple
     rdf_profiles: tuple
     redefines: frozenset
+    # Path of the generated mandatory-properties file, relative to the registry root. A pack
+    # without one has no mandatory properties.
+    conformance: typing.Optional[str] = None
+    # Dataset fields that shared RDF code keeps as free extras whichever profile is enabled, so
+    # retiring this pack must not prune them.
+    keep_extras: frozenset = frozenset()
 
 
 class Registry:
@@ -143,7 +157,44 @@ class Registry:
         fragments = _string_list(path, manifest, "fragments", required=True)
         rdf_profiles = _string_list(path, manifest, "rdf_profiles", required=True)
         redefines = _string_list(path, manifest, "redefines", required=False)
-        return Pack(name, tuple(fragments), tuple(rdf_profiles), frozenset(redefines))
+        keep_extras = _string_list(path, manifest, "keep_extras", required=False)
+        conformance = manifest.get("conformance")
+        if conformance is not None and not isinstance(conformance, str):
+            raise ProfileError(f"{path}: 'conformance' must be a path relative to the pack root")
+        return Pack(
+            name,
+            tuple(fragments),
+            tuple(rdf_profiles),
+            frozenset(redefines),
+            conformance,
+            frozenset(keep_extras),
+        )
+
+    def conformance(self, pack):
+        """The mandatory properties per access layer of ``pack``, or None when it declares none."""
+        if not pack.conformance:
+            return None
+        path = (self.root / pack.conformance).resolve()
+        if self.root.resolve() not in path.parents:
+            raise ProfileError(f"pack '{pack.name}': conformance file {pack.conformance!r} is outside {self.root}")
+        try:
+            rules = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise ProfileError(f"cannot read the conformance file of pack '{pack.name}' ({path}): {error}") from error
+        layers = rules.get("layers") if isinstance(rules, dict) else None
+        if not isinstance(layers, dict) or set(layers) != set(ACCESS_LAYERS):
+            raise ProfileError(f"{path}: expected 'layers' with exactly {', '.join(ACCESS_LAYERS)}")
+        for layer, body in layers.items():
+            mandatory = body.get("mandatory") if isinstance(body, dict) else None
+            if not isinstance(mandatory, list) or not all(
+                isinstance(rule, dict)
+                and isinstance(rule.get("property"), str)
+                and isinstance(rule.get("fields"), list)
+                and rule["fields"]
+                for rule in mandatory
+            ):
+                raise ProfileError(f"{path}: layer {layer} needs a 'mandatory' list of {{property, fields}}")
+        return rules
 
     def fragment(self, name):
         if name not in self._fragments:
@@ -306,6 +357,9 @@ def build_schema(profiles, root=PACK_ROOT):
                     defined_by_pack.add(key)
         for key in sorted(pack.redefines - defined_by_pack):
             raise ProfileError(f"pack '{pack.name}' redefines '{key}' but does not define it")
+        for name in sorted(pack.keep_extras):
+            if f"dataset_fields.{name}" not in defined_by_pack:
+                raise ProfileError(f"pack '{pack.name}' keeps the extra '{name}' but does not define it as a dataset field")
 
     by_name = {pack.name: pack for pack in packs}
     conflicts = []
@@ -397,6 +451,31 @@ def _unique(items):
     return list(dict.fromkeys(items))
 
 
+def retired_fields(enabled, root=PACK_ROOT):
+    """The fields that only packs outside ``enabled`` define, for the prune command.
+
+    Returns ``{"dataset_fields": {field: [pack, ...]}, "resource_fields": {...}}``. A field that
+    any enabled pack defines is not retired, however many retired packs also define it. A
+    pack's ``keep_extras`` are left out: shared RDF code keeps those as free extras in every
+    profile, so their values are not orphaned when the pack goes.
+    """
+    registry = Registry(root)
+    enabled_fields = set(build_schema(list(enabled), root).fields)
+    retired = {section: {} for section in FIELD_SECTIONS}
+    for name in registry.pack_names():
+        if name in enabled:
+            continue
+        pack = registry.pack(name)
+        for key in build_schema([name], root).fields:
+            section, _, field = key.partition(".")
+            if section not in FIELD_SECTIONS or key in enabled_fields:
+                continue
+            if section == "dataset_fields" and field in pack.keep_extras:
+                continue
+            retired[section].setdefault(field, []).append(name)
+    return retired
+
+
 # --- Output ------------------------------------------------------------------------
 
 
@@ -415,8 +494,8 @@ def render_schema(schema, header=""):
 def config_options(build, main, schema_path):
     """The CKAN config options that tie the deployment to the generated schema."""
     options = [
-        ("ckanext.dcat.metadata_profiles", " ".join(build.profiles)),
-        ("ckanext.dcat.metadata_profiles.main", main),
+        (OPTION_PROFILES, " ".join(build.profiles)),
+        (OPTION_MAIN_PROFILE, main),
     ]
     for name in build.profiles:
         options.append(

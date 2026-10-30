@@ -30,3 +30,9 @@ def gdi_filter_help_texts_show(context, data_dict=None):
 @toolkit.auth_allow_anonymous_access
 def gdi_dataset_help_texts_show(context, data_dict=None):
     return {"success": True}
+
+
+@toolkit.auth_allow_anonymous_access
+def gdi_metadata_profile_conformance(context, data_dict=None):
+    # Reading the dataset is checked by the package_show call inside the action.
+    return {"success": True}

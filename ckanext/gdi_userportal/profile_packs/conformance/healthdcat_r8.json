@@ -1,0 +1,266 @@
+{
+  "profile": "healthdcat_r8",
+  "source": {
+    "file": "healthdcat-cardinality-rules.json",
+    "sha256": "5c932223380a2a0ac6bee40a70a36b914ccde7a028287df2d3fa876b762a7029"
+  },
+  "layers": {
+    "PUBLIC": {
+      "mandatory": [
+        {
+          "property": "access rights",
+          "cardinality": "1..1",
+          "fields": [
+            "access_rights"
+          ]
+        },
+        {
+          "property": "applicable legislation",
+          "cardinality": "1..*",
+          "fields": [
+            "applicable_legislation"
+          ]
+        },
+        {
+          "property": "description",
+          "cardinality": "1..*",
+          "fields": [
+            "notes_translated",
+            "notes"
+          ]
+        },
+        {
+          "property": "dataset distribution",
+          "cardinality": "1..*",
+          "fields": [
+            "resources"
+          ]
+        },
+        {
+          "property": "health category",
+          "cardinality": "1..*",
+          "fields": [
+            "health_category"
+          ]
+        },
+        {
+          "property": "structured data",
+          "cardinality": "1..1",
+          "fields": [
+            "has_structured_data"
+          ]
+        },
+        {
+          "property": "identifier",
+          "cardinality": "1..*",
+          "fields": [
+            "identifier"
+          ]
+        },
+        {
+          "property": "theme",
+          "cardinality": "1..*",
+          "fields": [
+            "theme"
+          ]
+        },
+        {
+          "property": "title",
+          "cardinality": "1..*",
+          "fields": [
+            "title_translated",
+            "title"
+          ]
+        },
+        {
+          "property": "health data access body",
+          "cardinality": "1..1",
+          "fields": [
+            "hdab"
+          ]
+        }
+      ]
+    },
+    "RESTRICTED": {
+      "mandatory": [
+        {
+          "property": "access rights",
+          "cardinality": "1..1",
+          "fields": [
+            "access_rights"
+          ]
+        },
+        {
+          "property": "applicable legislation",
+          "cardinality": "1..*",
+          "fields": [
+            "applicable_legislation"
+          ]
+        },
+        {
+          "property": "description",
+          "cardinality": "1..*",
+          "fields": [
+            "notes_translated",
+            "notes"
+          ]
+        },
+        {
+          "property": "dataset distribution",
+          "cardinality": "1..*",
+          "fields": [
+            "resources"
+          ]
+        },
+        {
+          "property": "health category",
+          "cardinality": "1..*",
+          "fields": [
+            "health_category"
+          ]
+        },
+        {
+          "property": "structured data",
+          "cardinality": "1..1",
+          "fields": [
+            "has_structured_data"
+          ]
+        },
+        {
+          "property": "identifier",
+          "cardinality": "1..*",
+          "fields": [
+            "identifier"
+          ]
+        },
+        {
+          "property": "theme",
+          "cardinality": "1..*",
+          "fields": [
+            "theme"
+          ]
+        },
+        {
+          "property": "title",
+          "cardinality": "1..*",
+          "fields": [
+            "title_translated",
+            "title"
+          ]
+        },
+        {
+          "property": "health data access body",
+          "cardinality": "1..1",
+          "fields": [
+            "hdab"
+          ]
+        }
+      ]
+    },
+    "NON_PUBLIC": {
+      "mandatory": [
+        {
+          "property": "access rights",
+          "cardinality": "1..1",
+          "fields": [
+            "access_rights"
+          ]
+        },
+        {
+          "property": "applicable legislation",
+          "cardinality": "1..*",
+          "fields": [
+            "applicable_legislation"
+          ]
+        },
+        {
+          "property": "contact point",
+          "cardinality": "1..*",
+          "fields": [
+            "contact"
+          ]
+        },
+        {
+          "property": "description",
+          "cardinality": "1..*",
+          "fields": [
+            "notes_translated",
+            "notes"
+          ]
+        },
+        {
+          "property": "dataset distribution",
+          "cardinality": "1..*",
+          "fields": [
+            "resources"
+          ]
+        },
+        {
+          "property": "health category",
+          "cardinality": "1..*",
+          "fields": [
+            "health_category"
+          ]
+        },
+        {
+          "property": "structured data",
+          "cardinality": "1..1",
+          "fields": [
+            "has_structured_data"
+          ]
+        },
+        {
+          "property": "identifier",
+          "cardinality": "1..*",
+          "fields": [
+            "identifier"
+          ]
+        },
+        {
+          "property": "keyword",
+          "cardinality": "1..*",
+          "fields": [
+            "tags_translated",
+            "tags"
+          ]
+        },
+        {
+          "property": "provenance",
+          "cardinality": "1..*",
+          "fields": [
+            "provenance"
+          ]
+        },
+        {
+          "property": "theme",
+          "cardinality": "1..*",
+          "fields": [
+            "theme"
+          ]
+        },
+        {
+          "property": "title",
+          "cardinality": "1..*",
+          "fields": [
+            "title_translated",
+            "title"
+          ]
+        },
+        {
+          "property": "type",
+          "cardinality": "1..*",
+          "fields": [
+            "dcat_type"
+          ]
+        },
+        {
+          "property": "health data access body",
+          "cardinality": "1..1",
+          "fields": [
+            "hdab"
+          ]
+        }
+      ]
+    }
+  }
+}

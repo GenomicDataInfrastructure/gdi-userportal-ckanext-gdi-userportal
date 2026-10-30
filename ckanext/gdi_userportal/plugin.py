@@ -29,11 +29,13 @@ from ckanext.gdi_userportal.logic.action.get import (
     enhanced_package_search,
     enhanced_package_show,
     gdi_filter_help_texts_show,
+    gdi_metadata_profile_conformance,
 )
 from ckanext.gdi_userportal.logic.auth.get import (
     config_option_show,
     gdi_dataset_help_texts_show as gdi_dataset_help_texts_show_auth,
     gdi_filter_help_texts_show as gdi_filter_help_texts_show_auth,
+    gdi_metadata_profile_conformance as gdi_metadata_profile_conformance_auth,
 )
 from ckanext.gdi_userportal.validation import scheming_isodatetime_flex
 
@@ -179,6 +181,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "config_option_show": config_option_show,
             "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show_auth,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show_auth,
+            "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance_auth,
         }
 
     def get_actions(self):
@@ -187,6 +190,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "enhanced_package_show": enhanced_package_show,
             "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show,
+            "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance,
         }
 
     def get_helpers(self):

@@ -234,3 +234,31 @@ def test_variables_nest_table_group_table_and_column(generator):
 def test_related_resource_and_source_keep_the_key_of_the_existing_extras(generator):
     """No backfill: values saved as free extras become field values in place."""
     assert {"related_resource", "source"} <= set(dataset_fields(generator, ["healthdcat_r8"]))
+
+
+def test_retiring_r8_prunes_the_fields_only_r8_defines_and_spares_the_shared_extras(generator):
+    """related_resource and source stay: the shared RDF mapping reads and writes them as free extras."""
+    retired = generator.retired_fields(["gdi_current"])
+
+    assert set(retired["dataset_fields"]) == R8_ONLY - {"related_resource", "source"}
+    assert {packs[0] for packs in retired["dataset_fields"].values()} == {"healthdcat_r8"}
+    assert retired["resource_fields"] == {}
+
+
+def test_retiring_gdi_current_prunes_what_only_it_defines(generator):
+    retired = generator.retired_fields(["healthdcat_r8"])
+
+    assert set(retired["dataset_fields"]) == GDI_ONLY
+    assert retired["resource_fields"] == {}
+
+
+@pytest.mark.parametrize("profiles", [["gdi_current", "healthdcat_r8"], ["healthdcat_r8", "gdi_current"]])
+def test_with_both_packs_enabled_nothing_is_retired(generator, profiles):
+    assert generator.retired_fields(profiles) == {"dataset_fields": {}, "resource_fields": {}}
+
+
+def test_the_r8_pack_ships_its_conformance_rules(generator):
+    registry = generator.Registry()
+
+    assert registry.pack("healthdcat_r8").conformance == "conformance/healthdcat_r8.json"
+    assert registry.conformance(registry.pack("gdi_current")) is None

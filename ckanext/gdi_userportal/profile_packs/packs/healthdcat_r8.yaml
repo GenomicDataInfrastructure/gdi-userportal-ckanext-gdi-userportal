@@ -10,6 +10,10 @@
 # hours on the contact point of an agent, documentation on a data service). They are
 # redefined, so with both packs enabled the pack listed first decides: list healthdcat_r8
 # first to get the subfields.
+#
+# conformance holds the properties R8 makes mandatory per access layer, generated from R8's
+# cardinality rules by conformance_build.py. related_resource and source are kept when this
+# pack is retired: the shared RDF mapping reads and writes them as free extras in every profile.
 name: healthdcat_r8
 fragments:
   - core
@@ -29,3 +33,7 @@ redefines:
   - dataset_fields.publisher
   - dataset_fields.hdab
   - resource_fields.access_services
+conformance: conformance/healthdcat_r8.json
+keep_extras:
+  - related_resource
+  - source

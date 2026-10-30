@@ -589,3 +589,128 @@ def test_the_generator_imports_with_only_stdlib_and_pyyaml(generator):
             imported.add(node.module.split(".")[0])
 
     assert {name for name in imported if name not in sys.stdlib_module_names and name != "yaml"} == set()
+
+
+# --- retired fields (the prune command) ------------------------------------------------
+
+
+def retirement_root(make_root, b_keep=(), b_extra_fields=()):
+    return make_root(
+        {
+            "a": pack("a", ["fa"]),
+            "b": {**pack("b", ["fa", "fb"]), "keep_extras": list(b_keep)},
+            "c": pack("c", ["fc"]),
+        },
+        {
+            "fa": {"dataset_fields": [field("shared")]},
+            "fb": {
+                "dataset_fields": [field("only_b"), field("kept_b"), *b_extra_fields],
+                "resource_fields": [field("res_b")],
+            },
+            "fc": {"dataset_fields": [field("only_c"), field("only_b")]},
+        },
+    )
+
+
+def test_a_field_only_retired_packs_define_is_retired_with_the_packs_that_define_it(generator, make_root):
+    retired = generator.retired_fields(["a"], retirement_root(make_root))
+    assert retired["dataset_fields"] == {"only_b": ["b", "c"], "kept_b": ["b"], "only_c": ["c"]}
+    assert retired["resource_fields"] == {"res_b": ["b"]}
+
+
+def test_a_field_an_enabled_pack_defines_is_never_retired(generator, make_root):
+    # c defines only_c and only_b; a and b are retired, and only they define shared and kept_b
+    retired = generator.retired_fields(["c"], retirement_root(make_root))
+    assert set(retired["dataset_fields"]) == {"shared", "kept_b"}
+
+
+def test_the_shared_field_stays_while_any_pack_that_defines_it_is_enabled(generator, make_root):
+    root = retirement_root(make_root)
+    for enabled in (["a"], ["b"], ["a", "b"]):
+        assert "shared" not in generator.retired_fields(enabled, root)["dataset_fields"]
+
+
+def test_enabling_every_pack_retires_nothing(generator, make_root):
+    assert generator.retired_fields(["a", "b", "c"], retirement_root(make_root)) == {
+        "dataset_fields": {},
+        "resource_fields": {},
+    }
+
+
+def test_keep_extras_are_left_out_of_the_retired_fields(generator, make_root):
+    retired = generator.retired_fields(["a"], retirement_root(make_root, b_keep=["kept_b"]))
+    assert "kept_b" not in retired["dataset_fields"]
+    assert "only_b" in retired["dataset_fields"]
+
+
+def test_keeping_an_extra_the_pack_does_not_define_is_an_error(generator, make_root):
+    with pytest.raises(generator.ProfileError, match="keeps the extra 'ghost' but does not define it"):
+        generator.build_schema(["b"], retirement_root(make_root, b_keep=["ghost"]))
+
+
+def test_an_unknown_enabled_pack_is_reported(generator, make_root):
+    with pytest.raises(generator.ProfileError, match="unknown metadata profile 'nope'"):
+        generator.retired_fields(["nope"], retirement_root(make_root))
+
+
+# --- conformance files ------------------------------------------------------------------
+
+ALL_LAYERS = ("PUBLIC", "RESTRICTED", "NON_PUBLIC")
+
+
+def conformance_document(layers=None):
+    body = {"mandatory": [{"property": "title", "fields": ["title_translated"]}]}
+    return {"profile": "a", "layers": layers or {layer: body for layer in ALL_LAYERS}}
+
+
+def root_with_conformance(make_root, document, manifest_path="conformance/a.json"):
+    root = make_root({"a": {**pack("a", ["fa"]), "conformance": manifest_path}}, {"fa": {"dataset_fields": [field("x")]}})
+    if document is not None:
+        (root / "conformance").mkdir(exist_ok=True)
+        (root / "conformance" / "a.json").write_text(document if isinstance(document, str) else json.dumps(document))
+    return root
+
+
+def test_a_pack_loads_its_conformance_file(generator, make_root):
+    registry = generator.Registry(root_with_conformance(make_root, conformance_document()))
+    rules = registry.conformance(registry.pack("a"))
+    assert [r["property"] for r in rules["layers"]["PUBLIC"]["mandatory"]] == ["title"]
+
+
+def test_a_pack_without_a_conformance_file_has_no_rules(generator, make_root):
+    root = make_root({"a": pack("a", ["fa"])}, {"fa": {"dataset_fields": [field("x")]}})
+    registry = generator.Registry(root)
+    assert registry.conformance(registry.pack("a")) is None
+
+
+@pytest.mark.parametrize(
+    "document, message",
+    [
+        (None, "cannot read the conformance file"),
+        ("not json", "cannot read the conformance file"),
+        ("[]", "expected 'layers'"),
+        (conformance_document({"PUBLIC": {"mandatory": []}}), "expected 'layers' with exactly"),
+        (conformance_document({layer: {"mandatory": "x"} for layer in ALL_LAYERS}), "needs a 'mandatory' list"),
+        (
+            conformance_document({layer: {"mandatory": [{"property": "t", "fields": []}]} for layer in ALL_LAYERS}),
+            "needs a 'mandatory' list",
+        ),
+    ],
+)
+def test_a_broken_conformance_file_is_reported_when_loaded(generator, make_root, document, message):
+    registry = generator.Registry(root_with_conformance(make_root, document))
+    with pytest.raises(generator.ProfileError, match=message):
+        registry.conformance(registry.pack("a"))
+
+
+def test_a_conformance_path_cannot_leave_the_pack_root(generator, make_root):
+    root = root_with_conformance(make_root, conformance_document(), manifest_path="../outside.json")
+    registry = generator.Registry(root)
+    with pytest.raises(generator.ProfileError, match="outside"):
+        registry.conformance(registry.pack("a"))
+
+
+def test_the_conformance_manifest_key_must_be_a_string(generator, make_root):
+    root = make_root({"a": {**pack("a", ["fa"]), "conformance": ["x"]}}, {"fa": {"dataset_fields": [field("x")]}})
+    with pytest.raises(generator.ProfileError, match="'conformance' must be a path"):
+        generator.Registry(root).pack("a")
