@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# HealthDCAT-AP Release 8. It shares the neutral fields of gdi_current and adds the R8
+# fields in r8_additions. Fields only gdi_current defines (dataset_status,
+# trusted_data_holder) are left out: R8 has no such property.
+name: healthdcat_r8
+fragments:
+  - core
+  - dcat_ap_a
+  - dcat_ap_publisher
+  - dcat_ap_a2
+  - dcat_ap_b
+  - health_base_a
+  - health_base_b
+  - health_hdab
+  - health_access_services
+  - health_base_c
+  - r8_additions
+rdf_profiles:
+  - euro_health_dcat_ap_r8
+redefines: []
