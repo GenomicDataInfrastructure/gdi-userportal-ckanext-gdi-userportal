@@ -440,6 +440,9 @@ def test_the_config_options_for_the_default_profile(generator, tmp_path):
         "ckanext.dcat.rdf.profiles = fairdatapoint_dcat_ap euro_dcat_ap_nl",
         f"scheming.dataset_schemas = {schema_path.resolve().as_uri()} "
         "ckanext.gdi_userportal:scheming/schemas/dataset_series_multilingual.yaml",
+        "scheming.presets = ckanext.scheming:presets.json ckanext.dcat.schemas:presets.yaml "
+        "ckanext.fluent:presets.json ckanext.gdi_userportal:scheming/presets/gdi_presets.yaml "
+        "ckanext.dataset_series.schemas:presets.yaml",
     ]
 
 
@@ -520,7 +523,8 @@ def test_the_command_line_prints_the_config_options(generator, tmp_path, capsys)
     out = capsys.readouterr().out.splitlines()
     assert status == 0
     assert out[0] == "ckanext.dcat.metadata_profiles = gdi_current"
-    assert out[-1].startswith("scheming.dataset_schemas = file://")
+    assert out[-2].startswith("scheming.dataset_schemas = file://")
+    assert out[-1].startswith("scheming.presets = ")
 
 
 def test_the_command_line_reads_the_environment(generator, tmp_path, capsys):

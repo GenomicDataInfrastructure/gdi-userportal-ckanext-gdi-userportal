@@ -58,6 +58,16 @@ FIELD_SECTIONS = ("dataset_fields", "resource_fields")
 # Schemas that do not vary per profile and stay static files (ADR 4.2).
 STATIC_SCHEMAS = ("ckanext.gdi_userportal:scheming/schemas/dataset_series_multilingual.yaml",)
 
+# The generated schema uses these presets, and prerun.py loads it before setup_scheming.sh
+# could have configured them, so they are set together with the schema.
+SCHEMING_PRESETS = (
+    "ckanext.scheming:presets.json",
+    "ckanext.dcat.schemas:presets.yaml",
+    "ckanext.fluent:presets.json",
+    "ckanext.gdi_userportal:scheming/presets/gdi_presets.yaml",
+    "ckanext.dataset_series.schemas:presets.yaml",
+)
+
 SCHEMA_FILENAME = "dataset.yaml"
 PROVENANCE_FILENAME = "provenance.json"
 
@@ -417,6 +427,7 @@ def config_options(build, main, schema_path):
     options.append(
         ("scheming.dataset_schemas", " ".join([Path(schema_path).resolve().as_uri(), *STATIC_SCHEMAS]))
     )
+    options.append(("scheming.presets", " ".join(SCHEMING_PRESETS)))
     return [f"{key} = {value}" for key, value in options]
 
 
@@ -491,7 +502,7 @@ def generate(raw_profiles, raw_main, output_dir, root=PACK_ROOT, installed=None)
 
 def main(argv=None, environ=None):
     environ = os.environ if environ is None else environ
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     parser.add_argument("--output-dir", required=True, help="where dataset.yaml and provenance.json are written")
     parser.add_argument("--profiles", default=environ.get(ENV_PROFILES), help=f"default: ${ENV_PROFILES}")
     parser.add_argument(
