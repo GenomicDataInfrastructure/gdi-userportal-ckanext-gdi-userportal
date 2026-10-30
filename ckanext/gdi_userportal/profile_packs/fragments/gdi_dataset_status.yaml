@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dataset_fields:
+  - field_name: dataset_status
+    label: Dataset status
+    preset: select
+    validators: ignore_missing scheming_choices
+    choices:
+      - value: http://publications.europa.eu/resource/authority/dataset-status/COMPLETED
+        label: Completed
+      - value: http://publications.europa.eu/resource/authority/dataset-status/DEVELOP
+        label: Under Development
+      - value: http://publications.europa.eu/resource/authority/dataset-status/DEPRECATED
+        label: Deprecated
+      - value: http://publications.europa.eu/resource/authority/dataset-status/DISCONT
+        label: Discontinued
+      - value: http://publications.europa.eu/resource/authority/dataset-status/OP_DATPRO
+        label: Provisional Data
+      - value: http://publications.europa.eu/resource/authority/dataset-status/WITHDRAWN
+        label: Withdrawn
+    help_text: The status of the dataset as submitted by the data holder, in the context of maturity lifecycle. This is distinct from CKAN's internal dataset state.
+    filter_help_text:
+      en: Use this filter to search datasets by status.
+      nl: Gebruik dit filter om datasets te filteren op status.
+    facet_key: dataset_status

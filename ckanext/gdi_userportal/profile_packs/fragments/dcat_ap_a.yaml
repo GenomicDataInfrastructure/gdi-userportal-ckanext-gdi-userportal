@@ -1,0 +1,95 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dataset_fields:
+  - field_name: contact
+    label: Contact points
+    repeating_label: Contact point
+    repeating_subfields:
+      - field_name: uri
+        label: URI
+
+      - field_name: name
+        label: Name
+
+      - field_name: name_translated
+        label: Name (translations)
+        help_text: Name of the contact point in each language.
+
+      - field_name: email
+        label: Email
+        display_snippet: email.html
+
+      - field_name: identifier
+        label: Identifier
+        help_text: Unique identifier for the contact point. Such as a ROR ID.
+
+      - field_name: url
+        label: URL
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+        help_text: URL for more information about the contact point.
+    help_text: Contact information for enquiries about the dataset.
+
+  - field_name: publisher
+    label: Publisher
+    repeating_label: Publisher
+    repeating_once: true
+    repeating_subfields: !snippet agent_subfields
+    help_text: Entity responsible for making the dataset available.
+
+  - field_name: creator
+    label: Creator
+    repeating_label: Creator
+    repeating_subfields: !snippet agent_subfields
+
+  - field_name: license_id
+    label: License
+    form_snippet: license.html
+    help_text: License definitions and additional information can be found at http://opendefinition.org/.
+
+  - field_name: owner_org
+    label: Organization
+    preset: dataset_organization
+    help_text: The CKAN organization the dataset belongs to.
+
+  - field_name: url
+    label: Landing page
+    form_placeholder: http://example.com/dataset.json
+    display_snippet: link.html
+    help_text: Web page that can be navigated to gain access to the dataset, its distributions and/or additional information.
+
+  # Note: this will fall back to metadata_created if not present
+  - field_name: issued
+    label: Release date
+    preset: datetime_flex
+    help_text: Date of publication of the dataset.
+    filter_help_text:
+      en: Use this filter to search datasets by release date.
+      nl: Gebruik deze filter om datasets op releasedatum te zoeken.
+    facet_key: issued
+
+  # Note: this will fall back to metadata_modified if not present
+  - field_name: modified
+    label: Modification date
+    preset: datetime_flex
+    help_text: Most recent date on which the dataset was changed, updated or modified.
+    filter_help_text:
+      en: Use this filter to search datasets by modification date.
+      nl: Gebruik deze filter om datasets op wijzigingsdatum te zoeken.
+    facet_key: modified
+
+  - field_name: in_series
+    preset: dataset_series_in_series
+    help_text: Dataset series this dataset belongs to.
+
+  - field_name: version
+    label: Version
+    validators: ignore_missing unicode_safe package_version_validator
+    help_text: Version number or other version designation of the dataset.
+
+  - field_name: version_notes
+    label: Version notes
+    preset: fluent_markdown
+    help_text: A description of the differences between this version and a previous version of the dataset.

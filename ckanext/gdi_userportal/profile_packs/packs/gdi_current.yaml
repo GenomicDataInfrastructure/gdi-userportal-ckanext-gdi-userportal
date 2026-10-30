@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The metadata model the portal has always used. Its schema is the fragments below, in
+# order, which together equal scheming/schemas/dataset_multilingual.yaml.
+name: gdi_current
+fragments:
+  - core
+  - dcat_ap_a
+  - gdi_dataset_status
+  - dcat_ap_b
+  - health_base_a
+  - gdi_trusted_data_holder
+  - health_base_b
+rdf_profiles:
+  - fairdatapoint_dcat_ap
+  - euro_dcat_ap_nl
+redefines: []
