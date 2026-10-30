@@ -53,9 +53,22 @@ def test_every_mode_generates_a_schema(generator, profiles):
     assert names(schema["resource_fields"]), "no resource fields"
 
 
-@pytest.mark.parametrize("profiles", MODES, ids=" + ".join)
-def test_no_mode_has_a_conflict_left_unresolved(generator, profiles):
+# Shared fields R8 adds subfields to. The pack declares them, so that the pack listed first decides.
+REDEFINED = {"dataset_fields.publisher", "dataset_fields.hdab", "resource_fields.access_services"}
+CONTACT_POINT_SUBFIELDS = ["telephone", "opening_hours", "special_opening_hours"]
+
+
+@pytest.mark.parametrize("profiles", MODES[:2], ids=" + ".join)
+def test_one_pack_alone_has_no_conflict(generator, profiles):
     assert generator.build_schema(profiles).conflicts == []
+
+
+@pytest.mark.parametrize("profiles", MODES[2:], ids=" + ".join)
+def test_both_packs_conflict_on_the_redefined_fields_only_and_all_are_declared(generator, profiles):
+    conflicts = generator.build_schema(profiles).conflicts
+
+    assert {c["field"] for c in conflicts} == REDEFINED
+    assert all(c["winner"] == profiles[0] for c in conflicts)
 
 
 @pytest.mark.parametrize("profiles", MODES, ids=" + ".join)
@@ -147,12 +160,55 @@ def test_the_main_profile_decides_the_default_chain(generator, tmp_path):
     assert "ckanext.dcat.metadata_profiles.gdi_current.rdf_profiles = fairdatapoint_dcat_ap euro_dcat_ap_nl" in options
 
 
+def subfield_names(field):
+    return names(field["repeating_subfields"])
+
+
 def test_custodian_and_the_coordinator_have_the_subfields_of_hdab(generator):
     fields = dataset_fields(generator, ["healthdcat_r8"])
 
-    hdab = names(fields["hdab"]["repeating_subfields"])
-    assert names(fields["custodian"]["repeating_subfields"]) == hdab
-    assert names(fields["hdab_coordinator"]["repeating_subfields"]) == hdab
+    assert subfield_names(fields["custodian"]) == subfield_names(fields["hdab"])
+    assert subfield_names(fields["hdab_coordinator"]) == subfield_names(fields["hdab"])
+
+
+@pytest.mark.parametrize("name", ["hdab", "publisher"])
+def test_r8_agents_are_the_gdi_current_agents_plus_the_contact_point_subfields(generator, name):
+    """Guards the copy: the R8 snippets must not drift from the gdi_current ones."""
+    gdi = dataset_fields(generator, ["gdi_current"])[name]
+    r8 = dataset_fields(generator, ["healthdcat_r8"])[name]
+
+    assert subfield_names(r8) == subfield_names(gdi) + CONTACT_POINT_SUBFIELDS
+    assert r8["repeating_subfields"][: len(gdi["repeating_subfields"])] == gdi["repeating_subfields"]
+    assert {k: v for k, v in r8.items() if k != "repeating_subfields"} == {k: v for k, v in gdi.items() if k != "repeating_subfields"}
+
+
+def test_the_r8_access_services_are_the_gdi_current_ones_plus_documentation(generator):
+    gdi = {f["field_name"]: f for f in generator.build_schema(["gdi_current"]).schema["resource_fields"]}["access_services"]
+    r8 = {f["field_name"]: f for f in generator.build_schema(["healthdcat_r8"]).schema["resource_fields"]}["access_services"]
+
+    extra = [f for f in r8["repeating_subfields"] if f not in gdi["repeating_subfields"]]
+    assert [f["field_name"] for f in extra] == ["documentation"]
+    assert [f for f in r8["repeating_subfields"] if f["field_name"] != "documentation"] == gdi["repeating_subfields"]
+    assert {k: v for k, v in r8.items() if k != "repeating_subfields"} == {k: v for k, v in gdi.items() if k != "repeating_subfields"}
+
+
+def test_the_opening_hours_describe_a_temporal_entity(generator):
+    hdab = dataset_fields(generator, ["healthdcat_r8"])["hdab"]
+
+    for name in ("opening_hours", "special_opening_hours"):
+        field = next(f for f in hdab["repeating_subfields"] if f["field_name"] == name)
+        assert subfield_names(field) == ["description_translated", "frequency"]
+
+
+@pytest.mark.parametrize(
+    "profiles, has_subfields",
+    [(["healthdcat_r8"], True), (["healthdcat_r8", "gdi_current"], True), (["gdi_current", "healthdcat_r8"], False)],
+    ids=["r8", "r8 first", "gdi_current first"],
+)
+def test_the_pack_listed_first_decides_whether_the_contact_point_subfields_exist(generator, profiles, has_subfields):
+    hdab = dataset_fields(generator, profiles)["hdab"]
+
+    assert (set(CONTACT_POINT_SUBFIELDS) <= set(subfield_names(hdab))) is has_subfields
 
 
 def test_has_structured_data_is_a_boolean_like_trusted_data_holder(generator):

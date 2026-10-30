@@ -92,12 +92,12 @@ dataset_fields:
     label: Custodian
     repeating_label: Custodian
     repeating_once: true
-    repeating_subfields: !snippet hdab_subfields
+    repeating_subfields: !snippet hdab_subfields_r8
     help_text: The organisation that holds and takes care of the data (geodcatap:custodian).
 
   - field_name: hdab_coordinator
     label: Health data access body coordinator
     repeating_label: Health data access body coordinator
     repeating_once: true
-    repeating_subfields: !snippet hdab_subfields
+    repeating_subfields: !snippet hdab_subfields_r8
     help_text: The coordinator of the health data access bodies (healthdcatap:hdabCoordinator).

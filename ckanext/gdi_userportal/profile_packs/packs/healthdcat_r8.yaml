@@ -5,19 +5,27 @@
 # HealthDCAT-AP Release 8. It shares the neutral fields of gdi_current and adds the R8
 # fields in r8_additions. Fields only gdi_current defines (dataset_status,
 # trusted_data_holder) are left out: R8 has no such property.
+#
+# publisher, hdab and access_services are the shared fields R8 adds subfields to (opening
+# hours on the contact point of an agent, documentation on a data service). They are
+# redefined, so with both packs enabled the pack listed first decides: list healthdcat_r8
+# first to get the subfields.
 name: healthdcat_r8
 fragments:
   - core
   - dcat_ap_a
-  - dcat_ap_publisher
+  - r8_publisher
   - dcat_ap_a2
   - dcat_ap_b
   - health_base_a
   - health_base_b
-  - health_hdab
-  - health_access_services
+  - r8_hdab
+  - r8_access_services
   - health_base_c
   - r8_additions
 rdf_profiles:
   - euro_health_dcat_ap_r8
-redefines: []
+redefines:
+  - dataset_fields.publisher
+  - dataset_fields.hdab
+  - resource_fields.access_services

@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# hdab_subfields.yaml plus what R8 adds to the contact point of a HDAB.
+# test_healthdcat_r8_pack.py checks that nothing else differs.
+
+- field_name: uri
+  label: URI
+
+- field_name: name
+  label: Name
+
+- field_name: name_translated
+  label: Name (translations)
+  help_text: Name of the health data access body in each language.
+
+- field_name: email
+  label: Email
+  display_snippet: email.html
+
+- field_name: url
+  label: URL
+  display_snippet: link.html
+
+- field_name: type
+  label: Type
+
+- field_name: identifier
+  label: Identifier
+  help_text: Unique identifier for the HDAB, such as a ROR ID.
+
+- field_name: country
+  label: Country
+  help_text: Country of the HDAB, per the EU Publications Office country authority table.
+
+- field_name: telephone
+  label: Telephone
+  help_text: Telephone number of the contact point (cv:telephone).
+
+- field_name: opening_hours
+  label: Opening hours
+  repeating_label: Opening hours
+  help_text: When the contact point can be reached (cv:openingHours).
+  repeating_subfields:
+    - field_name: description_translated
+      label: Description (translations)
+      help_text: Description of the opening hours in each language.
+
+    - field_name: frequency
+      label: Frequency
+      help_text: How often the contact point is open, per the EU Publications Office frequency authority table.
+
+- field_name: special_opening_hours
+  label: Special opening hours
+  repeating_label: Special opening hours
+  help_text: Exceptions to the opening hours (cv:specialOpeningHoursSpecification).
+  repeating_subfields:
+    - field_name: description_translated
+      label: Description (translations)
+      help_text: Description of the exception in each language.
+
+    - field_name: frequency
+      label: Frequency
+      help_text: How often the exception applies, per the EU Publications Office frequency authority table.
