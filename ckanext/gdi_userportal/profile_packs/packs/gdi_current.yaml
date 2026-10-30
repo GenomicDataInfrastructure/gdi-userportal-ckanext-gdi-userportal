@@ -8,11 +8,16 @@ name: gdi_current
 fragments:
   - core
   - dcat_ap_a
+  - dcat_ap_publisher
+  - dcat_ap_a2
   - gdi_dataset_status
   - dcat_ap_b
   - health_base_a
   - gdi_trusted_data_holder
   - health_base_b
+  - health_hdab
+  - health_access_services
+  - health_base_c
 rdf_profiles:
   - fairdatapoint_dcat_ap
   - euro_dcat_ap_nl

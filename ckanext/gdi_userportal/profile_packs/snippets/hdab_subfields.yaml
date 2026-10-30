@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- field_name: uri
+  label: URI
+
+- field_name: name
+  label: Name
+
+- field_name: name_translated
+  label: Name (translations)
+  help_text: Name of the health data access body in each language.
+
+- field_name: email
+  label: Email
+  display_snippet: email.html
+
+- field_name: url
+  label: URL
+  display_snippet: link.html
+
+- field_name: type
+  label: Type
+
+- field_name: identifier
+  label: Identifier
+  help_text: Unique identifier for the HDAB, such as a ROR ID.
+
+- field_name: country
+  label: Country
+  help_text: Country of the HDAB, per the EU Publications Office country authority table.
