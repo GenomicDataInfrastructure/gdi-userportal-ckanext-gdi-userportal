@@ -103,14 +103,3 @@ dataset_fields:
       en: Use this filter to search datasets by personal data elements.
       nl: Gebruik deze filter om datasets op persoonsgegevens te zoeken.
     facet_key: personal_data
-
-  - field_name: publisher_note
-    label: Publisher note
-    preset: fluent_markdown
-    help_text: A description of the publisher activities.
-
-  - field_name: publisher_type
-    label: Publisher type
-    preset: multiple_text
-    validators: ignore_missing scheming_multiple_text
-    help_text: A type of organisation that makes the Dataset available.

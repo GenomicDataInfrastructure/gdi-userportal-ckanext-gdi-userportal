@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dataset_fields:
+  - field_name: creator
+    label: Creator
+    repeating_label: Creator
+    repeating_subfields: !snippet creator_subfields_r8

@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The HealthDCAT-AP publisher note and type on the dataset itself. R8 keeps both on the agent
+# (the description and dct:type of the publisher), so only gdi_current has them here.
+
+dataset_fields:
+  - field_name: publisher_note
+    label: Publisher note
+    preset: fluent_markdown
+    help_text: A description of the publisher activities.
+
+  - field_name: publisher_type
+    label: Publisher type
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: A type of organisation that makes the Dataset available.

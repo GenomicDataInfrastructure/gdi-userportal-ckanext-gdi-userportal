@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# agent_subfields.yaml plus what R8 adds to the contact point of a agent.
+# The agent of agent_subfields.yaml as R8 has it: without publisher_type (R8 types an agent
+# with dct:type, in type) and with the publisher note as the description of the agent
+# (dct:description), plus what R8 adds to the contact point.
 # test_healthdcat_r8_pack.py checks that nothing else differs.
 
 - field_name: uri
@@ -26,16 +28,11 @@
 - field_name: type
   label: Type
 
+# The key stays publisher_note: field names are the same in every profile.
 - field_name: publisher_note
-  label: Publisher note
+  label: Description
   preset: fluent_markdown
-  help_text: A description of the activities of the agent.
-
-- field_name: publisher_type
-  label: Publisher type
-  preset: multiple_text
-  validators: ignore_missing scheming_multiple_text
-  help_text: Type of organisation of the agent.
+  help_text: A description of the activities of the agent (dct:description).
 
 - field_name: identifier
   label: Identifier

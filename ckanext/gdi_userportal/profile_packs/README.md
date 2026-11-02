@@ -31,20 +31,28 @@ the container from starting.
 no such property. `related_resource` and `source` reuse the key of the free extras that exist
 today, so saved values become field values in place.
 
-**The order matters for three fields.** R8 adds subfields to `publisher`, `hdab` (the telephone
-and the opening hours of the contact point) and the resource field `access_services`
-(`documentation`). The pack declares them with `redefines`, so with both packs enabled the
-pack listed first decides. With `gdi_current` first they keep their `gdi_current` subfields, and
-a parsed value for a subfield that is missing is dropped, so the dataset stays valid. List
-`healthdcat_r8` first to keep them. The main profile is set apart from the order, so this does
-not change which mapping an export uses by default.
+The HealthDCAT-AP publisher note and publisher type are `gdi_current` only too, on the dataset
+and on the agents. R8 types an agent with `dct:type` (the `type` subfield) and writes its
+description as `dct:description`. The agent subfield keeps the key `publisher_note`, because field
+names are the same in every profile, and is labelled "Description" in R8. The R8 `creator` has
+no description and no contact point.
+
+**The order matters for four fields.** R8 defines `publisher`, `creator`, `hdab` and the resource
+field `access_services` differently: it adds subfields (the telephone and the opening hours of
+the contact point, `documentation`) and leaves out the legacy publisher type and note. The pack
+declares them with `redefines`, so with both packs enabled the pack listed first decides. With
+`gdi_current` first they keep their `gdi_current` subfields, and a parsed value for a subfield
+that is missing is dropped, so the dataset stays valid. List `healthdcat_r8` first to get the R8
+versions. The main profile is set apart from the order, so this does not change which mapping an
+export uses by default.
 
 R8 fields that allow several values where `gdi_current` holds one (`identifier`, `dcat_type`,
 the landing page, the access and download URL of a distribution, ...) stay single-valued. The
 R8 profile keeps the first value and logs a warning when it drops others (ADR 0001, Q3).
 
 The R8 variants of the agent snippets and of `access_services` are copies. The tests in
-`test_healthdcat_r8_pack.py` check that each equals the `gdi_current` one plus what R8 adds.
+`test_healthdcat_r8_pack.py` check that each equals the `gdi_current` one plus what R8 adds and
+minus what it leaves out.
 
 ## Layout
 

@@ -6,10 +6,11 @@
 # fields in r8_additions. Fields only gdi_current defines (dataset_status,
 # trusted_data_holder) are left out: R8 has no such property.
 #
-# publisher, hdab and access_services are the shared fields R8 adds subfields to (opening
-# hours on the contact point of an agent, documentation on a data service). They are
-# redefined, so with both packs enabled the pack listed first decides: list healthdcat_r8
-# first to get the subfields.
+# publisher, creator, hdab and access_services are the shared fields R8 defines differently:
+# R8 adds subfields (opening hours on the contact point of an agent, documentation on a data
+# service) and leaves out the HealthDCAT-AP publisher type and note, which only gdi_current
+# has. They are redefined, so with both packs enabled the pack listed first decides: list
+# healthdcat_r8 first to get the R8 versions.
 #
 # conformance holds the properties R8 makes mandatory per access layer, generated from R8's
 # cardinality rules by conformance_build.py. related_resource and source are kept when this
@@ -19,6 +20,7 @@ fragments:
   - core
   - dcat_ap_a
   - r8_publisher
+  - r8_creator
   - dcat_ap_a2
   - dcat_ap_b
   - health_base_a
@@ -31,6 +33,7 @@ rdf_profiles:
   - euro_health_dcat_ap_r8
 redefines:
   - dataset_fields.publisher
+  - dataset_fields.creator
   - dataset_fields.hdab
   - resource_fields.access_services
 conformance: conformance/healthdcat_r8.json
