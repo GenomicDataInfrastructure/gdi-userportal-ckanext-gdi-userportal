@@ -132,9 +132,23 @@ def scheming_missing_required_fields(
     return missing_per_page
 
 
+SHOW_EMPTY_PROPERTIES = "ckanext.gdi_userportal.show_empty_properties"
+
+
+def show_empty_properties() -> bool:
+    """Whether the display templates also list the properties that have no value.
+
+    Off by default: a page lists what the dataset holds. Switched on, every property the schema
+    defines gets a row, with a dash when it is empty, to see what the schema, the form and the
+    harvest can hold.
+    """
+    return tk.asbool(tk.config.get(SHOW_EMPTY_PROPERTIES, False))
+
+
 def get_helpers() -> dict[str, Any]:
     return {
         "scheming_missing_required_fields": scheming_missing_required_fields,
+        "gdi_show_empty_properties": show_empty_properties,
         "gdi_is_blank_value": _is_missing_value,
         "gdi_is_redundant_translation": is_redundant_translation,
     }

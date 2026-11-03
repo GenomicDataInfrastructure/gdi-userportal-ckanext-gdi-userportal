@@ -11,7 +11,6 @@
   'name',
   'description',
   'url',
-  'format',
   ] -%}
 {%- set schema = h.scheming_get_dataset_schema(dataset_type) -%}
 
@@ -34,28 +33,28 @@
         </thead>
       {%- endblock -%}
       <tbody>
-        {%- block resource_format -%}
-          {%- if res.format or res.mimetype_inner or res.mimetype -%}
-          <tr>
-            <th scope="row">{{ _('Format') }}</th>
-            <td>{{ res.format or res.mimetype_inner or res.mimetype }}</td>
-          </tr>
-          {%- endif -%}
-        {%- endblock -%}
+        {#- The format is a field of the schema, in the order of the others -#}
+        {%- block resource_format -%}{%- endblock -%}
         {%- block resource_fields -%}
+          {%- set show_empty = h.gdi_show_empty_properties() -%}
           {%- for field in schema.resource_fields -%}
+            {%- set blank = h.gdi_is_blank_value(res.get(field.field_name)) -%}
             {%- if field.field_name not in exclude_fields
                 and field.display_snippet is not none
-                and not h.gdi_is_blank_value(res.get(field.field_name)) -%}
+                and (show_empty or not blank) -%}
               <tr>
                 <th scope="row">
                   {{- h.scheming_language_text(field.label) -}}
                 </th>
+                {%- if blank %}
+                <td class="text-muted">&ndash;</td>
+                {%- else %}
                 <td>
                   {%- snippet 'scheming/snippets/display_field.html',
                       field=field, data=res, entity_type='dataset',
                       object_type=dataset_type -%}
                 </td>
+                {%- endif %}
               </tr>
             {%- endif -%}
           {%- endfor -%}

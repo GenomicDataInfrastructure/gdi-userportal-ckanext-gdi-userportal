@@ -29,6 +29,8 @@ def helpers():
         stubs[name] = types.ModuleType(name)
     stubs["ckan"].plugins = stubs["ckan.plugins"]
     stubs["ckan.plugins"].toolkit = stubs["ckan.plugins.toolkit"]
+    stubs["ckan.plugins.toolkit"].config = {}
+    stubs["ckan.plugins.toolkit"].asbool = lambda value: str(value).lower() in ("true", "1", "yes", "on")
     saved = {name: sys.modules.get(name) for name in stubs}
     sys.modules.update(stubs)
     try:
@@ -85,3 +87,15 @@ def test_a_translation_with_another_text_is_not_redundant(helpers):
 )
 def test_without_a_plain_value_to_repeat_nothing_is_redundant(helpers, field_name, entry):
     assert helpers.is_redundant_translation(field_name, entry) is False
+
+
+@pytest.mark.parametrize("setting, expected", [(None, False), ("false", False), ("true", True), ("True", True)])
+def test_empty_properties_are_shown_only_when_the_option_is_on(helpers, setting, expected):
+    config = helpers.tk.config
+    config.clear()
+    if setting is not None:
+        config["ckanext.gdi_userportal.show_empty_properties"] = setting
+    try:
+        assert helpers.get_helpers()["gdi_show_empty_properties"]() is expected
+    finally:
+        config.clear()
