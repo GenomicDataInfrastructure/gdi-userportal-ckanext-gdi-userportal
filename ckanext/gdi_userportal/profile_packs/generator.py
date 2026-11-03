@@ -90,6 +90,8 @@ FIELD_ORDERS = ("fragments", "alphabetical")
 LEADING_FIELDS = {
     "dataset_fields": ("title_translated", "notes_translated"),
     "resource_fields": ("name_translated", "description_translated"),
+    # the subfields of access_services (dcat:DataService), ordered by hand in the R8 fragment
+    "data_service_fields": ("title", "description"),
 }
 _SCHEMA_REFERENCE = re.compile(r"^[A-Za-z_][\w.]*:[\w./-]+\.ya?ml$")
 

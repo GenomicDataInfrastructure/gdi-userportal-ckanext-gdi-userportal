@@ -333,6 +333,20 @@ def test_the_r8_data_service_has_the_properties_of_dcat_dataservice_only(generat
     assert "multiple_text" not in str(subfields_of(contact, "url"))
 
 
+def test_the_r8_data_service_is_alphabetical_with_the_title_and_the_description_first(generator):
+    resource_fields = {f["field_name"]: f for f in generator.build_schema(["healthdcat_r8"]).schema["resource_fields"]}
+    service = resource_fields["access_services"]["repeating_subfields"]
+
+    assert [f["field_name"] for f in service] == [
+        f["field_name"] for f in generator.sort_alphabetically(service, "data_service_fields")
+    ]
+    assert [f["field_name"] for f in service[:2]] == ["title", "description"]
+    # the property names of dcat:DataService in R8
+    labels = {f["field_name"]: f["label"] for f in service}
+    assert labels["license"] == "Licence" and labels["contact"] == "Contact point"
+    assert labels["endpoint_url"] == "Endpoint URL" and labels["serves_dataset"] == "Serves dataset"
+
+
 def test_the_opening_hours_describe_a_temporal_entity(generator):
     hdab = dataset_fields(generator, ["healthdcat_r8"])["hdab"]
 

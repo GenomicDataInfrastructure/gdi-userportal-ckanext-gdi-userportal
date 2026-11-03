@@ -114,7 +114,9 @@ description first (`title_translated`, `notes_translated` and `name_translated`,
 distribution. Without it the order is that of the fragments. With several packs enabled the pack listed
 first decides. `healthdcat_r8` is alphabetical, `gdi_current` keeps the order of its fragments; the
 static series schema of the R8 pack, `dataset_series_r8.yaml`, is kept in the same order by hand (a test
-checks it). The subfields of a field keep their own order, which follows the model.
+checks it). The subfields of a field keep their own order, which follows the model, except those of a data
+service (`access_services` in the R8 pack): they are in the same alphabetical order, title and description
+first, kept by hand in `r8_access_services.yaml` and checked by a test.
 
 **Dataset series.** A series is not generated from fragments: each pack that has a model for it
 ships a static schema and names it with `series_schema`. With several packs enabled the one listed
