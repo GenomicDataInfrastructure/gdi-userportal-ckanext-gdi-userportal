@@ -760,3 +760,57 @@ def test_a_series_schema_must_be_a_schema_reference(generator, make_root, value)
     with pytest.raises(generator.ProfileError, match="series_schema"):
         generator.Registry(root).pack("a")
 
+
+
+# --- overrides ---------------------------------------------------------------------
+
+
+def test_an_override_replaces_keys_of_a_field_for_its_pack_only(generator, make_root):
+    root = make_root(
+        {
+            "a": {**pack("a", ["fa"]), "overrides": {"dataset_fields.x": {"label": "Ex", "repeating_once": True}}},
+            "b": pack("b", ["fb"]),
+        },
+        {"fa": {"dataset_fields": [field("x", help_text="h")]}, "fb": {"dataset_fields": [field("x", help_text="h")]}},
+    )
+
+    (only_a,) = generator.build_schema(["a"], root=root).schema["dataset_fields"]
+    (only_b,) = generator.build_schema(["b"], root=root).schema["dataset_fields"]
+
+    assert only_a == {"field_name": "x", "label": "Ex", "help_text": "h", "repeating_once": True}
+    assert only_b["label"] == "X" and "repeating_once" not in only_b
+
+
+def test_an_overridden_field_that_differs_between_packs_needs_a_redefines(generator, make_root):
+    fragments = {"fa": {"dataset_fields": [field("x")]}, "fb": {"dataset_fields": [field("x")]}}
+    overrides = {"overrides": {"dataset_fields.x": {"label": "Ex"}}}
+
+    undeclared = make_root({"a": {**pack("a", ["fa"]), **overrides}, "b": pack("b", ["fb"])}, fragments)
+    with pytest.raises(generator.ProfileError, match="dataset_fields.x"):
+        generator.build_schema(["a", "b"], root=undeclared)
+
+    declared = make_root(
+        {"a": {**pack("a", ["fa"], redefines=["dataset_fields.x"]), **overrides}, "b": pack("b", ["fb"])}, fragments
+    )
+    build = generator.build_schema(["a", "b"], root=declared)
+
+    assert build.schema["dataset_fields"][0]["label"] == "Ex"
+    assert [c["field"] for c in build.conflicts] == ["dataset_fields.x"]
+
+
+def test_an_override_of_a_field_the_pack_does_not_define_is_an_error(generator, make_root):
+    root = make_root(
+        {"a": {**pack("a", ["fa"]), "overrides": {"dataset_fields.nope": {"label": "N"}}}},
+        {"fa": {"dataset_fields": [field("x")]}},
+    )
+
+    with pytest.raises(generator.ProfileError, match="overrides 'dataset_fields.nope' but does not define it"):
+        generator.build_schema(["a"], root=root)
+
+
+@pytest.mark.parametrize("bad", [["dataset_fields.x"], {"dataset_fields.x": "label"}, {"dataset_fields.x": {}}])
+def test_overrides_must_map_fields_to_keys(generator, make_root, bad):
+    root = make_root({"a": {**pack("a", ["fa"]), "overrides": bad}}, {"fa": {"dataset_fields": [field("x")]}})
+
+    with pytest.raises(generator.ProfileError, match="overrides"):
+        generator.build_schema(["a"], root=root)

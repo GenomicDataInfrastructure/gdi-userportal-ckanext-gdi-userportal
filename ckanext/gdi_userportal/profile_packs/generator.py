@@ -81,7 +81,9 @@ PROVENANCE_FILENAME = "provenance.json"
 
 _NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 _SEPARATORS = re.compile(r"[,\s]+")
-_MANIFEST_KEYS = {"name", "fragments", "rdf_profiles", "redefines", "conformance", "keep_extras", "series_schema"}
+_MANIFEST_KEYS = {
+    "name", "fragments", "rdf_profiles", "redefines", "conformance", "keep_extras", "series_schema", "overrides",
+}
 _SCHEMA_REFERENCE = re.compile(r"^[A-Za-z_][\w.]*:[\w./-]+\.ya?ml$")
 
 
@@ -130,6 +132,10 @@ class Pack:
     # The static scheming schema of the dataset series (module:path/to/file.yaml); with several
     # packs enabled the first listed pack that has one decides.
     series_schema: typing.Optional[str] = None
+    # "<section>.<field_name>" -> keys that replace those of the field as a fragment defines it, for
+    # this pack only: a label or a cardinality that differs, without a fragment of its own. A field
+    # that ends up differing between packs still needs a ``redefines`` entry.
+    overrides: typing.Mapping = dataclasses.field(default_factory=dict)
 
 
 class Registry:
@@ -168,6 +174,12 @@ class Registry:
         series_schema = manifest.get("series_schema")
         if series_schema is not None and not (isinstance(series_schema, str) and _SCHEMA_REFERENCE.match(series_schema)):
             raise ProfileError(f"{path}: 'series_schema' must look like 'module.name:path/to/schema.yaml'")
+        overrides = manifest.get("overrides") or {}
+        if not (
+            isinstance(overrides, dict)
+            and all(isinstance(k, str) and isinstance(v, dict) and v for k, v in overrides.items())
+        ):
+            raise ProfileError(f"{path}: 'overrides' must map '<section>.<field_name>' to the keys to replace")
         return Pack(
             name,
             tuple(fragments),
@@ -176,6 +188,7 @@ class Registry:
             conformance,
             frozenset(keep_extras),
             series_schema,
+            overrides,
         )
 
     def conformance(self, pack):
@@ -360,6 +373,8 @@ def build_schema(profiles, root=PACK_ROOT):
                 else:
                     entries = [(top_key, value)]
                 for key, entry in entries:
+                    if key in pack.overrides:
+                        entry = {**entry, **pack.overrides[key]}
                     if key not in definitions:
                         definitions[key] = []
                         order.append(key)
@@ -367,6 +382,8 @@ def build_schema(profiles, root=PACK_ROOT):
                     defined_by_pack.add(key)
         for key in sorted(pack.redefines - defined_by_pack):
             raise ProfileError(f"pack '{pack.name}' redefines '{key}' but does not define it")
+        for key in sorted(set(pack.overrides) - defined_by_pack):
+            raise ProfileError(f"pack '{pack.name}' overrides '{key}' but does not define it")
         for name in sorted(pack.keep_extras):
             if f"dataset_fields.{name}" not in defined_by_pack:
                 raise ProfileError(f"pack '{pack.name}' keeps the extra '{name}' but does not define it as a dataset field")
