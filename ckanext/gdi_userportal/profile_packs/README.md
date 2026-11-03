@@ -56,10 +56,14 @@ subfield that holds one value keeps the first, with a warning), so the dataset s
 `healthdcat_r8` first to get the R8 versions. The main profile is set apart from the order, so this
 does not change which mapping an export uses by default.
 
-R8 fields that allow several values where `gdi_current` holds one (`identifier`, `dcat_type`,
-the landing page, the access and download URL of a distribution, ...) stay single-valued (the
-relations and roles of `qualified_relation` are lists in R8). The
-R8 profile keeps the first value and logs a warning when it drops others (ADR 0001, Q3).
+R8 fields that allow several values where `gdi_current` holds one and that are lists in the R8 pack:
+the relations and roles of `qualified_relation`, the roles of `qualified_attribution`, the landing
+page (`url`) and the type (`dcat_type`) of a dataset. The Discovery Service still reads one landing
+page and one type, so it has to follow before an R8-first deployment is used with it. Solr keeps one
+value in `url` and `dcat_type` (changing `multiValued` needs a reindex): `before_dataset_index` puts
+the first value there, and every type in `vocab_dcat_type`. The identifier, the access and download
+URL and the rights of a distribution, and a few data service properties stay single-valued: the R8
+profile keeps the first value and logs a warning when it drops others (ADR 0001, Q3).
 
 The R8 variants of the agent snippets and of `access_services` are copies. The tests in
 `test_healthdcat_r8_pack.py` check that each equals the `gdi_current` one plus what R8 adds and

@@ -71,6 +71,8 @@ REDEFINED = {
     "dataset_fields.spatial_resolution_in_meters",
     "dataset_fields.retention_period",
     "resource_fields.spatial_resolution_in_meters",
+    "dataset_fields.url",
+    "dataset_fields.dcat_type",
     "resource_fields.access_services",
 }
 # R8 agents (HealthDCAT-AP R8, Agent_Shape and the health agent shapes): a name and a type, the
@@ -520,3 +522,13 @@ def test_r8_attribution_holds_several_roles_and_gdi_current_one(generator):
 
     assert is_list(role(["healthdcat_r8"]))
     assert not is_list(role(["gdi_current"]))
+
+
+def test_r8_landing_page_and_type_are_lists_and_gdi_current_keeps_one_value(generator):
+    r8 = dataset_fields(generator, ["healthdcat_r8"])
+    gdi = dataset_fields(generator, ["gdi_current"])
+
+    for name in ("url", "dcat_type"):
+        assert is_list(r8[name]), name
+        assert not is_list(gdi[name]), name
+    assert r8["url"]["display_snippet"] == "link_list.html"
