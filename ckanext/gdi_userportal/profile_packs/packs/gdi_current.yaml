@@ -10,9 +10,12 @@ fragments:
   - dcat_ap_a
   - dcat_ap_publisher
   - dcat_ap_creator
+  - gdi_license
   - dcat_ap_a2
   - gdi_dataset_status
   - dcat_ap_b
+  - gdi_resource_retention
+  - dcat_ap_b2
   - health_base_a
   - gdi_publisher_legacy
   - gdi_trusted_data_holder
@@ -20,6 +23,9 @@ fragments:
   - health_hdab
   - health_access_services
   - health_base_c
+  - gdi_activity
+  - gdi_attribution
+  - health_base_c2
 rdf_profiles:
   - fairdatapoint_dcat_ap
   - euro_dcat_ap_nl

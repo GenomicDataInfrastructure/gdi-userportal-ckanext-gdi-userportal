@@ -11,8 +11,10 @@ have to generate valid schemas in every mode, and the fields they share have to 
 
 import pytest
 
-# publisher_note and publisher_type on the dataset are the HealthDCAT-AP ones; R8 keeps both on the agent
-GDI_ONLY = {"dataset_status", "trusted_data_holder", "publisher_note", "publisher_type"}
+# What only gdi_current has. publisher_note and publisher_type on the dataset are the HealthDCAT-AP
+# ones (R8 has the note on the publisher only); the license is on the distributions in R8.
+GDI_ONLY = {"dataset_status", "trusted_data_holder", "publisher_note", "publisher_type", "license_id"}
+GDI_ONLY_RESOURCE = {"retention_period"}
 R8_ONLY = {
     "alternative_title",
     "related_resource",
@@ -56,12 +58,24 @@ def test_every_mode_generates_a_schema(generator, profiles):
 
 # Shared fields R8 defines differently. The pack declares them, so that the pack listed first decides.
 REDEFINED = {
+    "dataset_fields.contact",
     "dataset_fields.publisher",
     "dataset_fields.creator",
+    "dataset_fields.qualified_attribution",
+    "dataset_fields.was_generated_by",
     "dataset_fields.hdab",
     "resource_fields.access_services",
 }
-LEGACY_AGENT_SUBFIELDS = {"publisher_type"}
+# R8 agents (HealthDCAT-AP R8, Agent_Shape and the health agent shapes): a name and a type, the
+# health agents of a dataset add the contact point and the publisher a description.
+AGENT = {"uri", "name", "name_translated", "type"}
+CONTACT_POINT = {"email", "url", "telephone", "opening_hours", "special_opening_hours"}
+# dcat:DataService, from the data service table of the R8 gap analysis
+DATA_SERVICE = {
+    "uri", "title", "description", "theme", "endpoint_description", "endpoint_url", "serves_dataset",
+    "access_rights", "conforms_to", "format", "landing_page", "documentation", "keyword",
+    "keyword_translated", "applicable_legislation", "contact", "publisher", "license",
+}
 CONTACT_POINT_SUBFIELDS = ["telephone", "opening_hours", "special_opening_hours"]
 
 
@@ -178,64 +192,86 @@ def test_custodian_and_the_coordinator_have_the_subfields_of_hdab(generator):
     assert subfield_names(fields["hdab_coordinator"]) == subfield_names(fields["hdab"])
 
 
-def test_r8_hdab_is_the_gdi_current_hdab_plus_the_contact_point_subfields(generator):
-    """Guards the copy: the R8 snippet must not drift from the gdi_current one."""
-    gdi = dataset_fields(generator, ["gdi_current"])["hdab"]
-    r8 = dataset_fields(generator, ["healthdcat_r8"])["hdab"]
-
-    assert subfield_names(r8) == subfield_names(gdi) + CONTACT_POINT_SUBFIELDS
-    assert r8["repeating_subfields"][: len(gdi["repeating_subfields"])] == gdi["repeating_subfields"]
-    assert {k: v for k, v in r8.items() if k != "repeating_subfields"} == {k: v for k, v in gdi.items() if k != "repeating_subfields"}
+def subfields_of(field, *path):
+    for name in path:
+        field = next(f for f in field["repeating_subfields"] if f["field_name"] == name)
+    return field
 
 
-def test_r8_publisher_is_the_gdi_current_publisher_without_the_legacy_type_plus_the_contact_point(generator):
-    gdi = dataset_fields(generator, ["gdi_current"])["publisher"]
-    r8 = dataset_fields(generator, ["healthdcat_r8"])["publisher"]
-
-    kept = [f for f in gdi["repeating_subfields"] if f["field_name"] not in LEGACY_AGENT_SUBFIELDS]
-    note = next(f for f in r8["repeating_subfields"] if f["field_name"] == "publisher_note")
-
-    assert subfield_names(r8) == [f["field_name"] for f in kept] + CONTACT_POINT_SUBFIELDS
-    assert [f for f in r8["repeating_subfields"] if f["field_name"] not in {"publisher_note", *CONTACT_POINT_SUBFIELDS}] == [
-        f for f in kept if f["field_name"] != "publisher_note"
-    ]
-    # R8 reads dct:description into the same key, so the key stays and only the label tells R8 apart
-    assert note["label"] == "Description"
-    assert {k: v for k, v in r8.items() if k != "repeating_subfields"} == {k: v for k, v in gdi.items() if k != "repeating_subfields"}
-
-
-def test_r8_agents_have_no_legacy_publisher_type(generator):
+def test_r8_agents_have_only_the_properties_of_the_r8_model(generator):
     fields = dataset_fields(generator, ["healthdcat_r8"])
 
-    for name in ("publisher", "creator", "hdab", "custodian", "hdab_coordinator"):
-        assert not LEGACY_AGENT_SUBFIELDS & set(subfield_names(fields[name])), name
+    assert set(subfield_names(fields["creator"])) == AGENT
+    assert set(subfield_names(subfields_of(fields["qualified_attribution"], "agent"))) == AGENT
+    assert set(subfield_names(fields["publisher"])) == AGENT | CONTACT_POINT | {"publisher_note"}
+    for name in ("hdab", "custodian", "hdab_coordinator"):
+        assert set(subfield_names(fields[name])) == AGENT | CONTACT_POINT, name
 
 
-def test_the_r8_creator_has_no_publisher_note_or_type_and_no_contact_point(generator):
-    creator = dataset_fields(generator, ["healthdcat_r8"])["creator"]
+def test_the_r8_activity_has_a_label_and_a_type_and_gdi_current_keeps_the_rest(generator):
+    r8 = dataset_fields(generator, ["healthdcat_r8"])["was_generated_by"]
+    gdi = dataset_fields(generator, ["gdi_current"])["was_generated_by"]
 
-    assert subfield_names(creator) == ["uri", "name", "name_translated", "email", "url", "type", "identifier", "country"]
+    assert subfield_names(r8) == ["uri", "label", "type", "dct_type"]
+    assert {"seeAlso", "startedAtTime", "wasAssociatedWith"} <= set(subfield_names(gdi))
 
 
-def test_gdi_current_keeps_the_legacy_publisher_fields_on_the_creator_and_the_dataset(generator):
+def test_the_note_of_the_r8_publisher_is_its_description(generator):
+    note = subfields_of(dataset_fields(generator, ["healthdcat_r8"])["publisher"], "publisher_note")
+
+    # R8 reads dct:description into the same key, so the key stays and only the label tells R8 apart
+    assert note["label"] == "Description"
+
+
+def test_the_contact_page_of_an_r8_agent_is_labelled_as_such(generator):
+    fields = dataset_fields(generator, ["healthdcat_r8"])
+
+    for name in ("publisher", "hdab", "custodian", "hdab_coordinator"):
+        assert subfields_of(fields[name], "url")["label"] == "Contact page", name
+
+
+def test_an_r8_contact_point_has_one_email_and_one_contact_page(generator):
+    contact = dataset_fields(generator, ["healthdcat_r8"])["contact"]
+    url = subfields_of(contact, "url")
+
+    assert set(subfield_names(contact)) == {"uri", "name", "name_translated", "email", "url"}
+    assert "multiple_text" not in str(url), "vcard:Kind allows one vcard:hasURL"
+
+
+def test_gdi_current_keeps_what_r8_leaves_out_of_the_agents_and_the_contact(generator):
     fields = dataset_fields(generator, ["gdi_current"])
 
+    for name in ("creator", "publisher", "hdab"):
+        assert {"identifier", "country"} <= set(subfield_names(fields[name])), name
     assert {"publisher_note", "publisher_type"} <= set(subfield_names(fields["creator"]))
-    assert {"publisher_note", "publisher_type"} <= set(fields)
+    assert {"publisher_note", "publisher_type"} <= set(subfield_names(fields["publisher"]))
+    assert {"publisher_note", "publisher_type", "license_id"} <= set(fields)
+    assert "multiple_text" in str(subfields_of(fields["contact"], "url"))
 
 
-def test_r8_has_no_legacy_publisher_fields_on_the_dataset(generator):
-    assert not {"publisher_note", "publisher_type"} & set(dataset_fields(generator, ["healthdcat_r8"]))
+def test_r8_has_no_legacy_publisher_fields_and_no_dataset_license(generator):
+    fields = dataset_fields(generator, ["healthdcat_r8"])
+
+    assert not {"publisher_note", "publisher_type", "license_id"} & set(fields)
 
 
-def test_the_r8_access_services_are_the_gdi_current_ones_plus_documentation(generator):
-    gdi = {f["field_name"]: f for f in generator.build_schema(["gdi_current"]).schema["resource_fields"]}["access_services"]
-    r8 = {f["field_name"]: f for f in generator.build_schema(["healthdcat_r8"]).schema["resource_fields"]}["access_services"]
+def test_the_r8_distribution_has_no_retention_period_and_gdi_current_keeps_it(generator):
+    def resource_names(profiles):
+        return set(names(generator.build_schema(profiles).schema["resource_fields"]))
 
-    extra = [f for f in r8["repeating_subfields"] if f not in gdi["repeating_subfields"]]
-    assert [f["field_name"] for f in extra] == ["documentation"]
-    assert [f for f in r8["repeating_subfields"] if f["field_name"] != "documentation"] == gdi["repeating_subfields"]
-    assert {k: v for k, v in r8.items() if k != "repeating_subfields"} == {k: v for k, v in gdi.items() if k != "repeating_subfields"}
+    assert not GDI_ONLY_RESOURCE & resource_names(["healthdcat_r8"])
+    assert GDI_ONLY_RESOURCE <= resource_names(["gdi_current"])
+
+
+def test_the_r8_data_service_has_the_properties_of_dcat_dataservice_only(generator):
+    resource_fields = {f["field_name"]: f for f in generator.build_schema(["healthdcat_r8"]).schema["resource_fields"]}
+    service = resource_fields["access_services"]
+
+    assert set(subfield_names(service)) == DATA_SERVICE
+    assert set(subfield_names(subfields_of(service, "publisher"))) == AGENT
+    contact = subfields_of(service, "contact")
+    assert "identifier" not in subfield_names(contact)
+    assert "multiple_text" not in str(subfields_of(contact, "url"))
 
 
 def test_the_opening_hours_describe_a_temporal_entity(generator):
@@ -295,7 +331,7 @@ def test_retiring_gdi_current_prunes_what_only_it_defines(generator):
     retired = generator.retired_fields(["healthdcat_r8"])
 
     assert set(retired["dataset_fields"]) == GDI_ONLY
-    assert retired["resource_fields"] == {}
+    assert set(retired["resource_fields"]) == GDI_ONLY_RESOURCE
 
 
 @pytest.mark.parametrize("profiles", [["gdi_current", "healthdcat_r8"], ["healthdcat_r8", "gdi_current"]])

@@ -31,20 +31,25 @@ the container from starting.
 no such property. `related_resource` and `source` reuse the key of the free extras that exist
 today, so saved values become field values in place.
 
-The HealthDCAT-AP publisher note and publisher type are `gdi_current` only too, on the dataset
-and on the agents. R8 types an agent with `dct:type` (the `type` subfield) and writes its
-description as `dct:description`. The agent subfield keeps the key `publisher_note`, because field
-names are the same in every profile, and is labelled "Description" in R8. The R8 `creator` has
-no description and no contact point.
+The R8 pack holds the properties of the R8 model and nothing else; what only `gdi_current` has
+stays in `gdi_current`. That is the HealthDCAT-AP publisher note and type (on the dataset and on the
+agents), the license of the dataset, the retention period of a distribution, the identifier and
+country of an agent, and the extra subfields of the activity and of a data service. R8 types an
+agent with `dct:type` (the `type` subfield) and writes the description of a publisher as
+`dct:description`; that subfield keeps the key `publisher_note`, because field names are the same in
+every profile, and is labelled "Description" in R8. In R8 the email and the contact page of a health
+agent belong to its contact point, so the subfield `url` is labelled "Contact page".
 
-**The order matters for four fields.** R8 defines `publisher`, `creator`, `hdab` and the resource
-field `access_services` differently: it adds subfields (the telephone and the opening hours of
-the contact point, `documentation`) and leaves out the legacy publisher type and note. The pack
-declares them with `redefines`, so with both packs enabled the pack listed first decides. With
-`gdi_current` first they keep their `gdi_current` subfields, and a parsed value for a subfield
-that is missing is dropped, so the dataset stays valid. List `healthdcat_r8` first to get the R8
-versions. The main profile is set apart from the order, so this does not change which mapping an
-export uses by default.
+**The order matters for seven fields.** R8 defines `contact`, `publisher`, `creator`,
+`qualified_attribution`, `was_generated_by`, `hdab` and the resource field `access_services`
+differently: a contact point with one contact page (`vcard:Kind` has at most one `vcard:hasURL`),
+plain agents with a name and a type (the health agents of a dataset add the contact point with the
+telephone and the opening hours, the publisher a description), an activity with a label and a type,
+and the properties of `dcat:DataService` only. The pack declares them with `redefines`, so with both
+packs enabled the pack listed first decides. With `gdi_current` first they keep their `gdi_current`
+subfields, and a parsed value for a subfield that is missing is dropped, so the dataset stays valid.
+List `healthdcat_r8` first to get the R8 versions. The main profile is set apart from the order, so
+this does not change which mapping an export uses by default.
 
 R8 fields that allow several values where `gdi_current` holds one (`identifier`, `dcat_type`,
 the landing page, the access and download URL of a distribution, ...) stay single-valued. The

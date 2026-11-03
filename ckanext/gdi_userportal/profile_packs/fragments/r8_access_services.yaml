@@ -52,25 +52,6 @@ resource_fields:
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text
 
-      - field_name: identifier
-        label: Identifier
-
-      - field_name: alternate_identifier
-        label: Other identifier
-        preset: multiple_text
-        validators: ignore_missing scheming_multiple_text
-        help_text: A secondary identifier of the data service, distinct from its primary identifier above.
-
-      - field_name: language
-        label: Language
-        preset: multiple_text
-        validators: ignore_missing scheming_multiple_text
-
-      - field_name: rights
-        label: Rights
-        form_snippet: markdown.html
-        help_text: Rights statement for the data service.
-
       - field_name: landing_page
         label: Landing page
         preset: multiple_text
@@ -117,43 +98,19 @@ resource_fields:
             label: Email
             display_snippet: email.html
 
-          - field_name: identifier
-            label: Identifier
-            help_text: Unique identifier for the contact point, such as a ROR ID.
-
           - field_name: url
-            label: URL
-            preset: multiple_text
-            validators: ignore_missing scheming_multiple_text
+            label: Contact page
             display_snippet: link.html
         help_text: Contact information for enquiries about the data service.
-
-      - field_name: creator
-        label: Creator
-        repeating_label: Creator
-        repeating_subfields: !snippet agent_subfields
 
       - field_name: publisher
         label: Publisher
         repeating_label: Publisher
         repeating_once: true
-        repeating_subfields: !snippet agent_subfields
+        repeating_subfields: !snippet agent_basic_subfields_r8
         help_text: Entity responsible for making the data service available.
 
       - field_name: license
         label: License
         help_text: License in which the data service is made available.
-
-      - field_name: modified
-        label: Modification date
-        preset: datetime_flex
-        help_text: Most recent date on which the data service was changed, updated or modified.
-
-      - field_name: hvd_category
-        label: HVD Category
-        help_text: A data category defined in the High Value Dataset Implementing Regulation.
-        preset: multiple_text
-        validators: ignore_missing scheming_multiple_text
-
-    help_text: A data service that gives access to the resource.
 

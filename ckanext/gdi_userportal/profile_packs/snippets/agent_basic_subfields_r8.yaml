@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# A plain foaf:Agent as R8 has it: a name and a type. It is the creator of a dataset, the agent of
+# an attribution and the publisher of a data service; only the health agents of a dataset (publisher,
+# hdab, custodian, coordinator) have a contact point.
+
+- field_name: uri
+  label: URI
+
+- field_name: name
+  label: Name
+
+- field_name: name_translated
+  label: Name (translations)
+  help_text: Name of the entity or person in each language.
+
+- field_name: type
+  label: Type

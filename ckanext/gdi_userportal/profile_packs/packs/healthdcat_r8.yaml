@@ -2,15 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# HealthDCAT-AP Release 8. It shares the neutral fields of gdi_current and adds the R8
-# fields in r8_additions. Fields only gdi_current defines (dataset_status,
-# trusted_data_holder) are left out: R8 has no such property.
+# HealthDCAT-AP Release 8. It holds the properties of the R8 model and nothing else: what only
+# gdi_current has (dataset_status, trusted_data_holder, the dataset license, the retention period of
+# a distribution, the legacy publisher type and note, the identifier and country of an agent, ...)
+# is left out, and lives in fragments of the gdi_current pack.
 #
-# publisher, creator, hdab and access_services are the shared fields R8 defines differently:
-# R8 adds subfields (opening hours on the contact point of an agent, documentation on a data
-# service) and leaves out the HealthDCAT-AP publisher type and note, which only gdi_current
-# has. They are redefined, so with both packs enabled the pack listed first decides: list
-# healthdcat_r8 first to get the R8 versions.
+# contact, publisher, creator, qualified_attribution, was_generated_by, hdab and access_services
+# are the shared fields R8 defines differently: R8 has a contact point with one contact page, plain
+# agents (a name and a type; the health agents of a dataset add a contact point, and the publisher
+# a description), an activity with a label and a type, and the properties of dcat:DataService only.
+# They are redefined, so with both packs enabled the pack listed first decides: list healthdcat_r8
+# first to get the R8 versions.
 #
 # conformance holds the properties R8 makes mandatory per access layer, generated from R8's
 # cardinality rules by conformance_build.py. related_resource and source are kept when this
@@ -18,22 +20,29 @@
 name: healthdcat_r8
 fragments:
   - core
-  - dcat_ap_a
+  - r8_contact
   - r8_publisher
   - r8_creator
   - dcat_ap_a2
   - dcat_ap_b
+  - dcat_ap_b2
   - health_base_a
   - health_base_b
   - r8_hdab
   - r8_access_services
   - health_base_c
+  - r8_activity
+  - r8_attribution
+  - health_base_c2
   - r8_additions
 rdf_profiles:
   - euro_health_dcat_ap_r8
 redefines:
+  - dataset_fields.contact
   - dataset_fields.publisher
   - dataset_fields.creator
+  - dataset_fields.qualified_attribution
+  - dataset_fields.was_generated_by
   - dataset_fields.hdab
   - resource_fields.access_services
 conformance: conformance/healthdcat_r8.json
