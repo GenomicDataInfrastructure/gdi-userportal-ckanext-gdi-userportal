@@ -42,7 +42,7 @@ dataset_fields:
     help_text: The variables of a structured dataset, as a CSVW table group (healthdcatap:hasVariables).
     repeating_subfields:
       - field_name: title_translated
-        label: Title (translations)
+        label: Title
         help_text: Title of the variable group in each language.
 
       - field_name: tables
@@ -50,7 +50,7 @@ dataset_fields:
         repeating_label: Table
         repeating_subfields:
           - field_name: title_translated
-            label: Title (translations)
+            label: Title
             help_text: Title of the table in each language.
 
           - field_name: keyword
@@ -72,11 +72,11 @@ dataset_fields:
                 help_text: Name of the column (csvw:name).
 
               - field_name: title_translated
-                label: Title (translations)
+                label: Title
                 help_text: Title of the column in each language.
 
               - field_name: description_translated
-                label: Description (translations)
+                label: Description
                 help_text: Description of the column in each language.
 
               - field_name: datatype

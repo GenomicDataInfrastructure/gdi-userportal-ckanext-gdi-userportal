@@ -44,7 +44,7 @@
   help_text: When the contact point can be reached (cv:openingHours).
   repeating_subfields:
     - field_name: description_translated
-      label: Description (translations)
+      label: Description
       help_text: Description of the opening hours in each language.
 
     - field_name: frequency
@@ -57,7 +57,7 @@
   help_text: Exceptions to the opening hours (cv:specialOpeningHoursSpecification).
   repeating_subfields:
     - field_name: description_translated
-      label: Description (translations)
+      label: Description
       help_text: Description of the exception in each language.
 
     - field_name: frequency
