@@ -10,6 +10,7 @@ from urllib.parse import quote
 from dateutil.parser import isoparse
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+from ckan import model
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
 from ckanext.gdi_userportal.languages import fall_back_to_available_languages
 from ckanext.gdi_userportal.logic.action.translation_utils import (
@@ -37,7 +38,9 @@ from ckanext.gdi_userportal.logic.auth.get import (
     gdi_dataset_help_texts_show as gdi_dataset_help_texts_show_auth,
     gdi_filter_help_texts_show as gdi_filter_help_texts_show_auth,
     gdi_metadata_profile_conformance as gdi_metadata_profile_conformance_auth,
+    package_show as package_show_auth,
 )
+from ckanext.gdi_userportal import profile_visibility
 from ckanext.gdi_userportal.validation import gdi_hex_binary, scheming_isodatetime_flex
 
 from opentelemetry import metrics
@@ -183,6 +186,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show_auth,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show_auth,
             "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance_auth,
+            "package_show": package_show_auth,
         }
 
     def get_actions(self):
@@ -256,6 +260,12 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         pass
 
     def before_dataset_search(self, search_params):
+        # the datasets of a harvest source whose metadata profile is not enabled are not found
+        enabled = profile_visibility.enabled_profiles(
+            toolkit.config.get(profile_visibility.ENABLED_PROFILES_OPTION)
+        )
+        search_params = profile_visibility.hide_from_search(search_params, model.Session, enabled)
+
         extras = search_params.get("extras") or {}
         raw_min = extras.get(TEMPORAL_MIN_PARAM)
         raw_max = extras.get(TEMPORAL_MAX_PARAM)

@@ -131,6 +131,10 @@ subfield take the row of that other one when it has a value, under its `display_
 names per language replace the single name). A field with `repeating_once` is shown without a number,
 and nested lists (variables, tables, columns) are indented.
 
+**Hiding.** Datasets of a harvest source whose `metadata_profile` is not enabled are hidden
+(`profile_visibility.py`); see "Datasets of a profile that is not enabled" in `docs/metadata-profiles.md`
+of `gdi-userportal-ckan-docker`.
+
 **Empty properties.** A dataset page and a distribution page list what has a value. With the option
 `ckanext.gdi_userportal.show_empty_properties = true` (the environment variable
 `CKANEXT__GDI_USERPORTAL__SHOW_EMPTY_PROPERTIES=true`) they list every property the schema defines, with
