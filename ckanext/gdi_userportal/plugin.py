@@ -38,7 +38,7 @@ from ckanext.gdi_userportal.logic.auth.get import (
     gdi_filter_help_texts_show as gdi_filter_help_texts_show_auth,
     gdi_metadata_profile_conformance as gdi_metadata_profile_conformance_auth,
 )
-from ckanext.gdi_userportal.validation import scheming_isodatetime_flex
+from ckanext.gdi_userportal.validation import gdi_hex_binary, scheming_isodatetime_flex
 
 from opentelemetry import metrics
 from opentelemetry.sdk.metrics import MeterProvider
@@ -922,7 +922,10 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         return facet_titles
 
     def get_validators(self):
-        return {"scheming_isodatetime_flex": scheming_isodatetime_flex}
+        return {
+            "scheming_isodatetime_flex": scheming_isodatetime_flex,
+            "gdi_hex_binary": gdi_hex_binary,
+        }
 
     # IConfigurable
     def configure(self, config):

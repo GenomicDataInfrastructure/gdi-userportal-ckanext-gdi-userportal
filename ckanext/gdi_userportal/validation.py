@@ -3,10 +3,11 @@
 #
 # SPDX-License-Identifier: MIT
 
+import re
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from ckanext.scheming.validation import register_validator, scheming_validator
-from ckantoolkit import Invalid, _, get_validator
+from ckantoolkit import Invalid, _, get_validator, missing
 from dateutil.parser import isoparse
 
 not_empty = get_validator("not_empty")
@@ -143,3 +144,17 @@ def scheming_isodatetime_flex(field, schema):
         data[key] = date
 
     return validator
+
+
+HEX_BINARY = re.compile(r"^(?:[0-9a-fA-F]{2})+$")
+
+
+@register_validator
+def gdi_hex_binary(value):
+    """A hexadecimal digest (xsd:hexBinary), stored in lower case: an even number of hexadecimal digits."""
+    if value is missing or value is None or value == "":
+        return value
+    text = str(value).strip()
+    if not HEX_BINARY.match(text):
+        raise Invalid(_("Must be a hexadecimal value with an even number of digits"))
+    return text.lower()

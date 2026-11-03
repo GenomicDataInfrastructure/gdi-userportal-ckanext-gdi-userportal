@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The checksum of a distribution in R8 is an entity (spdx:Checksum, 0..1) with a checksum algorithm
+# (one of the SPDX members, 1) and a checksum value (a lower case hexadecimal digest, xsd:hexBinary, 1),
+# not the two plain fields of gdi_current (gdi_resource_checksum).
+resource_fields:
+  - field_name: checksum
+    label: Checksum
+    repeating_label: Checksum
+    repeating_once: true
+    repeating_subfields:
+      - field_name: algorithm
+        label: Algorithm
+        preset: select
+        choices:
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_adler32
+            label: Adler-32
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_blake2b256
+            label: BLAKE2b-256
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_blake2b384
+            label: BLAKE2b-384
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_blake2b512
+            label: BLAKE2b-512
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_blake3
+            label: BLAKE3
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_md2
+            label: MD2
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_md4
+            label: MD4
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_md5
+            label: MD5
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_md6
+            label: MD6
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_sha1
+            label: SHA-1
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_sha224
+            label: SHA-224
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_sha256
+            label: SHA-256
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_sha384
+            label: SHA-384
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_sha512
+            label: SHA-512
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_sha3_256
+            label: SHA3-256
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_sha3_384
+            label: SHA3-384
+          - value: http://spdx.org/rdf/terms#checksumAlgorithm_sha3_512
+            label: SHA3-512
+        help_text: The algorithm used to produce the checksum, one of the SPDX checksum algorithms.
+      - field_name: checksum_value
+        label: Checksum value
+        validators: ignore_missing gdi_hex_binary
+        help_text: The digest as lower case hexadecimal (xsd:hexBinary).
+    help_text: A mechanism that can be used to verify that the contents of a distribution have not changed.

@@ -24,6 +24,8 @@ fragments:
   - dcat_ap_b
   - r8_spatial
   - dcat_ap_b3
+  - r8_checksum
+  - dcat_ap_b3_distribution
   - r8_distribution_policy
   - dcat_ap_b2
   - health_base_a
@@ -56,8 +58,7 @@ redefines:
   - resource_fields.compress_format
   - resource_fields.package_format
   - resource_fields.size
-  - resource_fields.hash
-  - resource_fields.hash_algorithm
+  - resource_fields.availability
   - resource_fields.license
   - resource_fields.conforms_to
   - resource_fields.access_url
@@ -71,7 +72,7 @@ overrides:
   resource_fields.spatial_resolution_in_meters:
     label: Spatial resolution
   # The names R8 gives the properties of a distribution: title, compression format, packaging
-  # format, byte size, checksum (a value and its algorithm), licence and linked schemas.
+  # format, byte size, licence and linked schemas.
   resource_fields.name_translated:
     label: Title
   resource_fields.compress_format:
@@ -80,10 +81,20 @@ overrides:
     label: Packaging format
   resource_fields.size:
     label: Byte size
-  resource_fields.hash:
-    label: Checksum
-  resource_fields.hash_algorithm:
-    label: Checksum algorithm
+  # The availability of a distribution is one concept of the EU planned-availability vocabulary (the
+  # EU Publications Office authority table, which also has OP_DATPRO, used by the Office itself).
+  resource_fields.availability:
+    preset: select
+    choices:
+      - value: http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE
+        label: Available
+      - value: http://publications.europa.eu/resource/authority/planned-availability/EXPERIMENTAL
+        label: Experimental
+      - value: http://publications.europa.eu/resource/authority/planned-availability/STABLE
+        label: Stable
+      - value: http://publications.europa.eu/resource/authority/planned-availability/TEMPORARY
+        label: Temporary
+    help_text: An indication how long it is planned to keep the distribution of the dataset available (dcatap:availability). One concept of the EU planned-availability vocabulary.
   resource_fields.license:
     label: Licence
   resource_fields.conforms_to:

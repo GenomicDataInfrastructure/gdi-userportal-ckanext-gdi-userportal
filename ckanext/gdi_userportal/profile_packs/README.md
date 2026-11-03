@@ -50,8 +50,12 @@ dataset add the `cv:ContactPoint`, whose email, contact page and telephone are l
 type, a relationship with one or more relations and roles, and the properties of `dcat:DataService` only. It also calls `spatial_coverage` "Geographical coverage" and
 `spatial_resolution_in_meters` "Spatial resolution" (the IRI keeps the unit), and has at most one
 retention period. A distribution carries the names R8 gives its properties: title, compression format,
-packaging format, byte size, checksum (value and algorithm), licence and linked schemas (the labels
-differ from `gdi_current`, so these resource fields are redefined too). The pack declares them with `redefines`, so
+packaging format, byte size, licence and linked schemas (the labels differ from `gdi_current`, so
+these resource fields are redefined too). Its checksum is an entity, as in R8 (`checksum` with an
+`algorithm`, one of the SPDX members, and a lower case hexadecimal `checksum_value`, checked by the
+validator `gdi_hex_binary`), where `gdi_current` has the two plain fields `hash` and `hash_algorithm`;
+each pack has its own fragment for it (`r8_checksum`, `gdi_resource_checksum`). The availability is one
+concept of the EU planned-availability vocabulary (a choice), where `gdi_current` takes free text. The pack declares them with `redefines`, so
 with both packs enabled the pack listed first decides. With `gdi_current` first they keep their
 `gdi_current` subfields, and a parsed value for a subfield that is missing is dropped (a value for a
 subfield that holds one value keeps the first, with a warning), so the dataset stays valid. List

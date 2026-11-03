@@ -17,8 +17,8 @@ import yaml
 # What only gdi_current has. publisher_note and publisher_type on the dataset are the HealthDCAT-AP
 # ones (R8 has the note on the publisher only); the license is on the distributions in R8.
 GDI_ONLY = {"dataset_status", "trusted_data_holder", "publisher_note", "publisher_type", "license_id"}
-GDI_ONLY_RESOURCE = {"retention_period"}
-R8_ONLY_RESOURCE = {"has_policy"}
+GDI_ONLY_RESOURCE = {"retention_period", "hash", "hash_algorithm"}
+R8_ONLY_RESOURCE = {"has_policy", "checksum"}
 R8_ONLY = {
     "alternative_title",
     "related_resource",
@@ -80,8 +80,7 @@ REDEFINED = {
     "resource_fields.compress_format",
     "resource_fields.package_format",
     "resource_fields.size",
-    "resource_fields.hash",
-    "resource_fields.hash_algorithm",
+    "resource_fields.availability",
     "resource_fields.license",
     "resource_fields.conforms_to",
     "resource_fields.access_url",
@@ -508,8 +507,7 @@ R8_DISTRIBUTION_LABELS = {
     "compress_format": "Compression format",
     "package_format": "Packaging format",
     "size": "Byte size",
-    "hash": "Checksum",
-    "hash_algorithm": "Checksum algorithm",
+    "checksum": "Checksum",
     "rights": "Rights",
     "license": "Licence",
     "availability": "Availability",
@@ -531,6 +529,38 @@ def test_a_distribution_has_every_r8_property_under_its_r8_name(generator):
 
     assert {name: resource[name]["label"] for name in R8_DISTRIBUTION_LABELS} == R8_DISTRIBUTION_LABELS
     assert "access_services" in resource
+
+
+SPDX_ALGORITHMS = {
+    "adler32", "blake2b256", "blake2b384", "blake2b512", "blake3", "md2", "md4", "md5", "md6", "sha1", "sha224",
+    "sha256", "sha384", "sha512", "sha3_256", "sha3_384", "sha3_512",
+}
+
+
+def test_r8_has_the_checksum_entity_and_not_the_two_plain_fields(generator):
+    r8 = resource_fields(generator, ["healthdcat_r8"])
+    gdi = resource_fields(generator, ["gdi_current"])
+
+    assert "hash" not in r8 and "hash_algorithm" not in r8
+    assert "checksum" not in gdi and {"hash", "hash_algorithm"} <= set(gdi)
+    checksum = r8["checksum"]
+    # 0..1, shown without a number; an algorithm out of the SPDX members and a hexadecimal value
+    assert checksum["repeating_once"] is True
+    algorithm, value = checksum["repeating_subfields"]
+    assert (algorithm["field_name"], value["field_name"]) == ("algorithm", "checksum_value")
+    assert {c["value"].rsplit("checksumAlgorithm_", 1)[1] for c in algorithm["choices"]} == SPDX_ALGORITHMS
+    assert all(c["value"].startswith("http://spdx.org/rdf/terms#checksumAlgorithm_") for c in algorithm["choices"])
+    assert "gdi_hex_binary" in value["validators"]
+
+
+def test_r8_availability_is_one_concept_of_the_planned_availability_vocabulary(generator):
+    r8 = resource_fields(generator, ["healthdcat_r8"])["availability"]
+    gdi = resource_fields(generator, ["gdi_current"])["availability"]
+
+    assert r8["preset"] == "select"
+    assert {c["value"].rsplit("/", 1)[1] for c in r8["choices"]} == {"AVAILABLE", "EXPERIMENTAL", "STABLE", "TEMPORARY"}
+    assert all(c["value"].startswith("http://publications.europa.eu/resource/authority/planned-availability/") for c in r8["choices"])
+    assert "preset" not in gdi and "choices" not in gdi
 
 
 def test_gdi_current_keeps_the_names_it_always_had_for_a_distribution(generator):
