@@ -110,11 +110,13 @@ schema by label (a label per language is read in English, ignoring case), with t
 description first (`title_translated`, `notes_translated` and `name_translated`,
 `description_translated`). It is the order of the edit form and of the display of a dataset and of a
 distribution. Without it the order is that of the fragments. With several packs enabled the pack listed
-first decides. `healthdcat_r8` is alphabetical, `gdi_current` keeps the order of its fragments; the
-static series schema of the R8 pack, `dataset_series_r8.yaml`, is kept in the same order by hand (a test
-checks it). The subfields of a field keep their own order, which follows the model, except those of a data
-service (`access_services` in the R8 pack): they are in the same alphabetical order, title and description
-first, kept by hand in `r8_access_services.yaml` and checked by a test.
+first decides. Both `healthdcat_r8` and `gdi_current` are alphabetical; the static series schemas,
+`dataset_series_r8.yaml` and `dataset_series_multilingual.yaml`, are kept in the same order by hand (a
+test checks them). The subfields of a field keep their own order, which follows the model, except those of
+a data service (`access_services`): they are in the same alphabetical order, title and description first,
+kept by hand in `r8_access_services.yaml` and `health_access_services.yaml` and checked by a test.
+`scheming/schemas/dataset_multilingual.yaml` keeps the original field order; the acceptance test compares
+it with `gdi_current` field by field, by name.
 
 **Dataset series.** A series is not generated from fragments: each pack that has a model for it
 ships a static schema and names it with `series_schema`. With several packs enabled the one listed

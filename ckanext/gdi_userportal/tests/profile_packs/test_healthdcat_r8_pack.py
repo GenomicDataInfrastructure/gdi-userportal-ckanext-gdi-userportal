@@ -172,11 +172,12 @@ def test_both_packs_give_the_union_of_their_fields(generator, profiles):
     assert both == set(dataset_fields(generator, ["gdi_current"])) | set(dataset_fields(generator, ["healthdcat_r8"]))
 
 
-def test_with_gdi_current_first_its_form_order_is_kept(generator):
-    both = list(dataset_fields(generator, ["gdi_current", "healthdcat_r8"]))
-    gdi = list(dataset_fields(generator, ["gdi_current"]))
+def test_with_gdi_current_first_the_superset_is_alphabetical_too(generator):
+    fields = generator.build_schema(["gdi_current", "healthdcat_r8"]).schema["dataset_fields"]
+    labels = [generator._label_text(f).lower() for f in fields[2:]]
 
-    assert both[: len(gdi)] == gdi
+    assert [f["field_name"] for f in fields[:2]] == ["title_translated", "notes_translated"]
+    assert labels == sorted(labels)
 
 
 def test_the_r8_fields_are_defined_by_the_r8_pack_only(generator):
@@ -616,23 +617,38 @@ def test_r8_access_url_download_url_and_rights_of_a_distribution_are_lists(gener
     assert gdi["rights"]["preset"] == "fluent_markdown" and "repeating_subfields" not in gdi["rights"]
 
 
-# R8 orders the fields of the schemas by label, the title and the description first
+# Both packs order the fields of the schemas by label, the title and the description first
+@pytest.mark.parametrize("pack", ["healthdcat_r8", "gdi_current"])
 @pytest.mark.parametrize("section, leading", [
     ("dataset_fields", ["title_translated", "notes_translated"]),
     ("resource_fields", ["name_translated", "description_translated"]),
 ])
-def test_the_r8_schema_is_alphabetical_with_the_title_and_the_description_first(generator, section, leading):
-    fields = generator.build_schema(["healthdcat_r8"]).schema[section]
+def test_the_schema_is_alphabetical_with_the_title_and_the_description_first(generator, pack, section, leading):
+    fields = generator.build_schema([pack]).schema[section]
     labels = [generator._label_text(f).lower() for f in fields[2:]]
 
     assert [f["field_name"] for f in fields[:2]] == leading
     assert labels == sorted(labels)
 
 
-def test_gdi_current_keeps_the_order_of_its_fragments(generator):
-    fields = generator.build_schema(["gdi_current"]).schema["dataset_fields"]
+def test_the_gdi_current_data_service_is_alphabetical_with_the_title_and_the_description_first(generator):
+    fields = {f["field_name"]: f for f in generator.build_schema(["gdi_current"]).schema["resource_fields"]}
+    service = fields["access_services"]["repeating_subfields"]
 
-    assert [f["field_name"] for f in fields[:4]] == ["title_translated", "name", "notes_translated", "tags_translated"]
+    assert [f["field_name"] for f in service] == [
+        f["field_name"] for f in generator.sort_alphabetically(service, "data_service_fields")
+    ]
+    assert [f["field_name"] for f in service[:2]] == ["title", "description"]
+
+
+def test_the_gdi_current_series_schema_is_alphabetical_with_the_title_and_the_description_first(generator):
+    path = Path(generator.__file__).parents[1] / "scheming/schemas/dataset_series_multilingual.yaml"
+    fields = yaml.safe_load(path.read_text())["dataset_fields"]
+
+    assert [f["field_name"] for f in fields] == [
+        f["field_name"] for f in generator.sort_alphabetically(fields, "dataset_fields")
+    ]
+    assert [f["field_name"] for f in fields[:2]] == ["title_translated", "notes_translated"]
 
 
 def test_the_r8_series_schema_is_alphabetical_with_the_title_and_the_description_first(generator):
