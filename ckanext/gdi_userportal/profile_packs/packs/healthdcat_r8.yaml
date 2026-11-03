@@ -64,6 +64,7 @@ redefines:
   - resource_fields.access_url
   - resource_fields.download_url
   - resource_fields.rights
+  - dataset_fields.in_series
 overrides:
   # R8 calls the property "spatial resolution" (its IRI is dcat:spatialResolutionInMeters), and a
   # dataset has at most one retention period.
@@ -123,6 +124,9 @@ overrides:
         display_snippet: all_languages.html
         help_text: The rights statement in each language.
     help_text: Statements that specify the rights associated with the distribution (dct:rights). One or more.
+  # A dataset that is in no series stores nothing: scheming_multiple_choice would store the empty list "[]".
+  dataset_fields.in_series:
+    validators: ignore_empty scheming_multiple_choice series_validator
   dataset_fields.retention_period:
     repeating_once: true
     repeating_label: Retention period
