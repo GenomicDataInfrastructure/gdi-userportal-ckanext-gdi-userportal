@@ -74,6 +74,14 @@ REDEFINED = {
     "dataset_fields.url",
     "dataset_fields.dcat_type",
     "resource_fields.access_services",
+    "resource_fields.name_translated",
+    "resource_fields.compress_format",
+    "resource_fields.package_format",
+    "resource_fields.size",
+    "resource_fields.hash",
+    "resource_fields.hash_algorithm",
+    "resource_fields.license",
+    "resource_fields.conforms_to",
 }
 # R8 agents (HealthDCAT-AP R8, Agent_Shape and the health agent shapes): a name and a type, the
 # health agents of a dataset add the contact point and the publisher a description.
@@ -482,6 +490,51 @@ def test_r8_calls_the_spatial_resolution_by_its_r8_name_and_geographical_coverag
     assert gdi["spatial_coverage"]["label"] == "Spatial coverage"
     resource = {f["field_name"]: f for f in generator.build_schema(["healthdcat_r8"]).schema["resource_fields"]}
     assert resource["spatial_resolution_in_meters"]["label"] == "Spatial resolution"
+
+
+# The property names of dcat:Distribution in the R8 model, by CKAN resource field
+R8_DISTRIBUTION_LABELS = {
+    "name_translated": "Title",
+    "description_translated": "Description",
+    "access_url": "Access URL",
+    "download_url": "Download URL",
+    "format": "Format",
+    "mimetype": "Media type",
+    "compress_format": "Compression format",
+    "package_format": "Packaging format",
+    "size": "Byte size",
+    "hash": "Checksum",
+    "hash_algorithm": "Checksum algorithm",
+    "rights": "Rights",
+    "license": "Licence",
+    "availability": "Availability",
+    "status": "Status",
+    "issued": "Release date",
+    "modified": "Modification date",
+    "has_policy": "Has policy",
+    "temporal_resolution": "Temporal resolution",
+    "spatial_resolution_in_meters": "Spatial resolution",
+    "language": "Language",
+    "documentation": "Documentation",
+    "conforms_to": "Linked schemas",
+    "applicable_legislation": "Applicable legislation",
+}
+
+
+def test_a_distribution_has_every_r8_property_under_its_r8_name(generator):
+    resource = {f["field_name"]: f for f in generator.build_schema(["healthdcat_r8"]).schema["resource_fields"]}
+
+    assert {name: resource[name]["label"] for name in R8_DISTRIBUTION_LABELS} == R8_DISTRIBUTION_LABELS
+    assert "access_services" in resource
+
+
+def test_gdi_current_keeps_the_names_it_always_had_for_a_distribution(generator):
+    resource = {f["field_name"]: f for f in generator.build_schema(["gdi_current"]).schema["resource_fields"]}
+
+    assert resource["name_translated"]["label"] == "Name"
+    assert resource["compress_format"]["label"] == "Compress format"
+    assert resource["conforms_to"]["label"] == "Conforms to"
+    assert resource["size"]["label"] == "Size"
 
 
 def test_r8_agents_with_a_cardinality_of_one_are_not_lists_and_the_retention_period_neither(generator):

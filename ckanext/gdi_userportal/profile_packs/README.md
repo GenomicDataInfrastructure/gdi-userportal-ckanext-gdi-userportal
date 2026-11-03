@@ -49,7 +49,9 @@ dataset add the `cv:ContactPoint`, whose email, contact page and telephone are l
 `0..n` of each, with the opening hours; the publisher a description), an activity with a label and a
 type, a relationship with one or more relations and roles, and the properties of `dcat:DataService` only. It also calls `spatial_coverage` "Geographical coverage" and
 `spatial_resolution_in_meters` "Spatial resolution" (the IRI keeps the unit), and has at most one
-retention period. The pack declares them with `redefines`, so
+retention period. A distribution carries the names R8 gives its properties: title, compression format,
+packaging format, byte size, checksum (value and algorithm), licence and linked schemas (the labels
+differ from `gdi_current`, so these resource fields are redefined too). The pack declares them with `redefines`, so
 with both packs enabled the pack listed first decides. With `gdi_current` first they keep their
 `gdi_current` subfields, and a parsed value for a subfield that is missing is dropped (a value for a
 subfield that holds one value keeps the first, with a warning), so the dataset stays valid. List

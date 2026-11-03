@@ -52,6 +52,14 @@ redefines:
   - dataset_fields.url
   - dataset_fields.dcat_type
   - resource_fields.access_services
+  - resource_fields.name_translated
+  - resource_fields.compress_format
+  - resource_fields.package_format
+  - resource_fields.size
+  - resource_fields.hash
+  - resource_fields.hash_algorithm
+  - resource_fields.license
+  - resource_fields.conforms_to
 overrides:
   # R8 calls the property "spatial resolution" (its IRI is dcat:spatialResolutionInMeters), and a
   # dataset has at most one retention period.
@@ -59,6 +67,24 @@ overrides:
     label: Spatial resolution
   resource_fields.spatial_resolution_in_meters:
     label: Spatial resolution
+  # The names R8 gives the properties of a distribution: title, compression format, packaging
+  # format, byte size, checksum (a value and its algorithm), licence and linked schemas.
+  resource_fields.name_translated:
+    label: Title
+  resource_fields.compress_format:
+    label: Compression format
+  resource_fields.package_format:
+    label: Packaging format
+  resource_fields.size:
+    label: Byte size
+  resource_fields.hash:
+    label: Checksum
+  resource_fields.hash_algorithm:
+    label: Checksum algorithm
+  resource_fields.license:
+    label: Licence
+  resource_fields.conforms_to:
+    label: Linked schemas
   dataset_fields.retention_period:
     repeating_once: true
     repeating_label: Retention period
