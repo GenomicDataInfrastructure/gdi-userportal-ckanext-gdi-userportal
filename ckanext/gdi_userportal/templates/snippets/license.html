@@ -1,0 +1,9 @@
+{#- A dataset without a license shows no license box, not "No License Provided": the license of
+    HealthDCAT-AP belongs to the distributions. -#}
+{% ckan_extends %}
+
+{% block license %}
+  {%- if text_only or pkg_dict.license_id or pkg_dict.license_url -%}
+    {{ super() }}
+  {%- endif -%}
+{% endblock %}

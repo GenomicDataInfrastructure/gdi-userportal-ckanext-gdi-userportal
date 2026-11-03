@@ -1,0 +1,35 @@
+{#-
+  The scheming master snippet for displaying a field, with a default for values that have no
+  display_snippet of their own: a language map is shown in the language of the user, a list as a
+  list. Without this the value is printed as a Python dict or list, e.g. {'en': 'Name'} or [].
+-#}
+{%- set display_snippet = field.display_snippet -%}
+{%- set value = data.get(field.field_name) -%}
+
+{%- if not display_snippet -%}
+  {%- if field.repeating_subfields -%}
+    {%- set display_snippet = 'repeating_subfields.html' -%}
+  {%- elif h.scheming_field_choices(field) -%}
+    {%- set display_snippet = 'select.html' -%}
+  {%- elif value is mapping -%}
+    {%- set display_snippet = 'fluent_text.html' -%}
+  {%- elif value is sequence and value is not string -%}
+    {%- set display_snippet = 'multiple_text.html' -%}
+  {%- else -%}
+    {%- set display_snippet = 'text.html' -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- if '/' not in display_snippet -%}
+  {%- set display_snippet = 'scheming/display_snippets/' + display_snippet -%}
+{%- endif -%}
+
+{%- if field.field_name in data -%}
+  {%- snippet display_snippet,
+    field=field,
+    data=data,
+    errors=errors,
+    entity_type=entity_type,
+    object_type=object_type
+  -%}
+{%- endif -%}
