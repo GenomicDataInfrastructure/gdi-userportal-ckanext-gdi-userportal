@@ -64,11 +64,15 @@
   repeating_subfields:
     - field_name: description_translated
       label: Description
-      help_text: Description of the opening hours in each language.
+      preset: fluent_text
+      display_snippet: all_languages.html
+      help_text: Description of the opening hours in each language (dct:description).
 
     - field_name: frequency
       label: Frequency
-      help_text: How often the contact point is open, per the EU Publications Office frequency authority table.
+      preset: multiple_text
+      validators: ignore_missing scheming_multiple_text
+      help_text: How often the contact point is open (cv:frequency), one or more, per the EU Publications Office frequency authority table.
 
 - field_name: special_opening_hours
   label: Special opening hours
@@ -78,8 +82,12 @@
   repeating_subfields:
     - field_name: description_translated
       label: Description
-      help_text: Description of the exception in each language.
+      preset: fluent_text
+      display_snippet: all_languages.html
+      help_text: Description of the exception in each language (dct:description).
 
     - field_name: frequency
       label: Frequency
-      help_text: How often the exception applies, per the EU Publications Office frequency authority table.
+      preset: multiple_text
+      validators: ignore_missing scheming_multiple_text
+      help_text: How often the exception applies (cv:frequency), one or more, per the EU Publications Office frequency authority table.

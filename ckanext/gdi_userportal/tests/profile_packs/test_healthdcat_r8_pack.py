@@ -532,3 +532,15 @@ def test_r8_landing_page_and_type_are_lists_and_gdi_current_keeps_one_value(gene
         assert is_list(r8[name]), name
         assert not is_list(gdi[name]), name
     assert r8["url"]["display_snippet"] == "link_list.html"
+
+
+def test_the_opening_hours_have_a_description_per_language_and_several_frequencies(generator):
+    fields = dataset_fields(generator, ["healthdcat_r8"])
+
+    for agent in ("publisher", "hdab", "custodian", "hdab_coordinator"):
+        for hours in ("opening_hours", "special_opening_hours"):
+            field = subfields_of(fields[agent], hours)
+            description = subfields_of(field, "description_translated")
+            assert description["preset"] == "fluent_text", f"{agent}.{hours}"
+            assert description["display_snippet"] == "all_languages.html", f"{agent}.{hours}"
+            assert is_list(subfields_of(field, "frequency")), f"{agent}.{hours}"
