@@ -11,6 +11,7 @@ from dateutil.parser import isoparse
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
+from ckanext.gdi_userportal.languages import fall_back_to_available_languages
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     SEARCH_INDEX_TRANSLATED_FIELDS,
     get_all_translations,
@@ -914,7 +915,8 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         return data_dict
 
     def after_dataset_show(self, context, data_dict):
-        return data_dict
+        schema = toolkit.h.scheming_get_dataset_schema(data_dict.get("type", "dataset"))
+        return fall_back_to_available_languages(data_dict, schema)
 
     def update_facet_titles(self, facet_titles):
         return facet_titles

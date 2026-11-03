@@ -111,6 +111,14 @@ subfield take the row of that other one when it has a value, under its `display_
 names per language replace the single name). A field with `repeating_once` is shown without a number,
 and nested lists (variables, tables, columns) are indented.
 
+**Language fallback.** The edit form stores an empty value for a form language left blank
+(`{"en": "Title", "nl": ""}`), and scheming and CKAN only fall back to another language when the key
+is missing. `after_dataset_show` (`languages.py`) therefore drops the empty languages of the fluent
+fields of a dataset, its resources and their nested subfields from what `package_show` returns, so a
+page in Dutch shows the English title, description, keywords, population coverage and version notes
+when there is no Dutch one. The stored value is unchanged, the edit form still offers every language,
+and an empty core field (`title`, `notes`) takes the first language that has a value.
+
 **Fragment**: header keys (`scheming_version`, `form_languages`, ...), `dataset_fields` and
 `resource_fields`. Reuse a block with `!snippet <name>`; YAML anchors cannot span files.
 
