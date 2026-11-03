@@ -61,6 +61,7 @@ def test_every_mode_generates_a_schema(generator, profiles):
 # Shared fields R8 defines differently. The pack declares them, so that the pack listed first decides.
 REDEFINED = {
     "dataset_fields.contact",
+    "dataset_fields.spatial_coverage",
     "dataset_fields.publisher",
     "dataset_fields.creator",
     "dataset_fields.qualified_attribution",
@@ -72,6 +73,8 @@ REDEFINED = {
 # health agents of a dataset add the contact point and the publisher a description.
 AGENT = {"uri", "name", "name_translated", "type"}
 CONTACT_POINT = {"email", "url", "telephone", "opening_hours", "special_opening_hours"}
+# dct:Location: the location is an IRI, with a geometry, a bounding box and a centroid
+LOCATION = {"uri", "geom", "bbox", "centroid"}
 # dcat:DataService, from the data service table of the R8 gap analysis
 DATA_SERVICE = {
     "uri", "title", "description", "theme", "endpoint_description", "endpoint_url", "serves_dataset",
@@ -218,6 +221,32 @@ def test_the_r8_activity_has_a_label_and_a_type_and_gdi_current_keeps_the_rest(g
     assert {"seeAlso", "startedAtTime", "wasAssociatedWith"} <= set(subfield_names(gdi))
 
 
+def test_the_email_contact_page_and_telephone_of_a_contact_point_are_lists_in_r8(generator):
+    """cv:ContactPoint: cv:email, cv:contactPage and cv:telephone are 0..n."""
+    fields = dataset_fields(generator, ["healthdcat_r8"])
+
+    for name in ("publisher", "hdab", "custodian", "hdab_coordinator"):
+        for sub in ("email", "url", "telephone"):
+            assert "multiple_text" in str(subfields_of(fields[name], sub)), f"{name}.{sub}"
+    gdi = dataset_fields(generator, ["gdi_current"])
+    for sub in ("email", "url"):
+        assert "multiple_text" not in str(subfields_of(gdi["publisher"], sub)), sub
+
+
+def test_a_location_in_r8_has_no_label_and_gdi_current_keeps_it(generator):
+    r8 = dataset_fields(generator, ["healthdcat_r8"])["spatial_coverage"]
+    gdi = dataset_fields(generator, ["gdi_current"])["spatial_coverage"]
+
+    assert set(subfield_names(r8)) == LOCATION
+    assert "text" in subfield_names(gdi)
+
+
+def test_the_contact_point_of_a_dataset_keeps_its_name_in_gdi_current(generator):
+    gdi = dataset_fields(generator, ["gdi_current"])["contact"]
+
+    assert {"name", "name_translated", "identifier"} <= set(subfield_names(gdi))
+
+
 def test_the_note_of_the_r8_publisher_is_its_description(generator):
     note = subfields_of(dataset_fields(generator, ["healthdcat_r8"])["publisher"], "publisher_note")
 
@@ -236,7 +265,7 @@ def test_an_r8_contact_point_has_one_email_and_one_contact_page(generator):
     contact = dataset_fields(generator, ["healthdcat_r8"])["contact"]
     url = subfields_of(contact, "url")
 
-    assert set(subfield_names(contact)) == {"uri", "name", "name_translated", "email", "url"}
+    assert set(subfield_names(contact)) == {"uri", "email", "url"}, "vcard:Kind has an email and a contact page"
     assert "multiple_text" not in str(url), "vcard:Kind allows one vcard:hasURL"
 
 
@@ -282,7 +311,7 @@ def test_the_r8_data_service_has_the_properties_of_dcat_dataservice_only(generat
     assert set(subfield_names(service)) == DATA_SERVICE
     assert set(subfield_names(subfields_of(service, "publisher"))) == AGENT
     contact = subfields_of(service, "contact")
-    assert "identifier" not in subfield_names(contact)
+    assert set(subfield_names(contact)) == {"uri", "email", "url"}
     assert "multiple_text" not in str(subfields_of(contact, "url"))
 
 
@@ -391,8 +420,9 @@ def test_the_r8_series_has_the_properties_of_dcat_datasetseries_only(generator):
 
     assert set(fields) == SERIES_R8
     assert set(subfield_names(fields["publisher"])) == AGENT
-    assert set(subfield_names(fields["contact"])) == {"uri", "name", "name_translated", "email", "url"}
+    assert set(subfield_names(fields["contact"])) == {"uri", "email", "url"}
     assert "multiple_text" not in str(subfields_of(fields["contact"], "url"))
+    assert set(subfield_names(fields["spatial_coverage"])) == LOCATION
 
 
 def test_gdi_current_keeps_the_order_fields_and_the_legacy_publisher_on_its_series(generator):

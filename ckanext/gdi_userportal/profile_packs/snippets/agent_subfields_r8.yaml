@@ -19,13 +19,15 @@
 
 - field_name: email
   label: Email
-  display_snippet: email.html
-  help_text: Email of the contact point of the agent (cv:email).
+  preset: multiple_text
+  validators: ignore_missing scheming_multiple_text
+  help_text: Emails of the contact point of the agent (cv:email), at least one email or contact page.
 
 - field_name: url
   label: Contact page
-  display_snippet: link.html
-  help_text: Contact page of the contact point of the agent (cv:contactPage).
+  preset: multiple_text
+  validators: ignore_missing scheming_multiple_text
+  help_text: Contact pages of the contact point of the agent (cv:contactPage), at least one email or contact page.
 
 - field_name: type
   label: Type
@@ -38,7 +40,9 @@
 
 - field_name: telephone
   label: Telephone
-  help_text: Telephone number of the contact point (cv:telephone).
+  preset: multiple_text
+  validators: ignore_missing scheming_multiple_text
+  help_text: Telephone numbers of the contact point (cv:telephone).
 
 - field_name: opening_hours
   label: Opening hours

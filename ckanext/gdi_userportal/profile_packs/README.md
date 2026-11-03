@@ -40,16 +40,19 @@ agent with `dct:type` (the `type` subfield) and writes the description of a publ
 every profile, and is labelled "Description" in R8. In R8 the email and the contact page of a health
 agent belong to its contact point, so the subfield `url` is labelled "Contact page".
 
-**The order matters for seven fields.** R8 defines `contact`, `publisher`, `creator`,
-`qualified_attribution`, `was_generated_by`, `hdab` and the resource field `access_services`
-differently: a contact point with one contact page (`vcard:Kind` has at most one `vcard:hasURL`),
-plain agents with a name and a type (the health agents of a dataset add the contact point with the
-telephone and the opening hours, the publisher a description), an activity with a label and a type,
-and the properties of `dcat:DataService` only. The pack declares them with `redefines`, so with both
-packs enabled the pack listed first decides. With `gdi_current` first they keep their `gdi_current`
-subfields, and a parsed value for a subfield that is missing is dropped, so the dataset stays valid.
-List `healthdcat_r8` first to get the R8 versions. The main profile is set apart from the order, so
-this does not change which mapping an export uses by default.
+**The order matters for eight fields.** R8 defines `contact`, `spatial_coverage`, `publisher`,
+`creator`, `qualified_attribution`, `was_generated_by`, `hdab` and the resource field
+`access_services` differently: a `vcard:Kind` contact point with an email and one contact page
+(`vcard:hasURL` is at most one) and nothing else, a location that is an IRI with a geometry, a
+bounding box and a centroid (no label), plain agents with a name and a type (the health agents of a
+dataset add the `cv:ContactPoint`, whose email, contact page and telephone are lists because R8 allows
+`0..n` of each, with the opening hours; the publisher a description), an activity with a label and a
+type, and the properties of `dcat:DataService` only. The pack declares them with `redefines`, so
+with both packs enabled the pack listed first decides. With `gdi_current` first they keep their
+`gdi_current` subfields, and a parsed value for a subfield that is missing is dropped (a value for a
+subfield that holds one value keeps the first, with a warning), so the dataset stays valid. List
+`healthdcat_r8` first to get the R8 versions. The main profile is set apart from the order, so this
+does not change which mapping an export uses by default.
 
 R8 fields that allow several values where `gdi_current` holds one (`identifier`, `dcat_type`,
 the landing page, the access and download URL of a distribution, ...) stay single-valued. The

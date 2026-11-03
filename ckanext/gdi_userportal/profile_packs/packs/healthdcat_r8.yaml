@@ -7,8 +7,8 @@
 # a distribution, the legacy publisher type and note, the identifier and country of an agent, ...)
 # is left out, and lives in fragments of the gdi_current pack.
 #
-# contact, publisher, creator, qualified_attribution, was_generated_by, hdab and access_services
-# are the shared fields R8 defines differently: R8 has a contact point with one contact page, plain
+# contact, spatial_coverage, publisher, creator, qualified_attribution, was_generated_by, hdab and
+# access_services are the shared fields R8 defines differently: R8 has a contact point with one contact page, plain
 # agents (a name and a type; the health agents of a dataset add a contact point, and the publisher
 # a description), an activity with a label and a type, and the properties of dcat:DataService only.
 # They are redefined, so with both packs enabled the pack listed first decides: list healthdcat_r8
@@ -25,6 +25,8 @@ fragments:
   - r8_creator
   - dcat_ap_a2
   - dcat_ap_b
+  - r8_spatial
+  - dcat_ap_b3
   - r8_distribution_policy
   - dcat_ap_b2
   - health_base_a
@@ -40,6 +42,7 @@ rdf_profiles:
   - euro_health_dcat_ap_r8
 redefines:
   - dataset_fields.contact
+  - dataset_fields.spatial_coverage
   - dataset_fields.publisher
   - dataset_fields.creator
   - dataset_fields.qualified_attribution

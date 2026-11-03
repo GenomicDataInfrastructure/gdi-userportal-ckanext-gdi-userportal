@@ -14,6 +14,8 @@ fragments:
   - dcat_ap_a2
   - gdi_dataset_status
   - dcat_ap_b
+  - gdi_spatial
+  - dcat_ap_b3
   - gdi_resource_retention
   - dcat_ap_b2
   - health_base_a
