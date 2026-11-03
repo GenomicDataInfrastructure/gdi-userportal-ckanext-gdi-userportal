@@ -68,11 +68,14 @@ page (`url`) and the type (`dcat_type`) of a dataset, and the access URL (`acces
 URL (`download_url`) of a distribution. The rights of a distribution are a list of statements, each
 with an optional IRI and a label per language (`rights` with the subfields `uri` and
 `label_translated`; the pack removes the `fluent_markdown` preset of `gdi_current` with a `null` in
-its `overrides`). The Discovery Service still reads one value of each, so it has to follow before an
-R8-first deployment is used with it. Solr keeps one value in `url` and `dcat_type` (changing
+its `overrides`). The title, description and endpoint description of a data service
+(`access_services`) hold a text per language in the R8 pack (`fluent_text`; the subfield values are
+language maps). Consumers that read one value of each (the Discovery Service) have to handle lists
+before an R8-first deployment serves them; see "Known limits" in `docs/metadata-profiles.md` of
+`gdi-userportal-ckan-docker`. Solr keeps one value in `url` and `dcat_type` (changing
 `multiValued` needs a reindex): `before_dataset_index` puts the first value there, and every type in
-`vocab_dcat_type`. The identifier and a few data service properties stay single-valued: the R8
-profile keeps the first value and logs a warning when it drops others (ADR 0001, Q3).
+`vocab_dcat_type`. The identifier stays single-valued: the R8 profile keeps the first value and logs a
+warning when it drops others (ADR 0001, Q3).
 
 The R8 variants of the agent snippets and of `access_services` are copies. The tests in
 `test_healthdcat_r8_pack.py` check that each equals the `gdi_current` one plus what R8 adds and

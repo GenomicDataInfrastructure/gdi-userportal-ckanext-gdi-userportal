@@ -347,6 +347,18 @@ def test_the_r8_data_service_is_alphabetical_with_the_title_and_the_description_
     assert labels["endpoint_url"] == "Endpoint URL" and labels["serves_dataset"] == "Serves dataset"
 
 
+def test_the_r8_data_service_title_description_and_endpoint_description_are_per_language(generator):
+    resource_fields = {f["field_name"]: f for f in generator.build_schema(["healthdcat_r8"]).schema["resource_fields"]}
+    service = {f["field_name"]: f for f in resource_fields["access_services"]["repeating_subfields"]}
+    gdi = {f["field_name"]: f for f in generator.build_schema(["gdi_current"]).schema["resource_fields"]}
+    gdi_service = {f["field_name"]: f for f in gdi["access_services"]["repeating_subfields"]}
+
+    for name, preset in (("title", "fluent_text"), ("description", "fluent_markdown"), ("endpoint_description", "fluent_text")):
+        assert service[name]["preset"] == preset
+        assert service[name]["display_snippet"] == "all_languages.html"
+        assert "preset" not in gdi_service[name]
+
+
 def test_the_opening_hours_describe_a_temporal_entity(generator):
     hdab = dataset_fields(generator, ["healthdcat_r8"])["hdab"]
 
