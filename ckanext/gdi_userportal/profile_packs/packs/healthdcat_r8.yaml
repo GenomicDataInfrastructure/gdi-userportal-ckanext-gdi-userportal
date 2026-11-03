@@ -46,7 +46,20 @@ redefines:
   - dataset_fields.was_generated_by
   - dataset_fields.hdab
   - dataset_fields.qualified_relation
+  - dataset_fields.spatial_resolution_in_meters
+  - dataset_fields.retention_period
+  - resource_fields.spatial_resolution_in_meters
   - resource_fields.access_services
+overrides:
+  # R8 calls the property "spatial resolution" (its IRI is dcat:spatialResolutionInMeters), and a
+  # dataset has at most one retention period.
+  dataset_fields.spatial_resolution_in_meters:
+    label: Spatial resolution
+  resource_fields.spatial_resolution_in_meters:
+    label: Spatial resolution
+  dataset_fields.retention_period:
+    repeating_once: true
+    repeating_label: Retention period
 conformance: conformance/healthdcat_r8.json
 series_schema: ckanext.gdi_userportal:scheming/schemas/dataset_series_r8.yaml
 keep_extras:

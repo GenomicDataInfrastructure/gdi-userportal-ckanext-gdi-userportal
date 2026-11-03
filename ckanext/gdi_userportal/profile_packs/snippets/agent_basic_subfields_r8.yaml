@@ -2,19 +2,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# A plain foaf:Agent as R8 has it: a name and a type. It is the creator of a dataset, the agent of
-# an attribution and the publisher of a data service; only the health agents of a dataset (publisher,
-# hdab, custodian, coordinator) have a contact point.
+# A plain foaf:Agent as R8 has it: one or more names (one per language) and a type. It is the
+# creator of a dataset, the agent of an attribution and the publisher of a data service; only the
+# health agents of a dataset (publisher, hdab, custodian, coordinator) have a contact point.
 
 - field_name: uri
   label: URI
 
 - field_name: name
   label: Name
+  help_text: The name of the entity or person. Give it in other languages in the field below.
 
 - field_name: name_translated
-  label: Name (translations)
-  help_text: Name of the entity or person in each language.
+  label: Name in each language
+  preset: fluent_text
+  display_snippet: all_languages.html
+  display_label: Name
+  display_replaces: name
+  help_text: The name of the entity or person in each language; R8 allows one or more names.
 
 - field_name: type
   label: Type

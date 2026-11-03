@@ -29,12 +29,12 @@ dataset_fields:
     preset: select
     choices:
       - value: false
-        label: "No"
+        label: "false"
       - value: true
-        label: "Yes"
+        label: "true"
     validators: ignore_missing boolean_validator
     output_validators: boolean_validator
-    help_text: Whether the dataset holds structured data. When it does, describe its variables (healthdcatap:hasStructuredData).
+    help_text: Whether the dataset holds structured data, an xsd:boolean (healthdcatap:hasStructuredData). When it does, describe its variables.
 
   - field_name: variables
     label: Variables

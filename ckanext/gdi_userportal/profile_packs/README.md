@@ -40,14 +40,16 @@ agent with `dct:type` (the `type` subfield) and writes the description of a publ
 every profile, and is labelled "Description" in R8. In R8 the email and the contact page of a health
 agent belong to its contact point, so the subfield `url` is labelled "Contact page".
 
-**The order matters for nine fields.** R8 defines `contact`, `spatial_coverage`, `publisher`,
+**The order matters for the fields R8 defines differently.** R8 defines `contact`, `spatial_coverage`, `publisher`,
 `creator`, `qualified_attribution`, `was_generated_by`, `hdab`, `qualified_relation` and the resource field
 `access_services` differently: a `vcard:Kind` contact point with an email and one contact page
 (`vcard:hasURL` is at most one) and nothing else, a location that is an IRI with a geometry, a
 bounding box and a centroid (no label), plain agents with a name and a type (the health agents of a
 dataset add the `cv:ContactPoint`, whose email, contact page and telephone are lists because R8 allows
 `0..n` of each, with the opening hours; the publisher a description), an activity with a label and a
-type, a relationship with one or more relations and roles, and the properties of `dcat:DataService` only. The pack declares them with `redefines`, so
+type, a relationship with one or more relations and roles, and the properties of `dcat:DataService` only. It also calls `spatial_coverage` "Geographical coverage" and
+`spatial_resolution_in_meters` "Spatial resolution" (the IRI keeps the unit), and has at most one
+retention period. The pack declares them with `redefines`, so
 with both packs enabled the pack listed first decides. With `gdi_current` first they keep their
 `gdi_current` subfields, and a parsed value for a subfield that is missing is dropped (a value for a
 subfield that holds one value keeps the first, with a warning), so the dataset stays valid. List
@@ -83,7 +85,12 @@ redefines: []              # "<section>.<field_name>" this pack defines differen
 conformance: conformance/<name>.json   # optional: mandatory properties per access layer (generated)
 keep_extras: []            # optional: dataset fields that stay when this pack is retired (see Pruning)
 series_schema: pkg:path/to/series.yaml   # optional: the static scheming schema of the dataset series
+overrides:                 # optional: keys that replace those of a field this pack defines, for this pack only
+  dataset_fields.retention_period: {repeating_once: true}
 ```
+
+`overrides` is for a label or a cardinality that differs, so that a shared fragment does not need a
+copy. The overridden field still needs a `redefines` entry when another pack defines it too.
 
 **Dataset series.** A series is not generated from fragments: each pack that has a model for it
 ships a static schema and names it with `series_schema`. With several packs enabled the one listed
@@ -92,6 +99,13 @@ first decides, as for the redefined fields (a pack without one is skipped). `gdi
 properties of `dcat:DatasetSeries` only: no ordering of the members (`series_order_*`, which only
 drive the previous and next links of the series extension), no legacy publisher fields and one
 contact page. The prune command does not look at series fields.
+
+**Display keys.** Scheming passes keys it does not know through, and the display templates of this
+extension use some on a subfield: `display_group` shows the subfields with the same value together
+under that heading (the contact point of an R8 agent); `display_replaces: <subfield>` makes the
+subfield take the row of that other one when it has a value, under its `display_label` (one or more
+names per language replace the single name). A field with `repeating_once` is shown without a number,
+and nested lists (variables, tables, columns) are indented.
 
 **Fragment**: header keys (`scheming_version`, `form_languages`, ...), `dataset_fields` and
 `resource_fields`. Reuse a block with `!snippet <name>`; YAML anchors cannot span files.

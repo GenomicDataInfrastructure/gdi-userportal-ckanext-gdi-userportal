@@ -68,6 +68,9 @@ REDEFINED = {
     "dataset_fields.was_generated_by",
     "dataset_fields.hdab",
     "dataset_fields.qualified_relation",
+    "dataset_fields.spatial_resolution_in_meters",
+    "dataset_fields.retention_period",
+    "resource_fields.spatial_resolution_in_meters",
     "resource_fields.access_services",
 }
 # R8 agents (HealthDCAT-AP R8, Agent_Shape and the health agent shapes): a name and a type, the
@@ -339,8 +342,15 @@ def test_has_structured_data_is_a_boolean_like_trusted_data_holder(generator):
     fields = dataset_fields(generator, ["gdi_current", "healthdcat_r8"])
     flag, existing = fields["has_structured_data"], fields["trusted_data_holder"]
 
-    for key in ("preset", "choices", "validators", "output_validators"):
+    for key in ("preset", "validators", "output_validators"):
         assert flag[key] == existing[key]
+    assert [c["value"] for c in flag["choices"]] == [c["value"] for c in existing["choices"]]
+
+
+def test_has_structured_data_is_shown_as_the_xsd_boolean(generator):
+    flag = dataset_fields(generator, ["healthdcat_r8"])["has_structured_data"]
+
+    assert {c["value"]: c["label"] for c in flag["choices"]} == {False: "false", True: "true"}
 
 
 def test_variables_nest_table_group_table_and_column(generator):
@@ -458,3 +468,55 @@ def test_gdi_current_relationship_keeps_one_relation_and_role(generator):
     subfields = {f["field_name"]: f for f in dataset_fields(generator, ["gdi_current"])["qualified_relation"]["repeating_subfields"]}
 
     assert not is_list(subfields["relation"]) and not is_list(subfields["role"])
+
+
+def test_r8_calls_the_spatial_resolution_by_its_r8_name_and_geographical_coverage_too(generator):
+    r8 = dataset_fields(generator, ["healthdcat_r8"])
+    gdi = dataset_fields(generator, ["gdi_current"])
+
+    assert r8["spatial_resolution_in_meters"]["label"] == "Spatial resolution"
+    assert gdi["spatial_resolution_in_meters"]["label"] == "Spatial resolution in meters"
+    assert r8["spatial_coverage"]["label"] == "Geographical coverage"
+    assert gdi["spatial_coverage"]["label"] == "Spatial coverage"
+    resource = {f["field_name"]: f for f in generator.build_schema(["healthdcat_r8"]).schema["resource_fields"]}
+    assert resource["spatial_resolution_in_meters"]["label"] == "Spatial resolution"
+
+
+def test_r8_agents_with_a_cardinality_of_one_are_not_lists_and_the_retention_period_neither(generator):
+    r8 = dataset_fields(generator, ["healthdcat_r8"])
+    gdi = dataset_fields(generator, ["gdi_current"])
+
+    for name in ("publisher", "hdab", "custodian", "hdab_coordinator", "retention_period"):
+        assert r8[name].get("repeating_once") is True, name
+    assert not r8["creator"].get("repeating_once"), "a dataset can have several creators"
+    assert not gdi["retention_period"].get("repeating_once")
+
+
+def test_r8_agent_names_are_one_or_more_names_per_language(generator):
+    fields = dataset_fields(generator, ["healthdcat_r8"])
+
+    for name in ("publisher", "creator", "hdab", "custodian", "hdab_coordinator"):
+        translated = subfields_of(fields[name], "name_translated")
+        assert translated["preset"] == "fluent_text", name
+        assert translated["display_replaces"] == "name", name
+        assert translated["display_label"] == "Name", name
+
+
+def test_the_properties_of_the_contact_point_are_grouped_for_display(generator):
+    fields = dataset_fields(generator, ["healthdcat_r8"])
+    grouped = {"email", "url", "telephone", "opening_hours", "special_opening_hours"}
+
+    for name in ("publisher", "hdab", "custodian", "hdab_coordinator"):
+        in_group = {f["field_name"] for f in fields[name]["repeating_subfields"] if f.get("display_group") == "Contact point"}
+        assert in_group == grouped, name
+    assert not any(f.get("display_group") for f in fields["creator"]["repeating_subfields"])
+    gdi = dataset_fields(generator, ["gdi_current"])
+    assert not any(f.get("display_group") for f in gdi["publisher"]["repeating_subfields"])
+
+
+def test_r8_attribution_holds_several_roles_and_gdi_current_one(generator):
+    def role(profiles):
+        return subfields_of(dataset_fields(generator, profiles)["qualified_attribution"], "role")
+
+    assert is_list(role(["healthdcat_r8"]))
+    assert not is_list(role(["gdi_current"]))

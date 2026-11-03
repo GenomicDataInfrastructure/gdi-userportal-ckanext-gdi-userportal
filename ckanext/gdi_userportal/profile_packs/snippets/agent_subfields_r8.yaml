@@ -4,7 +4,9 @@
 
 # The agent of agent_subfields.yaml as R8 has it: without publisher_type (R8 types an agent
 # with dct:type, in type) and with the publisher note as the description of the agent
-# (dct:description), plus what R8 adds to the contact point.
+# (dct:description), plus what R8 adds to the contact point. The name is one or more names, one
+# per language (name_translated), and the email, contact page, telephone and opening hours belong
+# to the contact point.
 # test_healthdcat_r8_pack.py checks that nothing else differs.
 
 - field_name: uri
@@ -12,22 +14,15 @@
 
 - field_name: name
   label: Name
+  help_text: The name of the agent. Give it in other languages in the field below.
 
 - field_name: name_translated
-  label: Name (translations)
-  help_text: Name of the entity or person in each language.
-
-- field_name: email
-  label: Email
-  preset: multiple_text
-  validators: ignore_missing scheming_multiple_text
-  help_text: Emails of the contact point of the agent (cv:email), at least one email or contact page.
-
-- field_name: url
-  label: Contact page
-  preset: multiple_text
-  validators: ignore_missing scheming_multiple_text
-  help_text: Contact pages of the contact point of the agent (cv:contactPage), at least one email or contact page.
+  label: Name in each language
+  preset: fluent_text
+  display_snippet: all_languages.html
+  display_label: Name
+  display_replaces: name
+  help_text: The name of the agent in each language; R8 allows one or more names.
 
 - field_name: type
   label: Type
@@ -38,8 +33,25 @@
   preset: fluent_markdown
   help_text: A description of the activities of the agent (dct:description).
 
+# The properties of the contact point (cv:ContactPoint) of the agent. display_group shows them
+# together, under the contact point, on the dataset page.
+- field_name: email
+  label: Email
+  display_group: Contact point
+  preset: multiple_text
+  validators: ignore_missing scheming_multiple_text
+  help_text: Emails of the contact point of the agent (cv:email), at least one email or contact page.
+
+- field_name: url
+  label: Contact page
+  display_group: Contact point
+  preset: multiple_text
+  validators: ignore_missing scheming_multiple_text
+  help_text: Contact pages of the contact point of the agent (cv:contactPage), at least one email or contact page.
+
 - field_name: telephone
   label: Telephone
+  display_group: Contact point
   preset: multiple_text
   validators: ignore_missing scheming_multiple_text
   help_text: Telephone numbers of the contact point (cv:telephone).
@@ -47,6 +59,7 @@
 - field_name: opening_hours
   label: Opening hours
   repeating_label: Opening hours
+  display_group: Contact point
   help_text: When the contact point can be reached (cv:openingHours).
   repeating_subfields:
     - field_name: description_translated
@@ -60,6 +73,7 @@
 - field_name: special_opening_hours
   label: Special opening hours
   repeating_label: Special opening hours
+  display_group: Contact point
   help_text: Exceptions to the opening hours (cv:specialOpeningHoursSpecification).
   repeating_subfields:
     - field_name: description_translated
