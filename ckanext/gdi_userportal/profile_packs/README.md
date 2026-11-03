@@ -78,7 +78,16 @@ rdf_profiles: [a, b]       # ckan.rdf.profiles entry points, in order
 redefines: []              # "<section>.<field_name>" this pack defines differently from another pack
 conformance: conformance/<name>.json   # optional: mandatory properties per access layer (generated)
 keep_extras: []            # optional: dataset fields that stay when this pack is retired (see Pruning)
+series_schema: pkg:path/to/series.yaml   # optional: the static scheming schema of the dataset series
 ```
+
+**Dataset series.** A series is not generated from fragments: each pack that has a model for it
+ships a static schema and names it with `series_schema`. With several packs enabled the one listed
+first decides, as for the redefined fields (a pack without one is skipped). `gdi_current` keeps
+`dataset_series_multilingual.yaml`, `healthdcat_r8` has `dataset_series_r8.yaml` with the
+properties of `dcat:DatasetSeries` only: no ordering of the members (`series_order_*`, which only
+drive the previous and next links of the series extension), no legacy publisher fields and one
+contact page. The prune command does not look at series fields.
 
 **Fragment**: header keys (`scheming_version`, `form_languages`, ...), `dataset_fields` and
 `resource_fields`. Reuse a block with `!snippet <name>`; YAML anchors cannot span files.

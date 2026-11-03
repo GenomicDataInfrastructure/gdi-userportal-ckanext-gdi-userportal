@@ -25,6 +25,7 @@ fragments:
   - r8_creator
   - dcat_ap_a2
   - dcat_ap_b
+  - r8_distribution_policy
   - dcat_ap_b2
   - health_base_a
   - health_base_b
@@ -46,6 +47,7 @@ redefines:
   - dataset_fields.hdab
   - resource_fields.access_services
 conformance: conformance/healthdcat_r8.json
+series_schema: ckanext.gdi_userportal:scheming/schemas/dataset_series_r8.yaml
 keep_extras:
   - related_resource
   - source

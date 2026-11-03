@@ -81,7 +81,8 @@ PROVENANCE_FILENAME = "provenance.json"
 
 _NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 _SEPARATORS = re.compile(r"[,\s]+")
-_MANIFEST_KEYS = {"name", "fragments", "rdf_profiles", "redefines", "conformance", "keep_extras"}
+_MANIFEST_KEYS = {"name", "fragments", "rdf_profiles", "redefines", "conformance", "keep_extras", "series_schema"}
+_SCHEMA_REFERENCE = re.compile(r"^[A-Za-z_][\w.]*:[\w./-]+\.ya?ml$")
 
 
 class ProfileError(Exception):
@@ -126,6 +127,9 @@ class Pack:
     # Dataset fields that shared RDF code keeps as free extras whichever profile is enabled, so
     # retiring this pack must not prune them.
     keep_extras: frozenset = frozenset()
+    # The static scheming schema of the dataset series (module:path/to/file.yaml); with several
+    # packs enabled the first listed pack that has one decides.
+    series_schema: typing.Optional[str] = None
 
 
 class Registry:
@@ -161,6 +165,9 @@ class Registry:
         conformance = manifest.get("conformance")
         if conformance is not None and not isinstance(conformance, str):
             raise ProfileError(f"{path}: 'conformance' must be a path relative to the pack root")
+        series_schema = manifest.get("series_schema")
+        if series_schema is not None and not (isinstance(series_schema, str) and _SCHEMA_REFERENCE.match(series_schema)):
+            raise ProfileError(f"{path}: 'series_schema' must look like 'module.name:path/to/schema.yaml'")
         return Pack(
             name,
             tuple(fragments),
@@ -168,6 +175,7 @@ class Registry:
             frozenset(redefines),
             conformance,
             frozenset(keep_extras),
+            series_schema,
         )
 
     def conformance(self, pack):
@@ -312,6 +320,8 @@ class Build:
     # one entry per definition that lost to a higher-precedence pack
     conflicts: list
     rdf_profiles: dict
+    # the schema of the dataset series of the first enabled pack that has one
+    series_schema: typing.Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -389,6 +399,7 @@ def build_schema(profiles, root=PACK_ROOT):
         fields={key: _unique(d.pack for d in definitions[key]) for key in order},
         conflicts=conflicts,
         rdf_profiles={pack.name: list(pack.rdf_profiles) for pack in packs},
+        series_schema=next((pack.series_schema for pack in packs if pack.series_schema), None),
     )
 
 
@@ -503,9 +514,8 @@ def config_options(build, main, schema_path):
         )
     # The existing key, so every code path that reads it keeps working unchanged.
     options.append(("ckanext.dcat.rdf.profiles", " ".join(build.rdf_profiles[main])))
-    options.append(
-        ("scheming.dataset_schemas", " ".join([Path(schema_path).resolve().as_uri(), *STATIC_SCHEMAS]))
-    )
+    static = [build.series_schema] if build.series_schema else list(STATIC_SCHEMAS)
+    options.append(("scheming.dataset_schemas", " ".join([Path(schema_path).resolve().as_uri(), *static])))
     options.append(("scheming.presets", " ".join(SCHEMING_PRESETS)))
     return [f"{key} = {value}" for key, value in options]
 

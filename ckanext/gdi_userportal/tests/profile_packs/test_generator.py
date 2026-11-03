@@ -714,3 +714,49 @@ def test_the_conformance_manifest_key_must_be_a_string(generator, make_root):
     root = make_root({"a": {**pack("a", ["fa"]), "conformance": ["x"]}}, {"fa": {"dataset_fields": [field("x")]}})
     with pytest.raises(generator.ProfileError, match="'conformance' must be a path"):
         generator.Registry(root).pack("a")
+
+
+# --- series schema ------------------------------------------------------------------
+
+
+def test_the_series_schema_of_the_first_pack_that_has_one_decides(generator, make_root):
+    root = make_root(
+        {
+            "a": {**pack("a", ["fa"]), "series_schema": "pkg.mod:schemas/a.yaml"},
+            "b": {**pack("b", ["fb"]), "series_schema": "pkg.mod:schemas/b.yaml"},
+            "c": pack("c", ["fb"]),
+        },
+        {"fa": {"dataset_fields": [field("x")]}, "fb": {"dataset_fields": [field("y")]}},
+    )
+    registry = generator.Registry(root)
+
+    def series(*profiles):
+        return generator.build_schema(list(profiles), root=root).series_schema
+
+    assert series("a", "b") == "pkg.mod:schemas/a.yaml"
+    assert series("b", "a") == "pkg.mod:schemas/b.yaml"
+    assert series("c", "b") == "pkg.mod:schemas/b.yaml"
+    assert series("c") is None
+    assert registry.pack("c").series_schema is None
+
+
+def test_the_series_schema_goes_into_the_scheming_options(generator, make_root, tmp_path):
+    root = make_root(
+        {"a": {**pack("a", ["fa"]), "series_schema": "pkg.mod:schemas/a.yaml"}, "c": pack("c", ["fa"])},
+        {"fa": {"dataset_fields": [field("x")]}},
+    )
+
+    with_series = generator.config_options(generator.build_schema(["a"], root=root), "a", tmp_path / "dataset.yaml")
+    without = generator.config_options(generator.build_schema(["c"], root=root), "c", tmp_path / "dataset.yaml")
+
+    assert any(o.startswith("scheming.dataset_schemas") and o.endswith(" pkg.mod:schemas/a.yaml") for o in with_series)
+    assert any(o.startswith("scheming.dataset_schemas") and o.endswith(generator.STATIC_SCHEMAS[0]) for o in without)
+
+
+@pytest.mark.parametrize("value", [1, "schema.yaml", "pkg:schema.txt", "../x:y.yaml", ["a:b.yaml"]])
+def test_a_series_schema_must_be_a_schema_reference(generator, make_root, value):
+    root = make_root({"a": {**pack("a", ["fa"]), "series_schema": value}}, {"fa": {"dataset_fields": [field("x")]}})
+
+    with pytest.raises(generator.ProfileError, match="series_schema"):
+        generator.Registry(root).pack("a")
+

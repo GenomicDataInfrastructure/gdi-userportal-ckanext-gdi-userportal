@@ -30,3 +30,4 @@ rdf_profiles:
   - fairdatapoint_dcat_ap
   - euro_dcat_ap_nl
 redefines: []
+series_schema: ckanext.gdi_userportal:scheming/schemas/dataset_series_multilingual.yaml

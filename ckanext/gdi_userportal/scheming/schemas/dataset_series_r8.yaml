@@ -1,0 +1,141 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The dataset series of the healthdcat_r8 pack (declared there with series_schema). It holds the
+# properties of dcat:DatasetSeries in R8 and nothing else; what only gdi_current has (the ordering
+# of the members, the legacy publisher fields, a list of contact URLs) stays in the static schema of
+# that pack, dataset_series_multilingual.yaml. A series is not generated from fragments, so this
+# file repeats the shared field definitions.
+
+scheming_version: 2
+dataset_type: dataset_series
+about: 'HealthDCAT-AP R8 Dataset Series schema: the properties of dcat:DatasetSeries and nothing else'
+about_url: http://github.com/ckan/ckanext-dcat
+form_languages:
+- en
+- nl
+dataset_fields:
+- field_name: title_translated
+  label:
+    en: Title
+    nl: Titel
+  preset: fluent_core_translated
+  help_text:
+    en: A descriptive title for the dataset series in each language.
+    nl: Een beschrijvende titel voor de datasetreeks in elke taal.
+  filter_help_text:
+    en: Use this filter to search dataset series by title.
+    nl: Gebruik deze filter om datasetreeksen op titel te zoeken.
+  facet_key: title
+- field_name: name
+  label: URL
+  preset: dataset_slug
+  form_placeholder: eg. my-dataset-series
+- field_name: notes_translated
+  label:
+    en: Description
+    nl: Beschrijving
+  preset: fluent_core_translated
+  form_snippet: fluent_markdown.html
+  display_snippet: fluent_markdown.html
+  help_text: A free-text account of the dataset series.
+- field_name: applicable_legislation
+  label: Applicable legislation
+  preset: multiple_text
+  validators: ignore_missing scheming_multiple_text
+  help_text: The legislation that mandates the creation or management of the dataset series.
+- field_name: contact
+  label: Contact points
+  repeating_label: Contact point
+  repeating_subfields:
+  - field_name: uri
+    label: URI
+  - field_name: name
+    label: Name
+  - field_name: name_translated
+    label: Name (translations)
+    help_text: Name of the contact point in each language.
+  - field_name: email
+    label: Email
+    display_snippet: email.html
+    help_text: Email of the contact point (vcard:hasEmail).
+  - field_name: url
+    label: Contact page
+    display_snippet: link.html
+    help_text: Contact page of the contact point (vcard:hasURL), one at most.
+  help_text: Contact information for enquiries about the dataset series.
+- field_name: frequency
+  label:
+    en: Frequency
+    nl: Frequentie
+  help_text: The frequency with which items are added to the dataset series collection.
+  filter_help_text:
+    en: Use this filter to search dataset series by frequency.
+    nl: Gebruik deze filter om datasetreeksen op frequentie te zoeken.
+  facet_key: frequency
+- field_name: spatial_coverage
+  label: Spatial coverage
+  repeating_subfields:
+  - field_name: uri
+    label: URI
+  - field_name: text
+    label: Label
+  - field_name: geom
+    label: Geometry
+  - field_name: bbox
+    label: Bounding Box
+  - field_name: centroid
+    label: Centroid
+  help_text: A geographic region that is covered by the dataset series.
+- field_name: modified
+  label:
+    en: Modification date
+    nl: Wijzigingsdatum
+  preset: datetime_flex
+  help_text: Date on which the dataset series was changed.
+  filter_help_text:
+    en: Use this filter to search dataset series by modification date.
+    nl: Gebruik deze filter om datasetreeksen op wijzigingsdatum te zoeken.
+  facet_key: modified
+- field_name: publisher
+  label: Publisher
+  repeating_label: Publisher
+  repeating_once: true
+  repeating_subfields:
+  - field_name: uri
+    label: URI
+  - field_name: name
+    label: Name
+  - field_name: name_translated
+    label: Name (translations)
+    help_text: Name of the entity or person in each language.
+  - field_name: type
+    label: Type
+  help_text: Entity responsible for ensuring the coherency of the dataset series.
+- field_name: owner_org
+  label: Organization
+  preset: dataset_organization
+  help_text: The CKAN organization the dataset series belongs to.
+- field_name: issued
+  label:
+    en: Release date
+    nl: Releasedatum
+  preset: datetime_flex
+  help_text: Date of formal issuance of the dataset series. This is the moment when the dataset series was established
+    as a managed resource.
+  filter_help_text:
+    en: Use this filter to search dataset series by release date.
+    nl: Gebruik deze filter om datasetreeksen op releasedatum te zoeken.
+  facet_key: issued
+- field_name: temporal_coverage
+  label: Temporal coverage
+  repeating_subfields:
+  - field_name: start
+    label: Start
+    preset: datetime_flex
+  - field_name: end
+    label: End
+    preset: datetime_flex
+  help_text: The temporal period or periods the dataset series covers.
+resource_fields: []

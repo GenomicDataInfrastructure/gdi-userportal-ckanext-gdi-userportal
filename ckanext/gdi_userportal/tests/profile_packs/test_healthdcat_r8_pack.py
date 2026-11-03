@@ -10,11 +10,13 @@ have to generate valid schemas in every mode, and the fields they share have to 
 """
 
 import pytest
+import yaml
 
 # What only gdi_current has. publisher_note and publisher_type on the dataset are the HealthDCAT-AP
 # ones (R8 has the note on the publisher only); the license is on the distributions in R8.
 GDI_ONLY = {"dataset_status", "trusted_data_holder", "publisher_note", "publisher_type", "license_id"}
 GDI_ONLY_RESOURCE = {"retention_period"}
+R8_ONLY_RESOURCE = {"has_policy"}
 R8_ONLY = {
     "alternative_title",
     "related_resource",
@@ -263,6 +265,16 @@ def test_the_r8_distribution_has_no_retention_period_and_gdi_current_keeps_it(ge
     assert GDI_ONLY_RESOURCE <= resource_names(["gdi_current"])
 
 
+def test_the_r8_distribution_has_the_policy_and_gdi_current_does_not(generator):
+    def resource_fields(profiles):
+        return {f["field_name"]: f for f in generator.build_schema(profiles).schema["resource_fields"]}
+
+    assert R8_ONLY_RESOURCE <= set(resource_fields(["healthdcat_r8"]))
+    assert not R8_ONLY_RESOURCE & set(resource_fields(["gdi_current"]))
+    # one policy at most (odrl:hasPolicy 0..1)
+    assert "multiple_text" not in str(resource_fields(["healthdcat_r8"])["has_policy"])
+
+
 def test_the_r8_data_service_has_the_properties_of_dcat_dataservice_only(generator):
     resource_fields = {f["field_name"]: f for f in generator.build_schema(["healthdcat_r8"]).schema["resource_fields"]}
     service = resource_fields["access_services"]
@@ -324,7 +336,7 @@ def test_retiring_r8_prunes_the_fields_only_r8_defines_and_spares_the_shared_ext
 
     assert set(retired["dataset_fields"]) == R8_ONLY - {"related_resource", "source"}
     assert {packs[0] for packs in retired["dataset_fields"].values()} == {"healthdcat_r8"}
-    assert retired["resource_fields"] == {}
+    assert set(retired["resource_fields"]) == R8_ONLY_RESOURCE
 
 
 def test_retiring_gdi_current_prunes_what_only_it_defines(generator):
@@ -344,3 +356,57 @@ def test_the_r8_pack_ships_its_conformance_rules(generator):
 
     assert registry.pack("healthdcat_r8").conformance == "conformance/healthdcat_r8.json"
     assert registry.conformance(registry.pack("gdi_current")) is None
+
+
+# --- dataset series -----------------------------------------------------------------
+
+SERIES_R8 = {
+    "title_translated", "name", "notes_translated", "applicable_legislation", "contact", "frequency",
+    "spatial_coverage", "modified", "publisher", "owner_org", "issued", "temporal_coverage",
+}
+
+
+def series_schema(generator, reference):
+    module, _, relative = reference.partition(":")
+    assert module == "ckanext.gdi_userportal"
+    return yaml.safe_load((generator.PACK_ROOT.parent / relative).read_text())
+
+
+def series_fields(generator, profiles):
+    reference = generator.build_schema(profiles).series_schema
+    return {f["field_name"]: f for f in series_schema(generator, reference)["dataset_fields"]}
+
+
+def test_each_pack_has_its_own_series_schema_and_the_first_pack_decides(generator):
+    build = generator.build_schema
+
+    assert build(["healthdcat_r8"]).series_schema.endswith("dataset_series_r8.yaml")
+    assert build(["gdi_current"]).series_schema.endswith("dataset_series_multilingual.yaml")
+    assert build(["healthdcat_r8", "gdi_current"]).series_schema.endswith("dataset_series_r8.yaml")
+    assert build(["gdi_current", "healthdcat_r8"]).series_schema.endswith("dataset_series_multilingual.yaml")
+
+
+def test_the_r8_series_has_the_properties_of_dcat_datasetseries_only(generator):
+    fields = series_fields(generator, ["healthdcat_r8"])
+
+    assert set(fields) == SERIES_R8
+    assert set(subfield_names(fields["publisher"])) == AGENT
+    assert set(subfield_names(fields["contact"])) == {"uri", "name", "name_translated", "email", "url"}
+    assert "multiple_text" not in str(subfields_of(fields["contact"], "url"))
+
+
+def test_gdi_current_keeps_the_order_fields_and_the_legacy_publisher_on_its_series(generator):
+    fields = series_fields(generator, ["gdi_current"])
+
+    assert {"series_order_field", "series_order_type"} <= set(fields)
+    assert {"publisher_note", "publisher_type"} <= set(subfield_names(fields["publisher"]))
+
+
+def test_a_series_schema_keeps_the_filter_metadata_the_frontend_uses(generator):
+    r8 = series_fields(generator, ["healthdcat_r8"])
+    gdi = series_fields(generator, ["gdi_current"])
+
+    for name in SERIES_R8:
+        assert r8[name].get("facet_key") == gdi[name].get("facet_key"), name
+        assert r8[name].get("filter_help_text") == gdi[name].get("filter_help_text"), name
+
