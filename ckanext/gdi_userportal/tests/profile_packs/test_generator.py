@@ -881,3 +881,108 @@ def test_an_unknown_field_order_is_an_error(generator, make_root, bad):
 
     with pytest.raises(generator.ProfileError, match="field_order"):
         generator.Registry(root).pack("a")
+
+
+# --- form languages ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("raw", [None, "", "   ", "\n"])
+def test_unset_form_languages_leave_the_schemas_as_they_are(generator, raw):
+    assert generator.parse_form_languages(raw) is None
+
+
+@pytest.mark.parametrize(
+    "raw, expected",
+    [("en", ["en"]), ("en nl", ["en", "nl"]), ("nl,en", ["nl", "en"]), (" en , nl fr ", ["en", "nl", "fr"]), ("en_GB nl", ["en_GB", "nl"])],
+)
+def test_form_languages_keep_their_order(generator, raw, expected):
+    assert generator.parse_form_languages(raw) == expected
+
+
+@pytest.mark.parametrize("raw", ["EN", "english", "e", "en nl en", "en;nl", "en-GB"])
+def test_a_bad_form_language_is_an_error(generator, raw):
+    with pytest.raises(generator.ProfileError, match="GDI_METADATA_FORM_LANGUAGES"):
+        generator.parse_form_languages(raw)
+
+
+def test_without_form_languages_nothing_changes(generator, tmp_path):
+    options = generator.generate("healthdcat_r8", None, tmp_path)
+
+    assert yaml.safe_load((tmp_path / "dataset.yaml").read_text())["form_languages"] == ["en", "nl"]
+    assert not (tmp_path / "dataset_series.yaml").exists()
+    assert "form_languages" not in json.loads((tmp_path / "provenance.json").read_text())
+    assert "dataset_series_r8.yaml" in next(o for o in options if o.startswith("scheming.dataset_schemas"))
+
+
+@pytest.mark.parametrize("profiles", ["gdi_current", "healthdcat_r8", "healthdcat_r8 gdi_current"])
+def test_form_languages_apply_to_the_dataset_and_the_series_schema(generator, tmp_path, profiles):
+    options = generator.generate(profiles, None, tmp_path, raw_form_languages="en nl fr")
+
+    assert yaml.safe_load((tmp_path / "dataset.yaml").read_text())["form_languages"] == ["en", "nl", "fr"]
+    series = yaml.safe_load((tmp_path / "dataset_series.yaml").read_text())
+    assert series["form_languages"] == ["en", "nl", "fr"] and series["dataset_type"] == "dataset_series"
+    assert json.loads((tmp_path / "provenance.json").read_text())["form_languages"] == ["en", "nl", "fr"]
+    schemas = next(o for o in options if o.startswith("scheming.dataset_schemas")).split(" = ", 1)[1].split()
+    assert schemas == [(tmp_path / "dataset.yaml").resolve().as_uri(), (tmp_path / "dataset_series.yaml").resolve().as_uri()]
+
+
+def test_the_series_copy_only_differs_in_the_form_languages(generator, tmp_path):
+    generator.generate("healthdcat_r8", None, tmp_path, raw_form_languages="en")
+    original = yaml.safe_load((generator.PACK_ROOT.parent / "scheming/schemas/dataset_series_r8.yaml").read_text())
+    copy = yaml.safe_load((tmp_path / "dataset_series.yaml").read_text())
+
+    assert copy.pop("form_languages") == ["en"]
+    original.pop("form_languages")
+    assert copy == original
+
+
+def test_the_output_with_form_languages_is_deterministic(generator, tmp_path):
+    first, second = tmp_path / "a", tmp_path / "b"
+    generator.generate("healthdcat_r8", None, first, raw_form_languages="nl en")
+    generator.generate("healthdcat_r8", None, second, raw_form_languages="nl en")
+
+    for name in ("dataset.yaml", "dataset_series.yaml", "provenance.json"):
+        assert (first / name).read_bytes() == (second / name).read_bytes()
+
+
+def test_a_main_language_that_is_not_the_first_form_language_gives_a_warning(generator, tmp_path, caplog):
+    with caplog.at_level(logging.WARNING):
+        generator.generate("gdi_current", None, tmp_path, raw_form_languages="nl en", locale_default="en")
+
+    assert any("CKAN__LOCALE_DEFAULT" in r.getMessage() for r in caplog.records)
+
+
+def test_no_warning_when_the_main_language_is_first(generator, tmp_path, caplog):
+    with caplog.at_level(logging.WARNING):
+        generator.generate("gdi_current", None, tmp_path, raw_form_languages="en nl", locale_default="en")
+
+    assert not [r for r in caplog.records if "CKAN__LOCALE_DEFAULT" in r.getMessage()]
+
+
+def test_the_command_line_reads_the_form_languages_from_the_environment(generator, tmp_path, capsys):
+    code = generator.main(
+        ["--output-dir", str(tmp_path), "--skip-entry-point-check"],
+        environ={"GDI_METADATA_PROFILES": "gdi_current", "GDI_METADATA_FORM_LANGUAGES": "en nl de"},
+    )
+
+    assert code == 0
+    assert yaml.safe_load((tmp_path / "dataset.yaml").read_text())["form_languages"] == ["en", "nl", "de"]
+
+
+def test_a_bad_form_language_stops_the_command_line(generator, tmp_path, capsys):
+    code = generator.main(
+        ["--output-dir", str(tmp_path), "--skip-entry-point-check"],
+        environ={"GDI_METADATA_FORM_LANGUAGES": "english"},
+    )
+
+    assert code == 1
+    assert "GDI_METADATA_FORM_LANGUAGES" in capsys.readouterr().err
+
+
+def test_a_series_copy_of_an_earlier_start_is_removed_when_the_languages_are_unset(generator, tmp_path):
+    generator.generate("healthdcat_r8", None, tmp_path, raw_form_languages="en nl fr")
+    assert (tmp_path / "dataset_series.yaml").exists()
+
+    generator.generate("healthdcat_r8", None, tmp_path)
+
+    assert not (tmp_path / "dataset_series.yaml").exists()

@@ -7,15 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 # Metadata profile packs
 
 One CKAN deployment can load several metadata profiles ("packs"), chosen at container start
-(ADR 0001). The generator merges the schema fragments of the enabled packs into one scheming
-`dataset` schema, because ckanext-scheming cannot compose schemas at runtime.
-
-| Variable | Meaning | Default |
-|---|---|---|
-| `GDI_METADATA_PROFILES` | Pack names, separated by commas and/or whitespace. The order is the precedence order: the first pack wins. | unset or empty: `gdi_current` |
-| `GDI_METADATA_MAIN_PROFILE` | The deployment's main profile. Must be one of the enabled packs. | the first enabled pack |
-
-Unknown packs, duplicate names, a main profile that is not enabled, and undeclared conflicts stop
+(ADR 0001) with `GDI_METADATA_PROFILES`, `GDI_METADATA_MAIN_PROFILE` and `GDI_METADATA_FORM_LANGUAGES`;
+the variables and examples are in `docs/metadata-profiles.md` of `gdi-userportal-ckan-docker`. The
+generator merges the schema fragments of the enabled packs into one scheming `dataset` schema, because
+ckanext-scheming cannot compose schemas at runtime. Unknown packs, duplicate names, a main profile that is not enabled, and undeclared conflicts stop
 the container from starting.
 
 ## Packs

@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import copy
 import dataclasses
+import importlib.util
 import json
 import logging
 import os
@@ -49,6 +50,13 @@ PACK_ROOT = Path(__file__).resolve().parent
 DEFAULT_PROFILE = "gdi_current"
 ENV_PROFILES = "GDI_METADATA_PROFILES"
 ENV_MAIN_PROFILE = "GDI_METADATA_MAIN_PROFILE"
+# The languages the edit form offers for the multilingual fields, in this order (a space or comma separated
+# list of codes). Unset: the list of the schemas, which is "en nl".
+ENV_FORM_LANGUAGES = "GDI_METADATA_FORM_LANGUAGES"
+# The language of the plain title and description, and the one text falls back to (a CKAN setting)
+ENV_LOCALE_DEFAULT = "CKAN__LOCALE_DEFAULT"
+SERIES_FILENAME = "dataset_series.yaml"
+_LANGUAGE_CODE = re.compile(r"^[a-z]{2,3}(?:_[A-Za-z0-9]+)?$")
 
 # The CKAN config options the generator writes, and runtime code reads instead of the environment.
 OPTION_PROFILES = "ckanext.dcat.metadata_profiles"
@@ -324,6 +332,20 @@ def parse_profiles(raw):
     return names
 
 
+def parse_form_languages(raw):
+    """The languages of the edit form, in order; None when unset or empty (the schemas keep their own list)."""
+    if raw is None or not raw.strip():
+        return None
+    languages = [token for token in _SEPARATORS.split(raw.strip()) if token]
+    invalid = [token for token in languages if not _LANGUAGE_CODE.match(token)]
+    if invalid:
+        raise ProfileError(f"{ENV_FORM_LANGUAGES} has invalid language codes: {', '.join(invalid)}")
+    duplicates = [token for token in _unique(languages) if languages.count(token) > 1]
+    if duplicates:
+        raise ProfileError(f"{ENV_FORM_LANGUAGES} lists a language twice: {', '.join(duplicates)}")
+    return languages
+
+
 def parse_main_profile(raw, profiles):
     """The main profile from ``GDI_METADATA_MAIN_PROFILE``; the first enabled one when unset."""
     main = (raw or "").strip()
@@ -351,6 +373,9 @@ class Build:
     rdf_profiles: dict
     # the schema of the dataset series of the first enabled pack that has one
     series_schema: typing.Optional[str] = None
+    # The form languages from the environment, when set, and the copy of the series schema written for them
+    form_languages: typing.Optional[list] = None
+    series_file: typing.Optional[Path] = None
 
 
 @dataclasses.dataclass
@@ -570,6 +595,8 @@ def config_options(build, main, schema_path):
     # The existing key, so every code path that reads it keeps working unchanged.
     options.append(("ckanext.dcat.rdf.profiles", " ".join(build.rdf_profiles[main])))
     static = [build.series_schema] if build.series_schema else list(STATIC_SCHEMAS)
+    if build.series_file:  # a copy of it with the form languages of the environment
+        static = [Path(build.series_file).resolve().as_uri()]
     options.append(("scheming.dataset_schemas", " ".join([Path(schema_path).resolve().as_uri(), *static])))
     options.append(("scheming.presets", " ".join(SCHEMING_PRESETS)))
     return [f"{key} = {value}" for key, value in options]
@@ -609,10 +636,35 @@ def write_outputs(build, main, output_dir):
         "fields": build.fields,
         "conflicts": build.conflicts,
     }
+    if build.form_languages:
+        provenance["form_languages"] = build.form_languages
+        build.series_file = _write_series_copy(build, output_dir, header)
+    else:  # a copy left by an earlier start with form languages is not used any more
+        (output_dir / SERIES_FILENAME).unlink(missing_ok=True)
     schema_path = output_dir / SCHEMA_FILENAME
     _write_atomically(schema_path, render_schema(build.schema, header))
     _write_atomically(output_dir / PROVENANCE_FILENAME, json.dumps(provenance, indent=2) + "\n")
     return schema_path
+
+
+def _series_schema_file(reference):
+    module, _, relative = reference.partition(":")
+    if module == "ckanext.gdi_userportal":
+        return PACK_ROOT.parent / relative
+    spec = importlib.util.find_spec(module)
+    if spec is None or not spec.submodule_search_locations:
+        raise ProfileError(f"cannot find the series schema {reference}")
+    return Path(next(iter(spec.submodule_search_locations))) / relative
+
+
+def _write_series_copy(build, output_dir, header):
+    """The series schema of the enabled packs, with the form languages of the environment."""
+    reference = build.series_schema or STATIC_SCHEMAS[0]
+    series = yaml.safe_load(_series_schema_file(reference).read_text(encoding="utf-8"))
+    series["form_languages"] = list(build.form_languages)
+    path = output_dir / SERIES_FILENAME
+    _write_atomically(path, render_schema(series, header))
+    return path
 
 
 def _write_atomically(path, text):
@@ -632,11 +684,23 @@ def _write_atomically(path, text):
 # --- Command line ------------------------------------------------------------------
 
 
-def generate(raw_profiles, raw_main, output_dir, root=PACK_ROOT, installed=None):
+def generate(
+    raw_profiles, raw_main, output_dir, root=PACK_ROOT, installed=None, raw_form_languages=None, locale_default=None
+):
     """The whole start-up step. ``installed`` (RDF profile names) enables the entry point check."""
     profiles = parse_profiles(raw_profiles)
     build = build_schema(profiles, root)  # first: an unknown pack is the root cause of a main profile mismatch
     main = parse_main_profile(raw_main, profiles)
+    languages = parse_form_languages(raw_form_languages)
+    if languages:
+        build.form_languages = languages
+        build.schema["form_languages"] = languages
+        if locale_default and locale_default != languages[0]:
+            log.warning(
+                "%s is '%s' but the first form language is '%s': the plain title and description, and the "
+                "fallback of a text, use '%s'; the form lists '%s' first",
+                ENV_LOCALE_DEFAULT, locale_default, languages[0], locale_default, languages[0],
+            )
     if installed is not None:
         check_rdf_profiles(build, installed)
     schema_path = write_outputs(build, main, output_dir)
@@ -653,6 +717,11 @@ def main(argv=None, environ=None):
         "--main-profile", default=environ.get(ENV_MAIN_PROFILE), help=f"default: ${ENV_MAIN_PROFILE}"
     )
     parser.add_argument(
+        "--form-languages",
+        default=environ.get(ENV_FORM_LANGUAGES),
+        help=f"the languages of the edit form, in order (default: ${ENV_FORM_LANGUAGES}, else the schemas' own)",
+    )
+    parser.add_argument(
         "--skip-entry-point-check",
         action="store_true",
         help="do not check that the RDF profiles of the packs are installed",
@@ -664,7 +733,14 @@ def main(argv=None, environ=None):
     )
     try:
         installed = None if args.skip_entry_point_check else installed_rdf_profiles()
-        options = generate(args.profiles, args.main_profile, args.output_dir, installed=installed)
+        options = generate(
+            args.profiles,
+            args.main_profile,
+            args.output_dir,
+            installed=installed,
+            raw_form_languages=args.form_languages,
+            locale_default=environ.get(ENV_LOCALE_DEFAULT),
+        )
     except ProfileError as error:
         print(f"[metadata-profiles] ERROR {error}", file=sys.stderr)
         return 1
