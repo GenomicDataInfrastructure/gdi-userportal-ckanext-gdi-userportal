@@ -67,6 +67,7 @@ REDEFINED = {
     "dataset_fields.qualified_attribution",
     "dataset_fields.was_generated_by",
     "dataset_fields.hdab",
+    "dataset_fields.qualified_relation",
     "resource_fields.access_services",
 }
 # R8 agents (HealthDCAT-AP R8, Agent_Shape and the health agent shapes): a name and a type, the
@@ -440,3 +441,20 @@ def test_a_series_schema_keeps_the_filter_metadata_the_frontend_uses(generator):
         assert r8[name].get("facet_key") == gdi[name].get("facet_key"), name
         assert r8[name].get("filter_help_text") == gdi[name].get("filter_help_text"), name
 
+
+
+def is_list(subfield):
+    return subfield.get("preset") == "multiple_text" or "scheming_multiple_text" in subfield.get("validators", "")
+
+
+def test_r8_relationship_holds_several_relations_and_roles(generator):
+    subfields = {f["field_name"]: f for f in dataset_fields(generator, ["healthdcat_r8"])["qualified_relation"]["repeating_subfields"]}
+
+    assert set(subfields) == {"uri", "relation", "role"}
+    assert is_list(subfields["relation"]) and is_list(subfields["role"])
+
+
+def test_gdi_current_relationship_keeps_one_relation_and_role(generator):
+    subfields = {f["field_name"]: f for f in dataset_fields(generator, ["gdi_current"])["qualified_relation"]["repeating_subfields"]}
+
+    assert not is_list(subfields["relation"]) and not is_list(subfields["role"])

@@ -7,12 +7,9 @@
 # a distribution, the legacy publisher type and note, the identifier and country of an agent, ...)
 # is left out, and lives in fragments of the gdi_current pack.
 #
-# contact, spatial_coverage, publisher, creator, qualified_attribution, was_generated_by, hdab and
-# access_services are the shared fields R8 defines differently: R8 has a contact point with one contact page, plain
-# agents (a name and a type; the health agents of a dataset add a contact point, and the publisher
-# a description), an activity with a label and a type, and the properties of dcat:DataService only.
-# They are redefined, so with both packs enabled the pack listed first decides: list healthdcat_r8
-# first to get the R8 versions.
+# The shared fields R8 defines differently are listed under redefines below; the README describes
+# them. With both packs enabled the pack listed first decides: list healthdcat_r8 first to get the
+# R8 versions.
 #
 # conformance holds the properties R8 makes mandatory per access layer, generated from R8's
 # cardinality rules by conformance_build.py. related_resource and source are kept when this
@@ -33,7 +30,7 @@ fragments:
   - health_base_b
   - r8_hdab
   - r8_access_services
-  - health_base_c
+  - r8_qualified_relation
   - r8_activity
   - r8_attribution
   - health_base_c2
@@ -48,6 +45,7 @@ redefines:
   - dataset_fields.qualified_attribution
   - dataset_fields.was_generated_by
   - dataset_fields.hdab
+  - dataset_fields.qualified_relation
   - resource_fields.access_services
 conformance: conformance/healthdcat_r8.json
 series_schema: ckanext.gdi_userportal:scheming/schemas/dataset_series_r8.yaml
