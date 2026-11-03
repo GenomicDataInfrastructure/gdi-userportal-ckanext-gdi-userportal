@@ -814,3 +814,70 @@ def test_overrides_must_map_fields_to_keys(generator, make_root, bad):
 
     with pytest.raises(generator.ProfileError, match="overrides"):
         generator.build_schema(["a"], root=root)
+
+
+def test_an_override_set_to_null_removes_that_key(generator, make_root):
+    root = make_root(
+        {"a": {**pack("a", ["fa"]), "overrides": {"dataset_fields.x": {"preset": None, "label": "Ex"}}}},
+        {"fa": {"dataset_fields": [field("x", preset="fluent_markdown", help_text="h")]}},
+    )
+
+    (only,) = generator.build_schema(["a"], root=root).schema["dataset_fields"]
+
+    assert only == {"field_name": "x", "label": "Ex", "help_text": "h"}
+
+
+# --- field order ---------------------------------------------------------------------
+
+
+ORDER_FRAGMENT = {
+    "dataset_fields": [
+        field("zebra"),
+        field("notes_translated", label="Description"),
+        field("owner", label={"en": "Apple", "nl": "Appel"}),
+        field("title_translated", label="Title"),
+        field("mango", label="mango"),
+    ],
+    "resource_fields": [
+        field("size", label="Byte size"),
+        field("description_translated", label="Description"),
+        field("name_translated", label="Title"),
+        field("access", label="Access URL"),
+    ],
+}
+
+
+def test_the_default_order_is_that_of_the_fragments(generator, make_root):
+    root = make_root({"a": pack("a", ["fa"])}, {"fa": ORDER_FRAGMENT})
+
+    schema = generator.build_schema(["a"], root=root).schema
+
+    assert names(schema) == ["zebra", "notes_translated", "owner", "title_translated", "mango"]
+
+
+def test_an_alphabetical_order_puts_the_title_and_the_description_first(generator, make_root):
+    root = make_root({"a": {**pack("a", ["fa"]), "field_order": "alphabetical"}}, {"fa": ORDER_FRAGMENT})
+
+    schema = generator.build_schema(["a"], root=root).schema
+
+    # by label, ignoring case; a label per language is read in English
+    assert names(schema) == ["title_translated", "notes_translated", "owner", "mango", "zebra"]
+    assert names(schema, "resource_fields") == ["name_translated", "description_translated", "access", "size"]
+
+
+def test_the_pack_listed_first_decides_the_order(generator, make_root):
+    fragments = {"fa": ORDER_FRAGMENT, "fb": ORDER_FRAGMENT}
+    root = make_root(
+        {"a": {**pack("a", ["fa"]), "field_order": "alphabetical"}, "b": pack("b", ["fb"])}, fragments
+    )
+
+    assert names(generator.build_schema(["a", "b"], root=root).schema)[-1] == "zebra"
+    assert names(generator.build_schema(["b", "a"], root=root).schema)[0] == "zebra"
+
+
+@pytest.mark.parametrize("bad", ["alphabetic", "", 3, None])
+def test_an_unknown_field_order_is_an_error(generator, make_root, bad):
+    root = make_root({"a": {**pack("a", ["fa"]), "field_order": bad}}, {"fa": ORDER_FRAGMENT})
+
+    with pytest.raises(generator.ProfileError, match="field_order"):
+        generator.Registry(root).pack("a")

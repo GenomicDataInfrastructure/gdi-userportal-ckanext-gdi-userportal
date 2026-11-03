@@ -60,6 +60,9 @@ redefines:
   - resource_fields.hash_algorithm
   - resource_fields.license
   - resource_fields.conforms_to
+  - resource_fields.access_url
+  - resource_fields.download_url
+  - resource_fields.rights
 overrides:
   # R8 calls the property "spatial resolution" (its IRI is dcat:spatialResolutionInMeters), and a
   # dataset has at most one retention period.
@@ -85,6 +88,30 @@ overrides:
     label: Licence
   resource_fields.conforms_to:
     label: Linked schemas
+  # The access URL (1..*), the download URL (0..*) and the rights (0..*) of a distribution.
+  resource_fields.access_url:
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    display_snippet: link_list.html
+    help_text: A URL that gives access to the distribution of the dataset (dcat:accessURL). One or more.
+  resource_fields.download_url:
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    display_snippet: link_list.html
+    help_text: A URL that is a direct link to a downloadable file in a given format (dcat:downloadURL). Zero or more.
+  resource_fields.rights:
+    preset: null  # a list of statements, each with its own languages (not one text per language)
+    repeating_label: Rights statement
+    repeating_subfields:
+      - field_name: uri
+        label: URI
+        help_text: IRI of the rights statement, when it has one.
+      - field_name: label_translated
+        label: Statement
+        preset: fluent_text
+        display_snippet: all_languages.html
+        help_text: The rights statement in each language.
+    help_text: Statements that specify the rights associated with the distribution (dct:rights). One or more.
   dataset_fields.retention_period:
     repeating_once: true
     repeating_label: Retention period
@@ -98,6 +125,7 @@ overrides:
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
     help_text: The type of the dataset (dct:type). One or more.
+field_order: alphabetical  # by label, the title and the description first
 conformance: conformance/healthdcat_r8.json
 series_schema: ckanext.gdi_userportal:scheming/schemas/dataset_series_r8.yaml
 keep_extras:

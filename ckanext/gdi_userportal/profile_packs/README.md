@@ -60,11 +60,14 @@ does not change which mapping an export uses by default.
 
 R8 fields that allow several values where `gdi_current` holds one and that are lists in the R8 pack:
 the relations and roles of `qualified_relation`, the roles of `qualified_attribution`, the landing
-page (`url`) and the type (`dcat_type`) of a dataset. The Discovery Service still reads one landing
-page and one type, so it has to follow before an R8-first deployment is used with it. Solr keeps one
-value in `url` and `dcat_type` (changing `multiValued` needs a reindex): `before_dataset_index` puts
-the first value there, and every type in `vocab_dcat_type`. The identifier, the access and download
-URL and the rights of a distribution, and a few data service properties stay single-valued: the R8
+page (`url`) and the type (`dcat_type`) of a dataset, and the access URL (`access_url`) and download
+URL (`download_url`) of a distribution. The rights of a distribution are a list of statements, each
+with an optional IRI and a label per language (`rights` with the subfields `uri` and
+`label_translated`; the pack removes the `fluent_markdown` preset of `gdi_current` with a `null` in
+its `overrides`). The Discovery Service still reads one value of each, so it has to follow before an
+R8-first deployment is used with it. Solr keeps one value in `url` and `dcat_type` (changing
+`multiValued` needs a reindex): `before_dataset_index` puts the first value there, and every type in
+`vocab_dcat_type`. The identifier and a few data service properties stay single-valued: the R8
 profile keeps the first value and logs a warning when it drops others (ADR 0001, Q3).
 
 The R8 variants of the agent snippets and of `access_services` are copies. The tests in
@@ -93,10 +96,21 @@ keep_extras: []            # optional: dataset fields that stay when this pack i
 series_schema: pkg:path/to/series.yaml   # optional: the static scheming schema of the dataset series
 overrides:                 # optional: keys that replace those of a field this pack defines, for this pack only
   dataset_fields.retention_period: {repeating_once: true}
+field_order: fragments     # optional: fragments (the default) or alphabetical, see below
 ```
 
 `overrides` is for a label or a cardinality that differs, so that a shared fragment does not need a
-copy. The overridden field still needs a `redefines` entry when another pack defines it too.
+copy; a key set to `null` is removed from the field (a preset that the pack replaces by subfields of its
+own). The overridden field still needs a `redefines` entry when another pack defines it too.
+
+`field_order: alphabetical` orders the `dataset_fields` and the `resource_fields` of the generated
+schema by label (a label per language is read in English, ignoring case), with the title and the
+description first (`title_translated`, `notes_translated` and `name_translated`,
+`description_translated`). It is the order of the edit form and of the display of a dataset and of a
+distribution. Without it the order is that of the fragments. With several packs enabled the pack listed
+first decides. `healthdcat_r8` is alphabetical, `gdi_current` keeps the order of its fragments; the
+static series schema of the R8 pack, `dataset_series_r8.yaml`, is kept in the same order by hand (a test
+checks it). The subfields of a field keep their own order, which follows the model.
 
 **Dataset series.** A series is not generated from fragments: each pack that has a model for it
 ships a static schema and names it with `series_schema`. With several packs enabled the one listed
@@ -112,6 +126,12 @@ under that heading (the contact point of an R8 agent); `display_replaces: <subfi
 subfield take the row of that other one when it has a value, under its `display_label` (one or more
 names per language replace the single name). A field with `repeating_once` is shown without a number,
 and nested lists (variables, tables, columns) are indented.
+
+**Empty properties.** A dataset page and a distribution page list what has a value. With the option
+`ckanext.gdi_userportal.show_empty_properties = true` (the environment variable
+`CKANEXT__GDI_USERPORTAL__SHOW_EMPTY_PROPERTIES=true`) they list every property the schema defines, with
+a dash for those without a value, to see what the schema, the edit form and a harvest can hold. It is
+off by default.
 
 **Language fallback.** The edit form stores an empty value for a form language left blank
 (`{"en": "Title", "nl": ""}`), and scheming and CKAN only fall back to another language when the key

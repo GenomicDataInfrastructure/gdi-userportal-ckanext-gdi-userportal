@@ -6,7 +6,8 @@
 # properties of dcat:DatasetSeries in R8 and nothing else; what only gdi_current has (the ordering
 # of the members, the legacy publisher fields, a list of contact URLs) stays in the static schema of
 # that pack, dataset_series_multilingual.yaml. A series is not generated from fragments, so this
-# file repeats the shared field definitions.
+# file repeats the shared field definitions. The fields are in alphabetical order by label, the title and
+# the description first, as in the generated schema of the pack (field_order: alphabetical).
 
 scheming_version: 2
 dataset_type: dataset_series
@@ -28,10 +29,6 @@ dataset_fields:
     en: Use this filter to search dataset series by title.
     nl: Gebruik deze filter om datasetreeksen op titel te zoeken.
   facet_key: title
-- field_name: name
-  label: URL
-  preset: dataset_slug
-  form_placeholder: eg. my-dataset-series
 - field_name: notes_translated
   label:
     en: Description
@@ -93,6 +90,10 @@ dataset_fields:
     en: Use this filter to search dataset series by modification date.
     nl: Gebruik deze filter om datasetreeksen op wijzigingsdatum te zoeken.
   facet_key: modified
+- field_name: owner_org
+  label: Organization
+  preset: dataset_organization
+  help_text: The CKAN organization the dataset series belongs to.
 - field_name: publisher
   label: Publisher
   repeating_label: Publisher
@@ -108,10 +109,6 @@ dataset_fields:
   - field_name: type
     label: Type
   help_text: Entity responsible for ensuring the coherency of the dataset series.
-- field_name: owner_org
-  label: Organization
-  preset: dataset_organization
-  help_text: The CKAN organization the dataset series belongs to.
 - field_name: issued
   label:
     en: Release date
@@ -133,4 +130,8 @@ dataset_fields:
     label: End
     preset: datetime_flex
   help_text: The temporal period or periods the dataset series covers.
+- field_name: name
+  label: URL
+  preset: dataset_slug
+  form_placeholder: eg. my-dataset-series
 resource_fields: []

@@ -9,6 +9,8 @@ The generator is tested on synthetic packs in ``test_generator.py``; here the sh
 have to generate valid schemas in every mode, and the fields they share have to be shared.
 """
 
+from pathlib import Path
+
 import pytest
 import yaml
 
@@ -82,6 +84,9 @@ REDEFINED = {
     "resource_fields.hash_algorithm",
     "resource_fields.license",
     "resource_fields.conforms_to",
+    "resource_fields.access_url",
+    "resource_fields.download_url",
+    "resource_fields.rights",
 }
 # R8 agents (HealthDCAT-AP R8, Agent_Shape and the health agent shapes): a name and a type, the
 # health agents of a dataset add the contact point and the publisher a description.
@@ -535,6 +540,52 @@ def test_gdi_current_keeps_the_names_it_always_had_for_a_distribution(generator)
     assert resource["compress_format"]["label"] == "Compress format"
     assert resource["conforms_to"]["label"] == "Conforms to"
     assert resource["size"]["label"] == "Size"
+
+
+def resource_fields(generator, profiles):
+    return {f["field_name"]: f for f in generator.build_schema(profiles).schema["resource_fields"]}
+
+
+def test_r8_access_url_download_url_and_rights_of_a_distribution_are_lists(generator):
+    r8 = resource_fields(generator, ["healthdcat_r8"])
+    gdi = resource_fields(generator, ["gdi_current"])
+
+    assert is_list(r8["access_url"]) and is_list(r8["download_url"])
+    assert not is_list(gdi["access_url"]) and not is_list(gdi["download_url"])
+    # a list of statements, each with an IRI and a label per language, instead of one text per language
+    assert "preset" not in r8["rights"]
+    assert [f["field_name"] for f in r8["rights"]["repeating_subfields"]] == ["uri", "label_translated"]
+    assert r8["rights"]["repeating_subfields"][1]["preset"] == "fluent_text"
+    assert gdi["rights"]["preset"] == "fluent_markdown" and "repeating_subfields" not in gdi["rights"]
+
+
+# R8 orders the fields of the schemas by label, the title and the description first
+@pytest.mark.parametrize("section, leading", [
+    ("dataset_fields", ["title_translated", "notes_translated"]),
+    ("resource_fields", ["name_translated", "description_translated"]),
+])
+def test_the_r8_schema_is_alphabetical_with_the_title_and_the_description_first(generator, section, leading):
+    fields = generator.build_schema(["healthdcat_r8"]).schema[section]
+    labels = [generator._label_text(f).lower() for f in fields[2:]]
+
+    assert [f["field_name"] for f in fields[:2]] == leading
+    assert labels == sorted(labels)
+
+
+def test_gdi_current_keeps_the_order_of_its_fragments(generator):
+    fields = generator.build_schema(["gdi_current"]).schema["dataset_fields"]
+
+    assert [f["field_name"] for f in fields[:4]] == ["title_translated", "name", "notes_translated", "tags_translated"]
+
+
+def test_the_r8_series_schema_is_alphabetical_with_the_title_and_the_description_first(generator):
+    path = Path(generator.__file__).parents[1] / "scheming/schemas/dataset_series_r8.yaml"
+    fields = yaml.safe_load(path.read_text())["dataset_fields"]
+
+    assert [f["field_name"] for f in fields] == [
+        f["field_name"] for f in generator.sort_alphabetically(fields, "dataset_fields")
+    ]
+    assert [f["field_name"] for f in fields[:2]] == ["title_translated", "notes_translated"]
 
 
 def test_r8_agents_with_a_cardinality_of_one_are_not_lists_and_the_retention_period_neither(generator):

@@ -83,6 +83,13 @@ _NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 _SEPARATORS = re.compile(r"[,\s]+")
 _MANIFEST_KEYS = {
     "name", "fragments", "rdf_profiles", "redefines", "conformance", "keep_extras", "series_schema", "overrides",
+    "field_order",
+}
+FIELD_ORDERS = ("fragments", "alphabetical")
+# With an alphabetical order these come first, in this order: the title and the description.
+LEADING_FIELDS = {
+    "dataset_fields": ("title_translated", "notes_translated"),
+    "resource_fields": ("name_translated", "description_translated"),
 }
 _SCHEMA_REFERENCE = re.compile(r"^[A-Za-z_][\w.]*:[\w./-]+\.ya?ml$")
 
@@ -132,10 +139,13 @@ class Pack:
     # The static scheming schema of the dataset series (module:path/to/file.yaml); with several
     # packs enabled the first listed pack that has one decides.
     series_schema: typing.Optional[str] = None
-    # "<section>.<field_name>" -> keys that replace those of the field as a fragment defines it, for
-    # this pack only: a label or a cardinality that differs, without a fragment of its own. A field
-    # that ends up differing between packs still needs a ``redefines`` entry.
+    # "<section>.<field_name>" -> keys that replace those of the field for this pack only; a key set
+    # to null removes it (a preset the pack replaces by its own subfields). A field that ends up
+    # differing between packs still needs a ``redefines`` entry.
     overrides: typing.Mapping = dataclasses.field(default_factory=dict)
+    # "fragments" (first occurrence along the fragments) or "alphabetical" (by label, the title and
+    # the description first); with several packs enabled the first listed pack decides.
+    field_order: str = "fragments"
 
 
 class Registry:
@@ -180,6 +190,9 @@ class Registry:
             and all(isinstance(k, str) and isinstance(v, dict) and v for k, v in overrides.items())
         ):
             raise ProfileError(f"{path}: 'overrides' must map '<section>.<field_name>' to the keys to replace")
+        field_order = manifest.get("field_order", "fragments")
+        if field_order not in FIELD_ORDERS:
+            raise ProfileError(f"{path}: 'field_order' must be one of {', '.join(FIELD_ORDERS)}")
         return Pack(
             name,
             tuple(fragments),
@@ -189,6 +202,7 @@ class Registry:
             frozenset(keep_extras),
             series_schema,
             overrides,
+            field_order,
         )
 
     def conformance(self, pack):
@@ -374,7 +388,7 @@ def build_schema(profiles, root=PACK_ROOT):
                     entries = [(top_key, value)]
                 for key, entry in entries:
                     if key in pack.overrides:
-                        entry = {**entry, **pack.overrides[key]}
+                        entry = {k: v for k, v in {**entry, **pack.overrides[key]}.items() if v is not None}
                     if key not in definitions:
                         definitions[key] = []
                         order.append(key)
@@ -406,7 +420,10 @@ def build_schema(profiles, root=PACK_ROOT):
     schema = {}
     for top_key in shape:
         if top_key in FIELD_SECTIONS:
-            schema[top_key] = [resolved[key] for key in order if key.startswith(f"{top_key}.")]
+            fields = [resolved[key] for key in order if key.startswith(f"{top_key}.")]
+            if packs and packs[0].field_order == "alphabetical":
+                fields = sort_alphabetically(fields, top_key)
+            schema[top_key] = fields
         else:
             schema[top_key] = resolved[top_key]
 
@@ -418,6 +435,25 @@ def build_schema(profiles, root=PACK_ROOT):
         rdf_profiles={pack.name: list(pack.rdf_profiles) for pack in packs},
         series_schema=next((pack.series_schema for pack in packs if pack.series_schema), None),
     )
+
+
+def _label_text(field):
+    label = field.get("label")
+    if isinstance(label, dict):
+        label = label.get("en") or next(iter(label.values()), None)
+    return str(label or field.get("field_name", ""))
+
+
+def sort_alphabetically(fields, section):
+    """``fields`` by label, ignoring case, with the title and the description of the section first."""
+    leading = LEADING_FIELDS.get(section, ())
+
+    def key(field):
+        name = field.get("field_name", "")
+        rank = leading.index(name) if name in leading else len(leading)
+        return (rank, _label_text(field).lower(), name)
+
+    return sorted(fields, key=key)
 
 
 def _field_name(fragment, section, field):
