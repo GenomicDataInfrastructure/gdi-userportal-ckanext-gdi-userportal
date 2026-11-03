@@ -485,17 +485,43 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             return data_dict
 
         for subfield in subfields:
+            # a subfield holds one value, or a list of them (the relations and roles of an R8 relationship)
             subfield_values = list(
-                {
-                    value.get(subfield)
+                dict.fromkeys(
+                    item
                     for value in values
-                    if isinstance(value, dict) and value.get(subfield)
-                }
+                    if isinstance(value, dict)
+                    for item in self._values_of(value.get(subfield))
+                )
             )
             if subfield_values:
                 data_dict[f"{field}_{subfield}"] = subfield_values
 
         data_dict.pop(field, None)
+        return data_dict
+
+    # R8 gives the landing page and the type of a dataset any number of values, so with the healthdcat_r8
+    # profile they are lists, while their Solr fields hold one value (a change of multiValued needs a
+    # reindex). The first value goes in the field and all the types are kept in vocab_dcat_type.
+    _SINGLE_VALUED_SOLR_FIELDS = ("url", "dcat_type")
+
+    def _flatten_single_valued_solr_fields(self, data_dict):
+        for key in self._SINGLE_VALUED_SOLR_FIELDS:
+            value = data_dict.get(key)
+            if isinstance(value, str) and value.lstrip().startswith("["):
+                try:
+                    value = json.loads(value)
+                except ValueError:
+                    continue
+            if not isinstance(value, (list, tuple)):
+                continue
+            values = [str(item) for item in value if item]
+            if key == "dcat_type" and values:
+                data_dict["vocab_dcat_type"] = list(dict.fromkeys(values))
+            if values:
+                data_dict[key] = values[0]
+            else:
+                data_dict.pop(key, None)
         return data_dict
 
     def _parse_series_ids(self, in_series):
@@ -519,12 +545,24 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         return []
 
+    @staticmethod
+    def _values_of(value):
+        """The values of a subfield: one, a list, or a JSON-encoded list (how a list is stored inside a subfield)."""
+        if isinstance(value, str) and value.lstrip().startswith("["):
+            try:
+                value = json.loads(value)
+            except ValueError:
+                return [value]
+        if isinstance(value, (list, tuple)):
+            return [item for item in value if item]
+        return [value] if value else []
+
     def _extract_string_values(self, value):
         if value is None:
             return []
 
         if isinstance(value, str):
-            return [value]
+            return [item for item in self._values_of(value) if isinstance(item, str)]
 
         if isinstance(value, list):
             extracted = []
@@ -825,6 +863,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         data_dict = self._merge_tags_translated_for_indexing(data_dict)
         data_dict = self._add_translated_search_fields(data_dict)
+        data_dict = self._flatten_single_valued_solr_fields(data_dict)
 
         return data_dict
 
