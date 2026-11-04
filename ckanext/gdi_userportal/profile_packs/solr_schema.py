@@ -3,26 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-The Solr schema that follows the generated dataset schema.
-
-``solr/schema.xml`` is written by hand: it holds the field types, CKAN's own fields and the fields
-the plugin builds itself while indexing (the agents, the contact point, ``vocab_*`` ...). The
-dataset fields of the enabled metadata profiles are not in it, and Solr gives every field it does
-not know the catch-all ``*`` (indexed, not stored, **single valued**). A profile field that holds
-several values then fails the import with "multiple values encountered for non multiValued field".
-
-This module closes that gap in two steps:
-
-* ``derive_fields`` turns every dataset field of the generated schema that ``schema.xml`` does not
-  declare into a Solr field, multi valued when the scheming field is (repeating subfields, multiple
-  text or choice).
-* ``sync`` compares the wanted schema (``schema.xml`` plus the derived fields) with the running
-  core and applies the difference through the Solr Schema API: it adds what is missing and
-  replaces what differs. It never deletes a field. A core that is created once from the image
-  (``solr-precreate``) and lives in a volume is otherwise never updated.
-
-``check`` is the drift test: it reports the dataset fields whose Solr field would reject the
-values of the scheming field.
+The Solr schema that follows the generated dataset schema: ``derive_fields`` makes a Solr field of
+every dataset field that ``schema.xml`` does not declare, ``sync`` applies the difference to the
+running core through the Solr Schema API (it never deletes a field), and ``check`` is the drift test.
+The rules, including the ``solr`` key that overrides a derived field, are in ``README.md``, section
+"Solr schema".
 
 It runs from the container start scripts and imports nothing but the standard library and PyYAML::
 
@@ -52,6 +37,21 @@ CATCH_ALL = "*"
 # Fields the plugin flattens to one value before indexing (plugin._flatten_single_valued_solr_fields);
 # their Solr field is single valued although the scheming field is a list.
 SINGLE_VALUED_SOLR_FIELDS = ("url", "dcat_type")
+
+# The fields the plugin builds itself while indexing (plugin.before_dataset_index), from the values
+# of a field that holds agents, a contact point or repeated subfields. The plugin reads these
+# constants, so the Solr fields they produce can be checked against schema.xml.
+AGENT_FIELDS = ("publisher", "creator")
+AGENT_SUBFIELDS = ("uri", "email", "url", "type", "identifier", "country")
+CONTACT_SUBFIELDS = ("uri", "name", "email", "identifier", "url")
+REPEATING_FLATTENED = {
+    "qualified_relation": ("uri", "relation", "role"),
+    "quality_annotation": ("body", "target", "motivated_by"),
+    "retention_period": ("start", "end"),
+}
+
+# A validator that fixes the type of the values; the Solr type it maps to.
+INFERRED_TYPES = {"int_validator": "long", "boolean_validator": "boolean"}
 
 # dataset_series_in_series and series_validator: ckanext-dataset-series keeps in_series as a list of series ids
 MULTIPLE_PRESETS = {"multiple_text", "multiple_select", "multiple_checkbox", "dataset_series_in_series"}
@@ -126,6 +126,37 @@ def matching_dynamic_field(name: str, dynamic_fields: Iterable[str]) -> Optional
     return None
 
 
+def flattened_field_names() -> List[str]:
+    """The Solr fields the plugin fills while indexing agents, the contact point and repeated subfields."""
+    names = []
+    for agent in AGENT_FIELDS:
+        names += ["%s_%s" % (agent, sub) for sub in ("name",) + AGENT_SUBFIELDS]
+    names += ["contact_point_%s" % sub for sub in CONTACT_SUBFIELDS]
+    for field, subfields in REPEATING_FLATTENED.items():
+        names += ["%s_%s" % (field, sub) for sub in subfields]
+    return names
+
+
+def inferred_type(field: dict) -> str:
+    """The Solr type for the values of a scheming field, from its validators; a string when none says more."""
+    for validator in str(field.get("validators", "")).split():
+        if validator in INFERRED_TYPES:
+            return INFERRED_TYPES[validator]
+    return "string"
+
+
+def solr_settings(field: dict) -> dict:
+    """The Solr field a scheming field gets: what follows from the field, overridden by its ``solr`` key."""
+    override = field.get("solr") or {}
+    return {
+        "name": field["field_name"],
+        "type": override.get("type", inferred_type(field)),
+        "indexed": bool(override.get("index", True)),
+        "stored": bool(override.get("store", False)),
+        "multiValued": bool(override.get("multiple", is_multivalued(field))),
+    }
+
+
 def derive_fields(dataset_fields: Iterable[dict], base: SolrSchema) -> List[dict]:
     """The Solr fields for the dataset fields that ``schema.xml`` does not declare, in schema order."""
     derived = []
@@ -133,9 +164,7 @@ def derive_fields(dataset_fields: Iterable[dict], base: SolrSchema) -> List[dict
         name = field["field_name"]
         if name in base.fields or matching_dynamic_field(name, base.dynamic_fields):
             continue
-        derived.append(
-            {"name": name, "type": "string", "indexed": True, "stored": False, "multiValued": is_multivalued(field)}
-        )
+        derived.append(solr_settings(field))
     return derived
 
 
@@ -157,6 +186,16 @@ def check(base: SolrSchema, dataset_fields: Iterable[dict]) -> List[str]:
     dataset_fields = list(dataset_fields)
     wanted = wanted_schema(base, dataset_fields)
     problems = []
+    for name in flattened_field_names():
+        spec = wanted.fields.get(name)
+        if spec is None:
+            problems.append("the plugin fills the Solr field %s while indexing but solr/schema.xml does not declare it" % name)
+        elif not spec.get("multiValued", False):
+            problems.append("the plugin fills the Solr field %s with a list but it is single valued" % name)
+    for field in dataset_fields:
+        override = (field.get("solr") or {}).get("type")
+        if override and override not in base.field_types:
+            problems.append("dataset_fields.%s asks for the Solr type '%s', which solr/schema.xml does not define" % (field["field_name"], override))
     for field in dataset_fields:
         name = field["field_name"]
         if name in SINGLE_VALUED_SOLR_FIELDS or not is_multivalued(field):
