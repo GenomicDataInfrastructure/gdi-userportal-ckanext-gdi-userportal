@@ -7,7 +7,8 @@ Acceptance test for ADR 0001: with only ``gdi_current`` enabled, the generated
 dataset schema is the schema the stack loaded before the generator existed.
 
 ``scheming/schemas/dataset_multilingual.yaml`` is that baseline. It stays in the
-tree unchanged, and this test fails when it and the ``gdi_current`` pack drift apart.
+tree unchanged, and this test fails when it and the ``gdi_current`` pack drift apart, except for
+the changes listed in ``DELIBERATE_CHANGES``.
 
 The baseline keeps the order of the form as it was; ``gdi_current`` now orders its fields
 alphabetically (``field_order``), so the tests compare the same fields, each identical, by
@@ -21,11 +22,23 @@ from conftest import STATIC_DATASET_SCHEMA
 
 
 def _baseline():
-    return yaml.safe_load(STATIC_DATASET_SCHEMA.read_text(encoding="utf-8"))
+    schema = yaml.safe_load(STATIC_DATASET_SCHEMA.read_text(encoding="utf-8"))
+    for (section, name), changes in DELIBERATE_CHANGES.items():
+        for field in schema[section]:
+            if field["field_name"] == name:
+                field.update(changes)
+    return schema
 
 
 def _names(fields):
     return [field["field_name"] for field in fields]
+
+
+# What gdi_current changed on purpose since the baseline: a dataset that is in no series stores nothing
+# (scheming_multiple_choice stored the empty list "[]" in package_extra).
+DELIBERATE_CHANGES = {
+    ("dataset_fields", "in_series"): {"validators": "ignore_empty scheming_multiple_choice series_validator"},
+}
 
 
 def _by_name(fields):

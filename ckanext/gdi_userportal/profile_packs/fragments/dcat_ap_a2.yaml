@@ -36,6 +36,8 @@ dataset_fields:
 
   - field_name: in_series
     preset: dataset_series_in_series
+    # A dataset that is in no series stores nothing: scheming_multiple_choice would store the empty list "[]".
+    validators: ignore_empty scheming_multiple_choice series_validator
     help_text: Dataset series this dataset belongs to.
 
   - field_name: version

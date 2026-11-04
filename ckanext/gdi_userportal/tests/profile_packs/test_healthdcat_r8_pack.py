@@ -86,7 +86,6 @@ REDEFINED = {
     "resource_fields.access_url",
     "resource_fields.download_url",
     "resource_fields.rights",
-    "dataset_fields.in_series",
 }
 # R8 agents (HealthDCAT-AP R8, Agent_Shape and the health agent shapes): a name and a type, the
 # health agents of a dataset add the contact point and the publisher a description.
@@ -661,13 +660,13 @@ def test_the_r8_series_schema_is_alphabetical_with_the_title_and_the_description
     assert [f["field_name"] for f in fields[:2]] == ["title_translated", "notes_translated"]
 
 
-def test_r8_stores_nothing_for_a_dataset_that_is_in_no_series(generator):
-    r8 = dataset_fields(generator, ["healthdcat_r8"])["in_series"]
-    gdi = dataset_fields(generator, ["gdi_current"])["in_series"]
+@pytest.mark.parametrize("pack", ["healthdcat_r8", "gdi_current"])
+def test_a_dataset_that_is_in_no_series_stores_nothing(generator, pack):
+    in_series = dataset_fields(generator, [pack])["in_series"]
 
     # an empty value stops the chain, so scheming_multiple_choice does not store "[]"
-    assert r8["validators"].split() == ["ignore_empty", "scheming_multiple_choice", "series_validator"]
-    assert "validators" not in gdi and r8["preset"] == gdi["preset"] == "dataset_series_in_series"
+    assert in_series["validators"].split() == ["ignore_empty", "scheming_multiple_choice", "series_validator"]
+    assert in_series["preset"] == "dataset_series_in_series"
 
 
 def test_r8_agents_with_a_cardinality_of_one_are_not_lists_and_the_retention_period_neither(generator):
