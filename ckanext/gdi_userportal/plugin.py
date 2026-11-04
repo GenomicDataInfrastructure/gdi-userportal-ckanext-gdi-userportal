@@ -13,7 +13,12 @@ import ckan.plugins.toolkit as toolkit
 from ckan import model
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
 from ckanext.gdi_userportal.languages import fall_back_to_available_languages
-from ckanext.gdi_userportal.profile_packs.solr_schema import SINGLE_VALUED_SOLR_FIELDS
+from ckanext.gdi_userportal.profile_packs.solr_schema import (
+    AGENT_SUBFIELDS,
+    CONTACT_SUBFIELDS,
+    REPEATING_FLATTENED,
+    SINGLE_VALUED_SOLR_FIELDS,
+)
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     SEARCH_INDEX_TRANSLATED_FIELDS,
     get_all_translations,
@@ -394,7 +399,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             del data_dict[extras_field]
         return data_dict
 
-    _agent_subfields = ("uri", "email", "url", "type", "identifier", "country")
+    _agent_subfields = AGENT_SUBFIELDS
 
     def _parse_agent_name(self, data_dict, field):
         if data_dict.get(field):
@@ -431,7 +436,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             values = [value] if subfield == "name" else self._flatten_contact_subfield_value(value)
             data_dict[f"{field}_{subfield}"] = values
 
-    _contact_subfields = ("uri", "name", "email", "identifier", "url")
+    _contact_subfields = CONTACT_SUBFIELDS
 
     def _parse_contact_point(self, data_dict):
         values = data_dict.get("contact")
@@ -863,13 +868,13 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         data_dict = self._parse_agent_name(data_dict, "creator")
         data_dict = self._parse_contact_point(data_dict)
         data_dict = self._parse_repeating_field(
-            data_dict, "qualified_relation", ("uri", "relation", "role")
+            data_dict, "qualified_relation", REPEATING_FLATTENED["qualified_relation"]
         )
         data_dict = self._parse_repeating_field(
-            data_dict, "quality_annotation", ("body", "target", "motivated_by")
+            data_dict, "quality_annotation", REPEATING_FLATTENED["quality_annotation"]
         )
         data_dict = self._parse_repeating_field(
-            data_dict, "retention_period", ("start", "end")
+            data_dict, "retention_period", REPEATING_FLATTENED["retention_period"]
         )
 
         data_dict = self._merge_tags_translated_for_indexing(data_dict)

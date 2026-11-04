@@ -206,11 +206,26 @@ profile field with several values fails the import ("multiple values encountered
 multiValued field"). `solr_schema.py` closes that:
 
 - `derive_fields` makes a Solr field of every dataset field that `schema.xml` does not declare (and no
-  dynamic field other than `*` covers): type string, indexed, not stored, multi valued when the
-  scheming field is a list (repeating subfields, `multiple_text`/`multiple_select`/`multiple_checkbox`,
-  `scheming_multiple_choice`/`scheming_multiple_text`, `dataset_series_in_series`, `series_validator`).
+  dynamic field other than `*` covers). Its type follows from the validators of the scheming field
+  (`int_validator` is a `long`, `boolean_validator` a `boolean`, anything else a `string`: a partial
+  date such as `2020` is not a Solr date, and a language map is stored as JSON text). It is multi valued
+  when the scheming field is a list (repeating subfields, `multiple_text`/`multiple_select`/
+  `multiple_checkbox`, `scheming_multiple_choice`/`scheming_multiple_text`, `dataset_series_in_series`,
+  `series_validator`), indexed and not stored. A `solr` key on the field overrides each of these:
+
+  ```yaml
+  - field_name: issued
+    solr: {type: date, index: true, store: false, multiple: false}   # every key is optional
+  ```
+
+  *Indexed* means Solr can search, filter, facet and sort on the field. *Stored* means Solr can return
+  the original value in a query; CKAN does not need that, it serves a dataset from the JSON in
+  `validated_data_dict`. `type` must be a field type of `schema.xml`; `check` reports one that is not.
 - `check` (the drift test, `tests/profile_packs/test_solr_schema.py`, for every pack and pack pair)
-  fails when a list field would land in a single valued Solr field. `url` and `dcat_type` are exempt:
+  fails when a list field would land in a single valued Solr field, and when a Solr field the plugin
+  fills while indexing (`flattened_field_names`: the agents, the contact point, `qualified_relation`,
+  `quality_annotation`, `retention_period`; the plugin reads the same constants) is not declared
+  `multiValued` in `schema.xml`. `url` and `dcat_type` are exempt:
   the plugin flattens them to one value before indexing (`SINGLE_VALUED_SOLR_FIELDS`). Fix a failure by
   making the field `multiValued` in `schema.xml`, or by flattening it in `before_dataset_index`.
 - `sync` runs from the start scripts after the generator: it compares `schema.xml` plus the derived
@@ -225,7 +240,7 @@ python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --dataset-schem
 
 Documents indexed before a change keep their old index: reindex (`ckan search-index rebuild`) after the
 sync reports changes. A field type that the core lacks is reported, not added: recreate the core.
-Fields the plugin builds itself while indexing stay hand-declared in `schema.xml`.
+Fields the plugin builds itself while indexing stay hand-declared in `schema.xml`, and the check above keeps them in line with the plugin.
 
 ## Running it
 

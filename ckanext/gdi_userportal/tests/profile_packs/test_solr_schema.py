@@ -73,17 +73,47 @@ def test_the_flattened_fields_are_the_ones_the_plugin_flattens(solr):
 
     assert "_SINGLE_VALUED_SOLR_FIELDS = SINGLE_VALUED_SOLR_FIELDS" in source
     assert set(solr.SINGLE_VALUED_SOLR_FIELDS) == {"url", "dcat_type"}
+    # the plugin builds its Solr fields from the constants that the check reads
+    assert "_agent_subfields = AGENT_SUBFIELDS" in source
+    assert "_contact_subfields = CONTACT_SUBFIELDS" in source
+    for name in solr.REPEATING_FLATTENED:
+        assert 'REPEATING_FLATTENED["%s"]' % name in source
 
 
-def test_a_list_field_with_a_single_valued_solr_field_is_reported(solr):
-    solr_base = solr.SolrSchema(fields={"theme": spec("theme", multiValued=False)}, field_types={"string"})
+def test_every_field_the_plugin_fills_while_indexing_is_declared_multi_valued_in_schema_xml(solr, base):
+    names = solr.flattened_field_names()
+
+    assert {"publisher_country", "creator_name", "contact_point_url", "qualified_relation_role", "retention_period_end"} <= set(names)
+    for name in names:
+        assert base.fields[name].get("multiValued") is True, name
+
+
+def test_a_field_the_plugin_fills_but_schema_xml_lacks_is_reported(solr, base):
+    without = solr.SolrSchema(
+        fields={k: v for k, v in base.fields.items() if k != "publisher_country"}, field_types=set(base.field_types)
+    )
+
+    assert any("publisher_country" in problem for problem in solr.check(without, []))
+
+
+def test_a_field_the_plugin_fills_with_a_list_but_schema_xml_declares_single_valued_is_reported(solr, base):
+    single = solr.SolrSchema(
+        fields={**base.fields, "publisher_country": spec("publisher_country", multiValued=False)},
+        field_types=set(base.field_types),
+    )
+
+    assert any("publisher_country" in problem and "single valued" in problem for problem in solr.check(single, []))
+
+
+def test_a_list_field_with_a_single_valued_solr_field_is_reported(solr, base):
+    solr_base = solr.SolrSchema(fields={**base.fields, "theme": spec("theme", multiValued=False)}, field_types=base.field_types)
     problems = solr.check(solr_base, [field("theme", preset="multiple_text")])
 
     assert problems and "dataset_fields.theme" in problems[0]
 
 
-def test_a_list_field_that_the_plugin_flattens_is_not_reported(solr):
-    solr_base = solr.SolrSchema(fields={"url": spec("url")}, field_types={"string"})
+def test_a_list_field_that_the_plugin_flattens_is_not_reported(solr, base):
+    solr_base = solr.SolrSchema(fields={**base.fields, "url": spec("url")}, field_types=base.field_types)
 
     assert solr.check(solr_base, [field("url", preset="multiple_text")]) == []
 
@@ -118,6 +148,43 @@ def test_only_the_fields_that_schema_xml_does_not_declare_are_derived(solr):
         {"name": "own", "type": "string", "indexed": True, "stored": False, "multiValued": True},
         {"name": "plain", "type": "string", "indexed": True, "stored": False, "multiValued": False},
     ]
+
+
+@pytest.mark.parametrize("scheming_field, solr_type", [
+    (field("a"), "string"),
+    (field("a", preset="select", validators="ignore_missing scheming_choices"), "string"),
+    (field("a", validators="ignore_missing int_validator"), "long"),
+    (field("a", validators="ignore_missing boolean_validator"), "boolean"),
+    (field("a", preset="datetime_flex"), "string"),  # a partial date is not a Solr date: opt in with solr: type
+    (field("a", preset="fluent_markdown"), "string"),
+])
+def test_the_type_follows_from_the_validators(solr, scheming_field, solr_type):
+    assert solr.solr_settings(scheming_field)["type"] == solr_type
+
+
+def test_a_solr_key_on_the_field_overrides_what_follows_from_it(solr):
+    settings = solr.solr_settings(
+        field("a", preset="datetime_flex", solr={"type": "date", "index": False, "store": True, "multiple": True})
+    )
+
+    assert settings == {"name": "a", "type": "date", "indexed": False, "stored": True, "multiValued": True}
+
+
+def test_a_solr_key_with_part_of_the_settings_keeps_the_rest(solr):
+    settings = solr.solr_settings(field("a", validators="int_validator", solr={"store": True}))
+
+    assert settings == {"name": "a", "type": "long", "indexed": True, "stored": True, "multiValued": False}
+
+
+def test_a_solr_type_that_schema_xml_does_not_define_is_reported(solr, base):
+    problems = solr.check(base, [field("zz_new", solr={"type": "no_such_type"})])
+
+    assert problems and "no_such_type" in problems[0]
+
+
+def test_the_solr_key_is_not_a_scheming_key_that_the_generator_rejects(generator):
+    # the generator copies unknown keys of a field untouched, so a pack may carry a solr block
+    assert "solr" not in generator.build_schema(["gdi_current"]).schema["dataset_fields"][0]
 
 
 def test_schema_xml_is_read_with_its_fields_dynamic_fields_and_copy_fields(solr, base):
