@@ -11,6 +11,7 @@ import botocore
 import ckan.model as model
 from ckanext.harvest.model import HarvestObject, HarvestSource
 from ckan.plugins.toolkit import config
+from ckanext.dcat.metadata_profiles import MetadataProfileError
 from ckanext.dcat.processors import RDFParserException, RDFParser
 from ckanext.dcat.harvesters.rdf import DCATRDFHarvester
 
@@ -34,6 +35,13 @@ class S3RDFHarvester(DCATRDFHarvester):
             rdf_format = json.loads(harvest_job.source.config).get("rdf_format")
 
         try:
+            rdf_profiles = self._source_rdf_profiles(harvest_job)
+        except MetadataProfileError as e:
+            # A raise here would crash the consumer, so report it on the job and harvest nothing
+            self._save_gather_error(f'Harvest source {harvest_job.source.id}: {e}', harvest_job)
+            return []
+
+        try:
             # List objects in the S3 bucket
             s3_objects = s3.list_objects_v2(Bucket=bucket_name)
             if 'Contents' not in s3_objects:
@@ -50,7 +58,7 @@ class S3RDFHarvester(DCATRDFHarvester):
                 # Download the object from S3
                 s3_object = s3.get_object(Bucket=bucket_name, Key=key)
                 content = s3_object['Body'].read().decode('utf-8')
-                parser = RDFParser()
+                parser = RDFParser(profiles=rdf_profiles or None)
                 try:
                     parser.parse(content, _format=rdf_format)
                 except RDFParserException as e:
