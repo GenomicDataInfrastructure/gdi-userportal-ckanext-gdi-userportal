@@ -197,6 +197,36 @@ extras to remove; see `prune.py`. A field a pack lists under `keep_extras` is ne
 for a field whose key the shared RDF code also keeps as a free extra in every profile
 (`related_resource` and `source` in `healthdcat_r8`).
 
+## Solr schema
+
+`solr/schema.xml` is written by hand: field types, CKAN's own fields and the fields the plugin builds
+while indexing (agents, contact point, `vocab_*`). The dataset fields of the enabled profiles are not
+in it. Solr gives a field it does not know the catch-all `*` (not stored, **single valued**), so a
+profile field with several values fails the import ("multiple values encountered for non
+multiValued field"). `solr_schema.py` closes that:
+
+- `derive_fields` makes a Solr field of every dataset field that `schema.xml` does not declare (and no
+  dynamic field other than `*` covers): type string, indexed, not stored, multi valued when the
+  scheming field is a list (repeating subfields, `multiple_text`/`multiple_select`/`multiple_checkbox`,
+  `scheming_multiple_choice`/`scheming_multiple_text`, `dataset_series_in_series`, `series_validator`).
+- `check` (the drift test, `tests/profile_packs/test_solr_schema.py`, for every pack and pack pair)
+  fails when a list field would land in a single valued Solr field. `url` and `dcat_type` are exempt:
+  the plugin flattens them to one value before indexing (`SINGLE_VALUED_SOLR_FIELDS`). Fix a failure by
+  making the field `multiValued` in `schema.xml`, or by flattening it in `before_dataset_index`.
+- `sync` runs from the start scripts after the generator: it compares `schema.xml` plus the derived
+  fields with the running core and applies the difference through the Solr Schema API (`add-field`,
+  `replace-field`, dynamic and copy fields). It never deletes a field and never stops CKAN when Solr
+  does not answer. A core is created once from the Solr image and lives in a volume, so a changed
+  `schema.xml` or a new profile would never reach an existing core without it.
+
+```
+python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --dataset-schema /srv/app/generated/dataset.yaml [--dry-run]
+```
+
+Documents indexed before a change keep their old index: reindex (`ckan search-index rebuild`) after the
+sync reports changes. A field type that the core lacks is reported, not added: recreate the core.
+Fields the plugin builds itself while indexing stay hand-declared in `schema.xml`.
+
 ## Running it
 
 ```

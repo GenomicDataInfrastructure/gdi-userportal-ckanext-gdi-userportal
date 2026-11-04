@@ -13,6 +13,7 @@ import ckan.plugins.toolkit as toolkit
 from ckan import model
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
 from ckanext.gdi_userportal.languages import fall_back_to_available_languages
+from ckanext.gdi_userportal.profile_packs.solr_schema import SINGLE_VALUED_SOLR_FIELDS
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     SEARCH_INDEX_TRANSLATED_FIELDS,
     get_all_translations,
@@ -511,10 +512,9 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         data_dict.pop(field, None)
         return data_dict
 
-    # R8 gives the landing page and the type of a dataset any number of values, so with the healthdcat_r8
-    # profile they are lists, while their Solr fields hold one value (a change of multiValued needs a
-    # reindex). The first value goes in the field and all the types are kept in vocab_dcat_type.
-    _SINGLE_VALUED_SOLR_FIELDS = ("url", "dcat_type")
+    # With healthdcat_r8 the landing page and the type are lists, while their Solr fields hold one value:
+    # see SINGLE_VALUED_SOLR_FIELDS in profile_packs/solr_schema.py.
+    _SINGLE_VALUED_SOLR_FIELDS = SINGLE_VALUED_SOLR_FIELDS
 
     def _flatten_single_valued_solr_fields(self, data_dict):
         for key in self._SINGLE_VALUED_SOLR_FIELDS:
