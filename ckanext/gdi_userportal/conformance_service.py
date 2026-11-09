@@ -105,6 +105,43 @@ def applicable_for(record, config, lookup):
     return applicable_profiles(record, enabled, main_profile(config, enabled), sources)
 
 
+# --- the empty properties a page lists ----------------------------------------------------
+
+
+@functools.lru_cache(maxsize=None)
+def profile_fields(profile: str) -> dict:
+    """``{section: frozenset of field names}`` the pack ``profile`` defines, for the dataset and resource fields."""
+    sections = {section: set() for section in profile_generator.FIELD_SECTIONS}
+    for key in profile_generator.build_schema([profile]).fields:
+        section, _, name = key.partition(".")
+        if section in sections:
+            sections[section].add(name)
+    return {section: frozenset(names) for section, names in sections.items()}
+
+
+def empty_property_scope(record, section, config, lookup=None):
+    """The field names of ``section`` a page may list without a value for ``record``, or None for all of them.
+
+    The generated schema holds the fields of every enabled profile, so a page that lists the empty properties
+    would also list those of a profile the dataset does not come from. For a dataset whose harvest source names
+    a profile (or none, which is the main profile) only the fields of that pack are in scope. A dataset no
+    source says anything about, and anything that is not a dataset (a series has a schema of its own, not
+    built from the packs), has no restriction. ``section`` is ``dataset_fields`` or ``resource_fields``;
+    ``lookup`` is as for ``page_indicator``. Never raises: on a failure every field is in scope, as it was
+    before.
+    """
+    try:
+        if not isinstance(record, Mapping) or record.get("type", DATASET) != DATASET:
+            return None
+        names, basis, _ = applicable_for(record, config, lookup)
+        if basis == BASIS_ENABLED:
+            return None
+        return frozenset().union(*(profile_fields(name)[section] for name in names))
+    except Exception:  # noqa: BLE001 - listing too many empty properties beats a page that fails to render
+        log.warning("Could not tell which empty properties to list for a record", exc_info=True)
+        return None
+
+
 # --- distributions: plain, sample and analytics ------------------------------------------
 
 

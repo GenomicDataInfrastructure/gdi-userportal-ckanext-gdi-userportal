@@ -89,6 +89,11 @@ def test_without_a_plain_value_to_repeat_nothing_is_redundant(helpers, field_nam
     assert helpers.is_redundant_translation(field_name, entry) is False
 
 
+def test_the_empty_property_scope_is_offered_to_the_templates(helpers):
+    assert helpers.get_helpers()["gdi_empty_property_scope"] is helpers.empty_property_scope
+    assert helpers.empty_property_scope(None, "dataset_fields") is None
+
+
 @pytest.mark.parametrize("setting, expected", [(None, False), ("false", False), ("true", True), ("True", True)])
 def test_empty_properties_are_shown_only_when_the_option_is_on(helpers, setting, expected):
     config = helpers.tk.config

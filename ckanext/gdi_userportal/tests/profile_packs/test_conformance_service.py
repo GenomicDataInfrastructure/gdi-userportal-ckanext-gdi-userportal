@@ -596,3 +596,85 @@ def test_an_empty_catalogue_conforms_everywhere():
 
 def test_the_report_is_plain_json():
     json.dumps(report(FakeSearch([dataset("a", theme=[])], [series("s")])))
+
+
+# --- the empty properties a page lists ----------------------------------------------------------
+
+
+def scope(record, section="dataset_fields", config=BOTH, lookup=None):
+    return service.empty_property_scope(record, section, config, Lookup() if lookup is None else lookup)
+
+
+def test_a_pack_defines_the_fields_that_are_its_own():
+    r8, gdi = service.profile_fields("healthdcat_r8"), service.profile_fields("gdi_current")
+
+    assert {"source", "variables"} <= r8["dataset_fields"]
+    assert not {"source", "variables"} & gdi["dataset_fields"]
+    assert {"trusted_data_holder", "dataset_status"} <= gdi["dataset_fields"]
+    assert not {"trusted_data_holder", "dataset_status"} & r8["dataset_fields"]
+    assert "has_policy" in r8["resource_fields"]
+    assert "has_policy" not in gdi["resource_fields"]
+    assert {"hash", "retention_period"} <= gdi["resource_fields"]
+    assert not {"hash", "retention_period"} & r8["resource_fields"]
+    assert {"theme"} <= r8["dataset_fields"] & gdi["dataset_fields"]
+
+
+def test_a_dataset_of_an_r8_source_lists_only_the_empty_properties_of_r8():
+    fields = scope(dataset(source=R8_SOURCE))
+
+    assert fields == service.profile_fields("healthdcat_r8")["dataset_fields"]
+    assert "source" in fields
+    assert not {"trusted_data_holder", "dataset_status"} & fields
+
+
+def test_a_dataset_of_a_gdi_source_lists_only_the_empty_properties_of_gdi_current():
+    fields = scope(dataset(source=GDI_SOURCE))
+
+    assert "trusted_data_holder" in fields
+    assert "source" not in fields
+
+
+def test_a_source_that_names_no_profile_lists_those_of_the_main_profile():
+    assert scope(dataset(source=PLAIN_SOURCE)) == service.profile_fields("gdi_current")["dataset_fields"]
+
+
+def test_the_distributions_of_a_dataset_follow_the_profile_of_the_dataset():
+    r8 = scope(dataset(source=R8_SOURCE), "resource_fields")
+    gdi = scope(dataset(source=GDI_SOURCE), "resource_fields")
+
+    assert "has_policy" in r8
+    assert not {"hash", "retention_period"} & r8
+    assert "hash" in gdi
+    assert "has_policy" not in gdi
+
+
+def test_a_dataset_no_source_says_anything_about_lists_every_empty_property():
+    assert scope(dataset()) is None
+    assert scope(dataset(source="unknown-source")) is None
+
+
+def test_a_source_whose_profile_is_not_enabled_lists_no_empty_property():
+    only_gdi = {"ckanext.dcat.metadata_profiles": "gdi_current"}
+
+    assert scope(dataset(source=R8_SOURCE), config=only_gdi) == frozenset()
+
+
+def test_a_series_and_whatever_is_not_a_dataset_have_no_restriction():
+    assert scope(series(source=R8_SOURCE)) is None
+    assert scope(None) is None
+    assert scope("not a record") is None
+
+
+def test_the_scope_asks_for_the_source_of_the_dataset_once():
+    lookup = Lookup()
+
+    scope(dataset(source=R8_SOURCE), lookup=lookup)
+
+    assert lookup.calls == [[R8_SOURCE]]
+
+
+def test_a_failure_lists_every_empty_property_as_before():
+    def broken(_source_ids):
+        raise RuntimeError("the database is gone")
+
+    assert scope(dataset(source=R8_SOURCE), lookup=broken) is None
