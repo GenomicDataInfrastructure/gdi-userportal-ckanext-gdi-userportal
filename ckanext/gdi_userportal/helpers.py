@@ -147,17 +147,48 @@ def show_empty_properties() -> bool:
     return tk.asbool(tk.config.get(SHOW_EMPTY_PROPERTIES, False))
 
 
-def profile_conformance(dataset: dict[str, Any] | None) -> dict[str, Any] | None:
-    """The conformance of a dataset to every enabled metadata profile, for the dataset and search pages.
+_SOURCE_PROFILES_CACHE = "_gdi_source_profiles"
 
-    See ``conformance_service.page_indicator``. None when there is nothing to show; never raises.
+
+def _source_profiles(source_ids) -> dict[str, str | None]:
+    """``{harvest source id: metadata_profile or None}`` for the sources that exist.
+
+    A page asks once per dataset or distribution it shows, so the answers are kept for the request.
     """
-    return conformance_service.page_indicator(dataset, tk.config)
+    from flask import g, has_app_context
+    from ckan import model
+    from ckanext.gdi_userportal import profile_visibility
+
+    ids = {source_id for source_id in source_ids if source_id}
+    cache = g.setdefault(_SOURCE_PROFILES_CACHE, {}) if has_app_context() else {}
+    unknown = ids - cache.keys()
+    if unknown:
+        found = profile_visibility.source_profiles(model.Session, unknown)
+        cache.update({source_id: (source_id in found, found.get(source_id)) for source_id in unknown})
+    return {source_id: cache[source_id][1] for source_id in ids if cache[source_id][0]}
+
+
+def profile_conformance(record: dict[str, Any] | None) -> dict[str, Any] | None:
+    """The conformance of a dataset or dataset series to the metadata profiles it comes from.
+
+    For the dataset, series and search pages; see ``conformance_service.page_indicator``. None when there is
+    nothing to show; never raises.
+    """
+    return conformance_service.page_indicator(record, tk.config, _source_profiles)
+
+
+def resource_conformance(dataset: dict[str, Any] | None, resource: dict[str, Any] | None) -> dict[str, Any] | None:
+    """The same for one distribution of ``dataset``, labelled sample or analytics where it is one.
+
+    See ``conformance_service.resource_indicator``. None when there is nothing to show; never raises.
+    """
+    return conformance_service.resource_indicator(dataset, resource, tk.config, _source_profiles)
 
 
 def get_helpers() -> dict[str, Any]:
     return {
         "gdi_profile_conformance": profile_conformance,
+        "gdi_resource_conformance": resource_conformance,
         "scheming_missing_required_fields": scheming_missing_required_fields,
         "gdi_show_empty_properties": show_empty_properties,
         "gdi_is_blank_value": _is_missing_value,

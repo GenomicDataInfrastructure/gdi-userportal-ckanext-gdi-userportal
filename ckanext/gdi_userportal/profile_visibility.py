@@ -16,10 +16,11 @@ that no harvest source created is never hidden: there is nothing that says which
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Iterable, Optional
 
-from ckanext.gdi_userportal.profile_packs.prune import find_sources_with_retired_profile
+from ckanext.gdi_userportal.profile_packs.prune import SOURCE_METADATA_PROFILE_KEY, find_sources_with_retired_profile
 
 ENABLED_PROFILES_OPTION = "ckanext.dcat.metadata_profiles"
 SEARCH_FIELD = "harvest_source_id"
@@ -52,6 +53,32 @@ def package_source_id(session, package_id) -> Optional[str]:
         text("SELECT harvest_source_id FROM harvest_object WHERE package_id = :id AND current ORDER BY gathered DESC LIMIT 1"),
         {"id": package_id},
     ).scalar()
+
+
+def source_profiles(session, source_ids: Iterable[str]) -> dict:
+    """``{source id: the metadata_profile its config names, or None}`` for the harvest sources that exist.
+
+    A source that names no profile, or whose config is not JSON, maps to None: it follows the main profile.
+    A source that does not exist, or a deployment without ckanext-harvest, is simply absent from the answer.
+    """
+    from sqlalchemy import bindparam, inspect, text
+
+    ids = sorted({source_id for source_id in source_ids if source_id})
+    if not ids or not inspect(session.get_bind()).has_table("harvest_source"):
+        return {}
+    statement = text("SELECT id, config FROM harvest_source WHERE id IN :ids").bindparams(
+        bindparam("ids", expanding=True)
+    )
+    return {source_id: _named_profile(config) for source_id, config in session.execute(statement, {"ids": ids})}
+
+
+def _named_profile(config) -> Optional[str]:
+    try:
+        parsed = json.loads(config) if config else {}
+    except ValueError:
+        return None
+    profile = parsed.get(SOURCE_METADATA_PROFILE_KEY) if isinstance(parsed, dict) else None
+    return profile.strip() if isinstance(profile, str) and profile.strip() else None
 
 
 def is_hidden(session, enabled: Iterable[str], package_id) -> bool:
