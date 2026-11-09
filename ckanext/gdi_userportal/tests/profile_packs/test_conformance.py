@@ -296,3 +296,81 @@ def test_every_field_a_property_names_is_a_field_of_the_r8_schema(generator, r8_
 def test_the_file_records_which_rules_it_was_generated_from(r8_rules):
     assert r8_rules["source"]["file"] == "healthdcat-cardinality-rules.json"
     assert len(r8_rules["source"]["sha256"]) == 64
+
+
+# --- distributions and dataset series -------------------------------------------------
+
+
+LAW = ["http://data.europa.eu/eli/reg/2025/327/oj"]
+
+
+def evaluate_class(conformance, r8_rules, record, kind, profiles=("healthdcat_r8",), rules=None):
+    return conformance.evaluate_class(record, list(profiles), rules or {"healthdcat_r8": r8_rules}, kind)["profiles"]["healthdcat_r8"]
+
+
+@pytest.mark.parametrize("kind", ["distribution", "series"])
+def test_a_distribution_or_series_with_applicable_legislation_conforms(conformance, r8_rules, kind):
+    result = evaluate_class(conformance, r8_rules, {"applicable_legislation": LAW}, kind)
+
+    assert result == {"conformant": True, "mandatory": 1, "missing": []}
+
+
+@pytest.mark.parametrize("kind", ["distribution", "series"])
+@pytest.mark.parametrize("value", [None, "", [], [""], "[]", [{}], "  "])
+def test_a_distribution_or_series_without_applicable_legislation_names_what_is_missing(conformance, r8_rules, kind, value):
+    result = evaluate_class(conformance, r8_rules, {"applicable_legislation": value}, kind)
+
+    assert result["conformant"] is False
+    assert missing(result) == {"applicable legislation"}
+
+
+def test_the_class_rules_do_not_depend_on_an_access_layer(conformance, r8_rules):
+    for rights in (PUBLIC, RESTRICTED, NON_PUBLIC, None, "nonsense"):
+        record = {"access_rights": rights, "applicable_legislation": LAW}
+        assert evaluate_class(conformance, r8_rules, record, "distribution")["conformant"] is True
+
+
+def test_a_profile_without_class_rules_is_satisfied_by_every_distribution(conformance, r8_rules):
+    result = conformance.evaluate_class({}, ["gdi_current", "healthdcat_r8"], {"gdi_current": None, "healthdcat_r8": r8_rules}, "distribution")
+
+    assert result["profiles"]["gdi_current"] == {"conformant": True, "mandatory": 0, "missing": []}
+    assert result["conformant_profiles"] == ["gdi_current"]
+
+
+def test_a_pack_with_layer_rules_but_no_class_rules_is_satisfied(conformance, r8_rules):
+    dataset_only = {key: value for key, value in r8_rules.items() if key != "classes"}
+
+    result = evaluate_class(conformance, r8_rules, {}, "series", rules={"healthdcat_r8": dataset_only})
+
+    assert result == {"conformant": True, "mandatory": 0, "missing": []}
+
+
+def test_a_kind_the_rules_do_not_know_has_no_mandatory_properties(conformance, r8_rules):
+    assert evaluate_class(conformance, r8_rules, {}, "data service")["conformant"] is True
+
+
+@pytest.mark.parametrize("record", [None, "text", [], 5, ["a"]])
+def test_whatever_a_record_is_it_gives_an_answer_and_not_an_error(conformance, r8_rules, record):
+    assert evaluate_class(conformance, r8_rules, record, "distribution")["conformant"] is False
+
+
+def test_the_class_rules_name_fields_of_the_r8_schemas(generator, r8_rules):
+    from conftest import PACKAGE_DIR
+    import yaml
+
+    resource_fields = {f["field_name"] for f in generator.build_schema(["healthdcat_r8"]).schema["resource_fields"]}
+    series_fields = {
+        f["field_name"]
+        for f in yaml.safe_load((PACKAGE_DIR / "scheming" / "schemas" / "dataset_series_r8.yaml").read_text(encoding="utf-8"))[
+            "dataset_fields"
+        ]
+    }
+    named = lambda kind: {field for rule in r8_rules["classes"][kind]["mandatory"] for field in rule["fields"]}  # noqa: E731
+
+    assert named("distribution") - resource_fields == set()
+    assert named("series") - series_fields == set()
+
+
+def test_the_shipped_file_has_exactly_the_distribution_and_series_classes(r8_rules):
+    assert set(r8_rules["classes"]) == {"distribution", "series"}
+    assert all(body["source"].startswith("SHACL") for body in r8_rules["classes"].values())

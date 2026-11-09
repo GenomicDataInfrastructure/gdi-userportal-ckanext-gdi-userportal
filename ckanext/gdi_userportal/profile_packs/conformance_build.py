@@ -33,6 +33,8 @@ PROFILE = "healthdcat_r8"
 # The rules file names the layers PUBLIC, RESTRICTED and NON-PUBLIC.
 LAYERS = {"PUBLIC": "PUBLIC", "RESTRICTED": "RESTRICTED", "NON-PUBLIC": "NON_PUBLIC"}
 MANDATORY = "Mandatory"
+# The classes other than the dataset that the field mapping can name (see conformance.py).
+CLASSES = ("distribution", "series")
 
 
 class ConformanceBuildError(Exception):
@@ -79,7 +81,41 @@ def build(rules_text, fields_text, profile=PROFILE, source_name="healthdcat-card
         "source": {"file": source_name, "sha256": hashlib.sha256(rules_text.encode("utf-8")).hexdigest()},
         "layers": layers,
     }
+    document.update(_class_section(fields_text))
     return json.dumps(document, indent=2, ensure_ascii=False) + "\n"
+
+
+def _class_section(fields_text):
+    """``{"classes": ...}`` when the field mapping has class rules, else nothing to add."""
+    rules = _class_rules((yaml.safe_load(fields_text) or {}).get("classes"))
+    return {"classes": rules} if rules else {}
+
+
+def _class_rules(classes):
+    """The mandatory properties of the classes other than the dataset, from the field mapping.
+
+    R8's cardinality rules describe the dataset only. For distributions and dataset series the mandatory
+    properties are the ones R8's SHACL shapes require, the same in every access layer, so they are kept in the
+    field mapping next to the property-to-field map and carried over as they are.
+    """
+    if classes is None:
+        return {}
+    if not isinstance(classes, dict) or set(classes) - set(CLASSES):
+        raise ConformanceBuildError(f"'classes' in the field mapping must name only: {', '.join(CLASSES)}")
+    document = {}
+    for kind, body in classes.items():
+        properties = body.get("properties") if isinstance(body, dict) else None
+        if not isinstance(properties, dict) or not properties:
+            raise ConformanceBuildError(f"class {kind!r} needs a 'properties' mapping")
+        mandatory = []
+        for label, rule in properties.items():
+            if not isinstance(rule, dict) or not isinstance(rule.get("cardinality"), str):
+                raise ConformanceBuildError(f"class {kind!r}: property {label!r} needs a 'cardinality' and 'fields'")
+            mandatory.append(
+                {"property": label, "cardinality": rule["cardinality"], "fields": _fields({label: rule.get("fields")}, label)}
+            )
+        document[kind] = {"source": str(body.get("source", "")), "mandatory": mandatory}
+    return document
 
 
 def _is_mandatory(layer, label, rule):

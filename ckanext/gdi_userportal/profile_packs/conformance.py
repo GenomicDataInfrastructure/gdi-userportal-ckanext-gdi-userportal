@@ -120,6 +120,40 @@ def evaluate(dataset, profiles, rules):
     }
 
 
+def evaluate_class(record, profiles, rules, kind):
+    """The conformance of one distribution or dataset series (``kind``) to each of ``profiles``.
+
+    A distribution is a resource of a dataset, a sample and an analytics distribution included (R8's shapes
+    apply the distribution shape to them too). Their mandatory properties do not depend on the access layer, so
+    none is needed. ``rules`` is as for ``evaluate``. Returns::
+
+        {"profiles": {name: {"conformant": bool, "mandatory": int, "missing": [{"property", "fields"}]}},
+         "conformant_profiles": [name, ...]}
+
+    A profile that declares nothing for ``kind`` has no mandatory properties and is satisfied. Like
+    ``evaluate``, whatever the record holds gives an answer, never an error.
+    """
+    record = record if isinstance(record, Mapping) else {}
+    results = {}
+    for name in profiles:
+        mandatory = _class_properties(rules.get(name), kind)
+        missing = [
+            {"property": rule["property"], "fields": list(rule["fields"])}
+            for rule in mandatory
+            if not any(is_filled(record.get(field)) for field in rule["fields"])
+        ]
+        results[name] = {"conformant": not missing, "mandatory": len(mandatory), "missing": missing}
+    return {
+        "profiles": results,
+        "conformant_profiles": [name for name, result in results.items() if result["conformant"]],
+    }
+
+
+def _class_properties(document, kind):
+    classes = document.get("classes") if document else None
+    return ((classes or {}).get(kind) or {}).get("mandatory", [])
+
+
 def _mandatory_properties(document, layer):
     """The mandatory properties to check, ``[]`` for a profile without rules, None without a layer."""
     if document is None:

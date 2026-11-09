@@ -83,6 +83,8 @@ SCHEMING_PRESETS = (
 
 # The access layers a conformance file carries rules for (see conformance.py).
 ACCESS_LAYERS = ("PUBLIC", "RESTRICTED", "NON_PUBLIC")
+# The classes other than the dataset a conformance file can carry rules for, not per access layer.
+CLASS_KINDS = ("distribution", "series")
 
 SCHEMA_FILENAME = "dataset.yaml"
 PROVENANCE_FILENAME = "provenance.json"
@@ -226,19 +228,7 @@ class Registry:
             rules = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError) as error:
             raise ProfileError(f"cannot read the conformance file of pack '{pack.name}' ({path}): {error}") from error
-        layers = rules.get("layers") if isinstance(rules, dict) else None
-        if not isinstance(layers, dict) or set(layers) != set(ACCESS_LAYERS):
-            raise ProfileError(f"{path}: expected 'layers' with exactly {', '.join(ACCESS_LAYERS)}")
-        for layer, body in layers.items():
-            mandatory = body.get("mandatory") if isinstance(body, dict) else None
-            if not isinstance(mandatory, list) or not all(
-                isinstance(rule, dict)
-                and isinstance(rule.get("property"), str)
-                and isinstance(rule.get("fields"), list)
-                and rule["fields"]
-                for rule in mandatory
-            ):
-                raise ProfileError(f"{path}: layer {layer} needs a 'mandatory' list of {{property, fields}}")
+        _check_conformance_rules(path, rules)
         return rules
 
     def fragment(self, name):
@@ -280,6 +270,33 @@ class Registry:
             return yaml.load(path.read_text(encoding="utf-8"), Loader=_PackLoader)
         except (OSError, yaml.YAMLError) as error:
             raise ProfileError(f"cannot read {path}: {error}") from error
+
+
+def _check_conformance_rules(path, rules):
+    """Raise a ProfileError unless ``rules`` has the layers, and optionally the classes, conformance.py reads."""
+    layers = rules.get("layers") if isinstance(rules, dict) else None
+    if not isinstance(layers, dict) or set(layers) != set(ACCESS_LAYERS):
+        raise ProfileError(f"{path}: expected 'layers' with exactly {', '.join(ACCESS_LAYERS)}")
+    for layer, body in layers.items():
+        if not _is_rule_list(body.get("mandatory") if isinstance(body, dict) else None):
+            raise ProfileError(f"{path}: layer {layer} needs a 'mandatory' list of {{property, fields}}")
+    classes = rules.get("classes", {})
+    if not isinstance(classes, dict) or set(classes) - set(CLASS_KINDS):
+        raise ProfileError(f"{path}: 'classes' may only name {', '.join(CLASS_KINDS)}")
+    for kind, body in classes.items():
+        if not _is_rule_list(body.get("mandatory") if isinstance(body, dict) else None):
+            raise ProfileError(f"{path}: class {kind} needs a 'mandatory' list of {{property, fields}}")
+
+
+def _is_rule_list(mandatory):
+    """Whether ``mandatory`` is a list of ``{property, fields}`` rules."""
+    return isinstance(mandatory, list) and all(
+        isinstance(rule, dict)
+        and isinstance(rule.get("property"), str)
+        and isinstance(rule.get("fields"), list)
+        and rule["fields"]
+        for rule in mandatory
+    )
 
 
 def _check_name(kind, name):
