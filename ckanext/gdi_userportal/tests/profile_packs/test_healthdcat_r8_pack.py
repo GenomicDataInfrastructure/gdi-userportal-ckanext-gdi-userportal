@@ -697,8 +697,16 @@ def test_the_properties_of_the_contact_point_are_grouped_for_display(generator):
         in_group = {f["field_name"] for f in fields[name]["repeating_subfields"] if f.get("display_group") == "Contact point"}
         assert in_group == grouped, name
     assert not any(f.get("display_group") for f in fields["creator"]["repeating_subfields"])
+
+
+def test_gdi_current_groups_the_email_and_url_of_an_agent_under_the_contact_point_as_r8_does(generator):
     gdi = dataset_fields(generator, ["gdi_current"])
-    assert not any(f.get("display_group") for f in gdi["publisher"]["repeating_subfields"])
+
+    for name in ("publisher", "creator", "hdab"):
+        in_group = {f["field_name"] for f in gdi[name]["repeating_subfields"] if f.get("display_group") == "Contact point"}
+        assert in_group == {"email", "url"}, name
+    attribution = subfields_of(gdi["qualified_attribution"], "agent")
+    assert {f["field_name"] for f in attribution["repeating_subfields"] if f.get("display_group")} == {"email", "url"}
 
 
 def test_r8_attribution_holds_several_roles_and_gdi_current_one(generator):
