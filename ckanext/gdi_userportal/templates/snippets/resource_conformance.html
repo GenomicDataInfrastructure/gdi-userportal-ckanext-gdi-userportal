@@ -1,0 +1,31 @@
+{#-
+The metadata profiles a distribution conforms to, for the profiles of the dataset it belongs to (see
+profile_conformance.html). A sample and an analytics distribution are distributions too and are labelled as such.
+Computed on every page view, stored nowhere (h.gdi_resource_conformance).
+
+pkg - the dataset the distribution belongs to.
+res - the distribution.
+-#}
+{%- set indicator = h.gdi_resource_conformance(pkg, res) -%}
+{%- if indicator %}
+  {%- set kind_labels = {'distribution': _('Distribution'), 'sample': _('Sample distribution'), 'analytics': _('Analytics distribution')} %}
+  <section class="profile-conformance mb-3" aria-label="{{ _('Metadata profile conformance') }}">
+    <p class="mb-1">
+      <span class="badge bg-secondary">{{ kind_labels[indicator.kind] }}</span>
+      <span class="small text-muted">{{ _('Metadata profiles of the dataset') }}</span>
+    </p>
+    <ul class="list-unstyled mb-0">
+      {%- for profile in indicator.profiles %}
+        <li class="mb-1">
+          {%- if profile.conformant %}
+            <span class="badge bg-success"><i class="fa fa-check" aria-hidden="true"></i> {{ profile.name }}</span>
+            <span class="small text-muted">{{ _('conforms') }}</span>
+          {%- else %}
+            <span class="badge bg-warning text-dark"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ profile.name }}</span>
+            <span class="small text-muted">{{ _('does not conform') }}: {{ _('missing') }} {{ profile.missing | join(', ') }}</span>
+          {%- endif %}
+        </li>
+      {%- endfor %}
+    </ul>
+  </section>
+{%- endif %}

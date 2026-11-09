@@ -19,6 +19,11 @@ SPDX-License-Identifier: Apache-2.0
   ] -%}
 {%- set schema = h.scheming_get_dataset_schema(dataset_type) -%}
 
+{% block resource_read_title %}
+  {{ super() }}
+  {% snippet 'snippets/resource_conformance.html', pkg=package, res=res %}
+{% endblock %}
+
 {% block resource_additional_information_inner %}
   {% if res.datastore_active %}
     {% block resource_data_dictionary %}

@@ -9,8 +9,9 @@
 
 import json
 
+from ckan import model
 from ckan.plugins import toolkit
-from ckanext.gdi_userportal import conformance_service
+from ckanext.gdi_userportal import conformance_service, profile_visibility
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     collect_search_values_to_translate,
     collect_values_to_translate,
@@ -165,30 +166,58 @@ def enhanced_package_show(context, data_dict) -> dict:
     return replace_package(result, translations, lang=lang)
 
 
+def _source_profiles(source_ids) -> dict:
+    """``{harvest source id: metadata_profile or None}`` for the sources that exist."""
+    return profile_visibility.source_profiles(model.Session, source_ids)
+
+
 @toolkit.side_effect_free
 def gdi_metadata_profile_conformance(context, data_dict) -> dict:
     """
-    Which of the deployment's enabled metadata profiles a dataset satisfies, at its access layer.
+    Which of the deployment's enabled metadata profiles a dataset or dataset series satisfies.
 
-    Computed from the dataset on every call and stored nowhere. Missing or malformed values
+    Computed from the record on every call and stored nowhere. Missing or malformed values
     make a profile "not conformant"; they never make this action fail.
 
-    :param id: the id or name of the dataset
+    ``profiles`` answers for every enabled profile; ``applicable_profiles`` names the ones that count for this
+    record: the ``metadata_profile`` of its harvest source (``basis`` "source"), the main profile when the source
+    names none ("main"), every enabled profile when no source created it ("enabled"). A dataset is checked at
+    its access layer; a dataset series has no layer. ``distributions`` answers for each distribution of a
+    dataset, samples and analytics distributions included (``kind``).
+
+    :param id: the id or name of the dataset or dataset series
     """
     dataset_id = (data_dict or {}).get("id")
     if not dataset_id:
         raise toolkit.ValidationError({"id": ["Missing value"]})
 
     dataset = toolkit.get_action("package_show")(dict(context), {"id": dataset_id})
-    if dataset.get("type", "dataset") != "dataset":
+    record_type = dataset.get("type", "dataset")
+    if record_type not in (conformance_service.DATASET, conformance_service.SERIES):
         raise toolkit.ValidationError(
-            {"id": [f"Conformance is only computed for datasets, not for type '{dataset.get('type')}'"]}
+            {"id": [f"Conformance is only computed for datasets and dataset series, not for type '{record_type}'"]}
         )
 
     enabled = conformance_service.enabled_profiles(toolkit.config)
     main = conformance_service.main_profile(toolkit.config, enabled)
-    result = conformance_service.evaluate_dataset(dataset, toolkit.config, enabled)
-    return {"id": dataset["id"], "name": dataset.get("name"), "main_profile": main, **result}
+    applicable, basis, source_profile = conformance_service.applicable_for(dataset, toolkit.config, _source_profiles)
+    if record_type == conformance_service.SERIES:
+        result = conformance_service.evaluate_series(dataset, toolkit.config, enabled)
+        distributions = []
+    else:
+        result = conformance_service.evaluate_dataset(dataset, toolkit.config, enabled)
+        distributions = conformance_service.evaluate_distributions(dataset, toolkit.config, enabled)
+    return {
+        "id": dataset["id"],
+        "name": dataset.get("name"),
+        "type": record_type,
+        "main_profile": main,
+        "source_profile": source_profile,
+        "applicable_profiles": applicable,
+        "basis": basis,
+        **result,
+        "distributions": distributions,
+    }
 
 
 @toolkit.side_effect_free
@@ -215,7 +244,7 @@ def gdi_metadata_profile_conformance_report(context, data_dict=None) -> dict:
         return search(dict(context), query)
 
     return conformance_service.conformance_report(
-        package_search, toolkit.config, [profile] if profile else None
+        package_search, toolkit.config, [profile] if profile else None, _source_profiles
     )
 
 
