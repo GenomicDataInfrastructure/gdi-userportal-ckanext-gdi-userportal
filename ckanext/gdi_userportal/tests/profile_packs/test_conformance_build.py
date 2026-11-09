@@ -40,6 +40,16 @@ def fields_text(**properties):
     return yaml.safe_dump({"properties": properties})
 
 
+def fields_with_classes(classes):
+    return yaml.safe_dump({"properties": {"title": ["title_translated"], "theme": ["theme"], "keyword": ["tags"]}, "classes": classes})
+
+
+DISTRIBUTION = {
+    "source": "SHACL :Distribution_Shape",
+    "properties": {"applicable legislation": {"cardinality": "1..*", "fields": ["applicable_legislation"]}},
+}
+
+
 def build(conformance_build, rules=None, fields=None):
     return json.loads(conformance_build.build(rules or rules_text(), fields or fields_text()))
 
@@ -153,3 +163,45 @@ def test_the_mapping_that_ships_has_an_entry_for_every_property_the_file_lists(r
 def test_the_committed_file_is_what_the_real_rules_produce(conformance_build):
     rules = Path(os.environ["HEALTHDCAT_RULES_JSON"])
     assert conformance_build.main(["--rules", str(rules), "--check"]) == 0
+
+
+# --- the classes other than the dataset ----------------------------------------------------
+
+
+def test_the_class_rules_are_carried_over_from_the_field_mapping(conformance_build):
+    document = build(conformance_build, fields=fields_with_classes({"distribution": DISTRIBUTION, "series": DISTRIBUTION}))
+
+    assert list(document["classes"]) == ["distribution", "series"]
+    assert document["classes"]["distribution"] == {
+        "source": "SHACL :Distribution_Shape",
+        "mandatory": [{"property": "applicable legislation", "cardinality": "1..*", "fields": ["applicable_legislation"]}],
+    }
+
+
+def test_without_class_rules_the_file_has_no_classes(conformance_build):
+    assert "classes" not in build(conformance_build)
+
+
+def test_the_classes_do_not_disturb_the_layers(conformance_build):
+    plain = build(conformance_build)
+    with_classes = build(conformance_build, fields=fields_with_classes({"distribution": DISTRIBUTION}))
+
+    assert with_classes["layers"] == plain["layers"]
+    assert with_classes["source"] == plain["source"]
+
+
+@pytest.mark.parametrize(
+    "classes, message",
+    [
+        ({"data service": DISTRIBUTION}, "must name only"),
+        ("distribution", "must name only|must be"),
+        ({"distribution": {"source": "x"}}, "needs a 'properties' mapping"),
+        ({"distribution": {"properties": {}}}, "needs a 'properties' mapping"),
+        ({"distribution": {"properties": {"p": {"fields": ["f"]}}}}, "needs a 'cardinality' and 'fields'"),
+        ({"distribution": {"properties": {"p": {"cardinality": "1..*"}}}}, "no CKAN fields"),
+        ({"distribution": {"properties": {"p": {"cardinality": "1..*", "fields": []}}}}, "no CKAN fields"),
+    ],
+)
+def test_broken_class_rules_fail_and_say_why(conformance_build, classes, message):
+    with pytest.raises(conformance_build.ConformanceBuildError, match=message):
+        build(conformance_build, fields=fields_with_classes(classes))

@@ -25,3 +25,22 @@ properties:
   keyword: [tags_translated, tags]
   provenance: [provenance]
   type: [dcat_type]
+
+# R8's cardinality rules describe the dataset only. For the other classes the mandatory properties are those
+# of R8's SHACL shapes (:Distribution_Shape and :DatasetSeries_Shape in r8-spec/shapes/*-shapes.ttl). They are the
+# same in the public, restricted and non-public shapes, so they are not per access layer. A sample
+# (adms:sample) and an analytics distribution (healthdcatap:analytics) are dcat:Distribution too: the shapes apply
+# the distribution shape to them, and the profile stores them as resources.
+classes:
+  distribution:
+    source: "SHACL :Distribution_Shape"
+    properties:
+      applicable legislation:
+        cardinality: "1..*"
+        fields: [applicable_legislation]
+  series:
+    source: "SHACL :DatasetSeries_Shape"
+    properties:
+      applicable legislation:
+        cardinality: "1..*"
+        fields: [applicable_legislation]
