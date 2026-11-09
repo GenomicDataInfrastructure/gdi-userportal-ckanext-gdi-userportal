@@ -14,11 +14,13 @@
 
 {% block package_additional_info %}
   {%- set show_empty = h.gdi_show_empty_properties() -%}
+  {#- the fields of the profile the dataset comes from; none: all of them -#}
+  {%- set scope = h.gdi_empty_property_scope(pkg_dict, 'dataset_fields') if show_empty else none -%}
   {%- for field in schema.dataset_fields -%}
     {%- set blank = h.gdi_is_blank_value(pkg_dict.get(field.field_name)) -%}
     {%- if field.field_name not in exclude_fields
         and field.display_snippet is not none
-        and (show_empty or not blank) -%}
+        and (not blank or (show_empty and (scope is none or field.field_name in scope))) -%}
       <tr>
         <th scope="row" class="dataset-label">{{
           h.scheming_language_text(field.label) }}</th>

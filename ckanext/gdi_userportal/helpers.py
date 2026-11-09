@@ -185,8 +185,18 @@ def resource_conformance(dataset: dict[str, Any] | None, resource: dict[str, Any
     return conformance_service.resource_indicator(dataset, resource, tk.config, _source_profiles)
 
 
+def empty_property_scope(record: dict[str, Any] | None, section: str) -> frozenset[str] | None:
+    """The fields of ``section`` (``dataset_fields`` or ``resource_fields``) a page lists as empty for ``record``.
+
+    Only used when ``show_empty_properties`` is on. None means every field of the schema; see
+    ``conformance_service.empty_property_scope``. Never raises.
+    """
+    return conformance_service.empty_property_scope(record, section, tk.config, _source_profiles)
+
+
 def get_helpers() -> dict[str, Any]:
     return {
+        "gdi_empty_property_scope": empty_property_scope,
         "gdi_profile_conformance": profile_conformance,
         "gdi_resource_conformance": resource_conformance,
         "scheming_missing_required_fields": scheming_missing_required_fields,
