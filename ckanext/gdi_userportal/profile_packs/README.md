@@ -169,20 +169,34 @@ and an empty core field (`title`, `notes`) takes the first language that has a v
 ## Conformance
 
 `conformance.py` (standard library only) says which enabled packs a dataset satisfies at its
-access layer. `conformance_service.py` (one level up) wraps it for the API action
+access layer (`evaluate`), and which a distribution or a dataset series satisfies (`evaluate_class`, no
+layer). `conformance_service.py` (one level up) wraps both for the API action
 `gdi_metadata_profile_conformance`, the sysadmin report action `gdi_metadata_profile_conformance_report`
-and the `profiles conformance` command, and for the page helper `h.gdi_profile_conformance` that the
-dataset page (`package/read.html`) and the dataset lists (`snippets/package_item.html`) use. The
-harvest-log warning of ckanext-fairdatapoint calls the action. Everything is computed on demand; nothing
-is stored and the Solr schema and the index are not involved. A pack with no `conformance` file has no
-mandatory properties.
+and the `profiles conformance` command, and for the page helpers `h.gdi_profile_conformance` (dataset and
+series pages, `package/read.html`, and the lists, `snippets/package_item.html`) and
+`h.gdi_resource_conformance` (the distribution list, `package/snippets/resource_item.html`, and the
+distribution page). The harvest-log warning of ckanext-fairdatapoint calls the action. Everything is computed
+on demand; nothing is stored and the Solr schema and the index are not involved. A pack with no
+`conformance` file has no mandatory properties.
+
+A record is checked against the profile it comes from: the `metadata_profile` of its harvest source, the
+main profile when the source names none, every enabled profile when no source created it
+(`applicable_profiles`; the source lookup is `profile_visibility.source_profiles`). A sample
+(`adms:sample`) and an analytics distribution (`healthdcatap:analytics`) are stored as resources and are
+distributions: they are checked like any other and labelled by `resource_kind`.
 
 The file of `healthdcat_r8` is **generated** from R8's cardinality rules, never edited by hand:
 
 ```
-conformance/healthdcat_r8_fields.yaml     R8 property label -> the CKAN fields that carry it (hand-written)
-conformance/healthdcat_r8.json            generated: the properties that are Mandatory per layer
+conformance/healthdcat_r8_fields.yaml     R8 property label -> the CKAN fields that carry it (hand-written),
+                                          and `classes`: what R8's SHACL shapes make mandatory on a
+                                          distribution and a dataset series (applicable legislation)
+conformance/healthdcat_r8.json            generated: the properties that are Mandatory per layer, and `classes`
 ```
+
+R8's cardinality rules cover the dataset only. The distribution and series rules come from
+`:Distribution_Shape` and `:DatasetSeries_Shape` of the R8 SHACL files, which are identical in the public,
+restricted and non-public shapes, so they have no layer. The build copies them as they are.
 
 ```
 python3 profile_packs/conformance_build.py --rules path/to/healthdcat-cardinality-rules.json [--check]
