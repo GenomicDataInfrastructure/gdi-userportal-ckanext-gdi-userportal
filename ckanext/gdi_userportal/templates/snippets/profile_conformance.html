@@ -1,0 +1,35 @@
+{#-
+The metadata profiles a dataset conforms to, for every enabled profile. Computed on every page view,
+stored nowhere (h.gdi_profile_conformance). Nothing is shown for a record without rules, such as a series.
+
+pkg - the dataset.
+-#}
+{%- set indicator = h.gdi_profile_conformance(pkg) -%}
+{%- if indicator %}
+  <section class="profile-conformance mb-3" aria-label="{{ _('Metadata profile conformance') }}">
+    <h2 class="h6 text-muted mb-2">
+      {{ _('Metadata profiles') }}
+      {%- if indicator.access_layer %}
+        <span class="fw-normal">({{ _('access layer') }}: {{ indicator.access_layer }})</span>
+      {%- endif %}
+    </h2>
+    <ul class="list-unstyled mb-0">
+      {%- for profile in indicator.profiles %}
+        <li class="mb-1">
+          {%- if profile.conformant %}
+            <span class="badge bg-success"><i class="fa fa-check" aria-hidden="true"></i> {{ profile.name }}</span>
+            <span class="small text-muted">{{ _('conforms') }}</span>
+          {%- else %}
+            <span class="badge bg-warning text-dark"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ profile.name }}</span>
+            <span class="small text-muted">
+              {{- _('does not conform') -}}
+              {%- if profile.missing %}: {{ _('missing') }} {{ profile.missing | join(', ') }}
+              {%- elif profile.reason %}: {{ profile.reason }}
+              {%- endif -%}
+            </span>
+          {%- endif %}
+        </li>
+      {%- endfor %}
+    </ul>
+  </section>
+{%- endif %}
