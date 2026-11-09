@@ -141,7 +141,10 @@ of `gdi-userportal-ckan-docker`.
 `ckanext.gdi_userportal.show_empty_properties = true` (the environment variable
 `CKANEXT__GDI_USERPORTAL__SHOW_EMPTY_PROPERTIES=true`) they list every property the schema defines, with
 a dash for those without a value, to see what the schema, the edit form and a harvest can hold. It is
-off by default.
+off by default. The generated schema holds the fields of every enabled profile, so a dataset gets a dash
+only for the fields of the profile of its harvest source (`conformance_service.empty_property_scope`, from
+the fields each pack defines); a dataset no source says anything about gets all of them, and a field with a
+value is always shown.
 
 **Language fallback.** The edit form stores an empty value for a form language left blank
 (`{"en": "Title", "nl": ""}`), and scheming and CKAN only fall back to another language when the key
