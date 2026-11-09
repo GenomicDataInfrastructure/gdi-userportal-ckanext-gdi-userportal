@@ -27,7 +27,26 @@ def _baseline():
         for field in schema[section]:
             if field["field_name"] == name:
                 field.update(changes)
+    for section in ("dataset_fields", "resource_fields"):
+        _group_contact_points(schema[section])
     return schema
+
+
+# The agents (publisher, creator, health data access body, the agent of an attribution, and those of a data
+# service) show their email and URL together under the contact point, as the agents of R8 do: display_group.
+# It is read by the display template only. The contact point field itself stays flat.
+AGENT_FIELDS = ("publisher", "creator", "hdab", "agent")
+CONTACT_POINT_SUBFIELDS = ("email", "url")
+
+
+def _group_contact_points(fields):
+    for field in fields:
+        subfields = field.get("repeating_subfields") or []
+        if field["field_name"] in AGENT_FIELDS:
+            for subfield in subfields:
+                if subfield["field_name"] in CONTACT_POINT_SUBFIELDS:
+                    subfield["display_group"] = "Contact point"
+        _group_contact_points(subfields)
 
 
 def _names(fields):

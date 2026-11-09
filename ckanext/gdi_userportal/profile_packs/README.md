@@ -128,7 +128,7 @@ contact page. The prune command does not look at series fields.
 
 **Display keys.** Scheming passes keys it does not know through, and the display templates of this
 extension use some on a subfield: `display_group` shows the subfields with the same value together
-under that heading (the contact point of an R8 agent); `display_replaces: <subfield>` makes the
+under that heading (the contact point of an agent: the email and URL in `gdi_current`, more in R8); `display_replaces: <subfield>` makes the
 subfield take the row of that other one when it has a value, under its `display_label` (one or more
 names per language replace the single name). A field with `repeating_once` is shown without a number,
 and nested lists (variables, tables, columns) are indented.
