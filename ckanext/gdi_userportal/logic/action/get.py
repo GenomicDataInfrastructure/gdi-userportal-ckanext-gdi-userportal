@@ -7,12 +7,10 @@
 
 # -*- coding: utf-8 -*-
 
-import functools
 import json
 
 from ckan.plugins import toolkit
-from ckanext.gdi_userportal.profile_packs import conformance as profile_conformance
-from ckanext.gdi_userportal.profile_packs import generator as profile_generator
+from ckanext.gdi_userportal import conformance_service
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     collect_search_values_to_translate,
     collect_values_to_translate,
@@ -167,12 +165,6 @@ def enhanced_package_show(context, data_dict) -> dict:
     return replace_package(result, translations, lang=lang)
 
 
-@functools.lru_cache(maxsize=None)
-def _conformance_rules(profile: str):
-    registry = profile_generator.Registry()
-    return registry.conformance(registry.pack(profile))
-
-
 @toolkit.side_effect_free
 def gdi_metadata_profile_conformance(context, data_dict) -> dict:
     """
@@ -193,12 +185,38 @@ def gdi_metadata_profile_conformance(context, data_dict) -> dict:
             {"id": [f"Conformance is only computed for datasets, not for type '{dataset.get('type')}'"]}
         )
 
-    enabled = profile_generator.parse_profiles(toolkit.config.get(profile_generator.OPTION_PROFILES))
-    main = (toolkit.config.get(profile_generator.OPTION_MAIN_PROFILE) or "").strip() or enabled[0]
-    result = profile_conformance.evaluate(
-        dataset, enabled, {name: _conformance_rules(name) for name in enabled}
-    )
+    enabled = conformance_service.enabled_profiles(toolkit.config)
+    main = conformance_service.main_profile(toolkit.config, enabled)
+    result = conformance_service.evaluate_dataset(dataset, toolkit.config, enabled)
     return {"id": dataset["id"], "name": dataset.get("name"), "main_profile": main, **result}
+
+
+@toolkit.side_effect_free
+def gdi_metadata_profile_conformance_report(context, data_dict=None) -> dict:
+    """
+    The datasets that do not conform to the deployment's enabled metadata profiles, per profile.
+
+    Sysadmins only. Computed from the search on every call and stored nowhere; the datasets of a
+    harvest source whose profile is not enabled are hidden from the search and so left out.
+
+    :param profile: limit the report to this enabled profile (default: every enabled profile)
+    """
+    toolkit.check_access("gdi_metadata_profile_conformance_report", context, data_dict)
+    profile = ((data_dict or {}).get("profile") or "").strip() or None
+    enabled = conformance_service.enabled_profiles(toolkit.config)
+    if profile is not None and profile not in enabled:
+        raise toolkit.ValidationError(
+            {"profile": [f"Metadata profile '{profile}' is not enabled. Enabled: {', '.join(enabled)}"]}
+        )
+
+    search = toolkit.get_action("package_search")
+
+    def package_search(query):
+        return search(dict(context), query)
+
+    return conformance_service.conformance_report(
+        package_search, toolkit.config, [profile] if profile else None
+    )
 
 
 @toolkit.side_effect_free

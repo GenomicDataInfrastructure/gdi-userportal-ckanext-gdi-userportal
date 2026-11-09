@@ -38,12 +38,14 @@ from ckanext.gdi_userportal.logic.action.get import (
     enhanced_package_show,
     gdi_filter_help_texts_show,
     gdi_metadata_profile_conformance,
+    gdi_metadata_profile_conformance_report,
 )
 from ckanext.gdi_userportal.logic.auth.get import (
     config_option_show,
     gdi_dataset_help_texts_show as gdi_dataset_help_texts_show_auth,
     gdi_filter_help_texts_show as gdi_filter_help_texts_show_auth,
     gdi_metadata_profile_conformance as gdi_metadata_profile_conformance_auth,
+    gdi_metadata_profile_conformance_report as gdi_metadata_profile_conformance_report_auth,
     package_show as package_show_auth,
 )
 from ckanext.gdi_userportal import profile_visibility
@@ -192,6 +194,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show_auth,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show_auth,
             "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance_auth,
+            "gdi_metadata_profile_conformance_report": gdi_metadata_profile_conformance_report_auth,
             "package_show": package_show_auth,
         }
 
@@ -202,6 +205,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show,
             "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance,
+            "gdi_metadata_profile_conformance_report": gdi_metadata_profile_conformance_report,
         }
 
     def get_helpers(self):

@@ -54,3 +54,8 @@ def gdi_dataset_help_texts_show(context, data_dict=None):
 def gdi_metadata_profile_conformance(context, data_dict=None):
     # Reading the dataset is checked by the package_show call inside the action.
     return {"success": True}
+
+
+def gdi_metadata_profile_conformance_report(context, data_dict=None):
+    # Sysadmins pass before this runs; the report lists every dataset, private ones included.
+    return {"success": False, "msg": toolkit._("Only sysadmins can read the metadata profile conformance report")}
