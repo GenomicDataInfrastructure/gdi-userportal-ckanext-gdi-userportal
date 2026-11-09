@@ -169,8 +169,13 @@ and an empty core field (`title`, `notes`) takes the first language that has a v
 ## Conformance
 
 `conformance.py` (standard library only) says which enabled packs a dataset satisfies at its
-access layer; the API action `gdi_metadata_profile_conformance` and the harvest-log warning of
-ckanext-fairdatapoint use it. A pack with no `conformance` file has no mandatory properties.
+access layer. `conformance_service.py` (one level up) wraps it for the API action
+`gdi_metadata_profile_conformance`, the sysadmin report action `gdi_metadata_profile_conformance_report`
+and the `profiles conformance` command, and for the page helper `h.gdi_profile_conformance` that the
+dataset page (`package/read.html`) and the dataset lists (`snippets/package_item.html`) use. The
+harvest-log warning of ckanext-fairdatapoint calls the action. Everything is computed on demand; nothing
+is stored and the Solr schema and the index are not involved. A pack with no `conformance` file has no
+mandatory properties.
 
 The file of `healthdcat_r8` is **generated** from R8's cardinality rules, never edited by hand:
 
