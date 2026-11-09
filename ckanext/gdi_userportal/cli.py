@@ -328,6 +328,34 @@ def prune(delete, yes):
         click.echo(f"Reindexed {len(orphans)} dataset(s).")
 
 
+@profiles.command("conformance")
+@click.option("--profile", default=None, help="Only this enabled profile. Default: every enabled profile.")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def conformance(profile, as_json):
+    """List the datasets that do not conform to the enabled metadata profiles.
+
+    Read-only. A dataset conforms to a profile when every property the profile makes mandatory at its
+    access layer has a value. Computed from the search on every run: the datasets of a harvest source
+    whose profile is not enabled are hidden from it and so not listed.
+    """
+    from ckan.plugins import toolkit
+    from ckanext.gdi_userportal import conformance_service
+
+    try:
+        site_user = toolkit.get_action("get_site_user")({"ignore_auth": True}, {})
+        report = toolkit.get_action("gdi_metadata_profile_conformance_report")(
+            {"user": site_user["name"]}, {"profile": profile} if profile else {}
+        )
+    except toolkit.ValidationError as error:
+        raise click.ClickException("; ".join(f"{key}: {message}" for key, message in error.error_summary.items()))
+
+    if as_json:
+        click.echo(json.dumps(report, indent=2))
+        return
+    for line in conformance_service.format_report(report):
+        click.echo(line)
+
+
 def get_commands():
     """Return CLI commands for this extension."""
     return [gdi_userportal]
