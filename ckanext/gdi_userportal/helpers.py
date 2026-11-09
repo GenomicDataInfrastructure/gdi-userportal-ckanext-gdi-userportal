@@ -10,6 +10,8 @@ from typing import Any
 
 import ckan.plugins.toolkit as tk
 
+from ckanext.gdi_userportal import conformance_service
+
 
 def _ensure_data_dict(data: dict[str, Any] | None, package_id: str | None) -> dict[str, Any]:
     """Return a dataset dict for the current helper call.
@@ -145,8 +147,17 @@ def show_empty_properties() -> bool:
     return tk.asbool(tk.config.get(SHOW_EMPTY_PROPERTIES, False))
 
 
+def profile_conformance(dataset: dict[str, Any] | None) -> dict[str, Any] | None:
+    """The conformance of a dataset to every enabled metadata profile, for the dataset and search pages.
+
+    See ``conformance_service.page_indicator``. None when there is nothing to show; never raises.
+    """
+    return conformance_service.page_indicator(dataset, tk.config)
+
+
 def get_helpers() -> dict[str, Any]:
     return {
+        "gdi_profile_conformance": profile_conformance,
         "scheming_missing_required_fields": scheming_missing_required_fields,
         "gdi_show_empty_properties": show_empty_properties,
         "gdi_is_blank_value": _is_missing_value,

@@ -1,0 +1,19 @@
+{#- Core's dataset list item, plus a badge per enabled metadata profile the dataset does not conform to.
+    Datasets that conform to every enabled profile get nothing. Computed from the dict in the search result. -#}
+{% ckan_extends %}
+
+{% block notes %}
+  {{ super() }}
+  {%- set indicator = h.gdi_profile_conformance(package) -%}
+  {%- if indicator and indicator.failing %}
+    <p class="profile-conformance mb-2">
+      {%- for profile in indicator.failing %}
+        <span class="badge bg-warning text-dark" title="{{ _('Does not conform to') }} {{ profile.name }}{% if profile.missing %}: {{ _('missing') }} {{ profile.missing | join(', ') }}{% elif profile.reason %}: {{ profile.reason }}{% endif %}">
+          <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+          {{ _('Not conformant') }}: {{ profile.name }}
+          {%- if profile.missing %} ({{ profile.missing | length }} {{ _('missing') }}){% endif -%}
+        </span>
+      {%- endfor %}
+    </p>
+  {%- endif %}
+{% endblock %}

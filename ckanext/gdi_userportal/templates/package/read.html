@@ -1,0 +1,7 @@
+{#- Core's dataset page, plus the metadata profiles the dataset conforms to under the description. -#}
+{% ckan_extends %}
+
+{% block package_description %}
+  {{ super() }}
+  {% snippet 'snippets/profile_conformance.html', pkg=pkg %}
+{% endblock %}
