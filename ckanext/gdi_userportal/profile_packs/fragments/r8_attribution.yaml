@@ -7,6 +7,7 @@
 
 dataset_fields:
   - field_name: qualified_attribution
+    solr: {prefix: vocab_qualified_attribution, flatten: [role, agent.name]}
     label: Qualified attribution
     repeating_label: Attribution
     repeating_subfields:

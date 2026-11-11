@@ -8,6 +8,7 @@ dataset_fields:
     help_text: Minimum spatial separation resolvable in a dataset, measured in meters.
 
   - field_name: access_rights
+    solr: {text: false}
     label: Access rights
     validators: ignore_missing unicode_safe
     help_text: Information that indicates whether the dataset is Open Data, has access restrictions or is not public.
@@ -17,6 +18,7 @@ dataset_fields:
     facet_key: access_rights
 
   - field_name: alternate_identifier
+    solr: {text: false}
     label: Other identifier
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -27,6 +29,7 @@ dataset_fields:
     facet_key: alternate_identifier
 
   - field_name: theme
+    solr: {text: false}
     label: Theme
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -37,6 +40,7 @@ dataset_fields:
     facet_key: theme
 
   - field_name: language
+    solr: {text: false}
     label: Language
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -48,12 +52,14 @@ dataset_fields:
     # TODO: language form snippet / validator / graph
 
   - field_name: documentation
+    solr: {text: false}
     label: Documentation
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
     help_text: A page or document about this dataset.
 
   - field_name: conforms_to
+    solr: {text: false}
     label: Conforms to
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -64,6 +70,7 @@ dataset_fields:
     facet_key: conforms_to
 
   - field_name: is_referenced_by
+    solr: {text: false}
     label: Is referenced by
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -97,12 +104,14 @@ dataset_fields:
       or analytics services.
 
   - field_name: applicable_legislation
+    solr: {text: false}
     label: Applicable legislation
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
     help_text: The legislation that mandates the creation or management of the dataset.
 
   - field_name: has_version
+    solr: {text: false}
     label: Has version
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text

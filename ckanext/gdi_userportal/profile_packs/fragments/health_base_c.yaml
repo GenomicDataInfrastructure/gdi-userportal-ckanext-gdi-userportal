@@ -4,6 +4,7 @@
 
 dataset_fields:
   - field_name: qualified_relation
+    solr: {flatten: [uri, relation, role], text: false}
     label: Qualified relation
     repeating_label: Relationship
     repeating_subfields:

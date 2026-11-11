@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from ckanext.gdi_userportal import plugin
+from ckanext.gdi_userportal import indexing, plugin
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     collect_values_to_translate,
     replace_package,
@@ -21,25 +21,30 @@ DEU = "http://publications.europa.eu/resource/authority/country/DEU"
 TRANSLATIONS = {NLD: "Netherlands", DEU: "Germany"}
 
 
+def _flatten(fields, data_dict, name):
+    """What the indexing writes for the agent field ``name`` (the solr key of the field says which subfields)."""
+    return indexing.flatten(data_dict, next(field for field in fields if field["field_name"] == name))
+
+
 def _label(uri):
     return {"name": uri, "display_name": TRANSLATIONS[uri], "count": None}
 
 
 class TestSolrIndexing:
-    def test_several_values_of_one_agent_are_all_indexed(self):
+    def test_several_values_of_one_agent_are_all_indexed(self, indexing_schema):
         data_dict = {
             "publisher": [
                 {"name": "Org", "country": [NLD, DEU], "identifier": ["id-1", "id-2"]}
             ]
         }
 
-        result = plugin.GdiUserPortalPlugin()._parse_agent_name(data_dict, "publisher")
+        result = _flatten(indexing_schema, data_dict, "publisher")
 
         assert sorted(result["publisher_country"]) == sorted([NLD, DEU])
         assert sorted(result["publisher_identifier"]) == ["id-1", "id-2"]
 
     def test_lists_and_legacy_scalars_of_different_agents_are_merged_without_duplicates(
-        self,
+        self, indexing_schema
     ):
         data_dict = {
             "creator": [
@@ -48,27 +53,27 @@ class TestSolrIndexing:
             ]
         }
 
-        result = plugin.GdiUserPortalPlugin()._parse_agent_name(data_dict, "creator")
+        result = _flatten(indexing_schema, data_dict, "creator")
 
         assert sorted(result["creator_country"]) == sorted([NLD, DEU])
         assert sorted(result["creator_identifier"]) == ["id-1", "id-2", "id-3"]
 
-    def test_empty_lists_add_no_index_fields(self):
+    def test_empty_lists_add_no_index_fields(self, indexing_schema):
         data_dict = {"creator": [{"name": "Org", "country": [], "identifier": []}]}
 
-        result = plugin.GdiUserPortalPlugin()._parse_agent_name(data_dict, "creator")
+        result = _flatten(indexing_schema, data_dict, "creator")
 
         assert "creator_country" not in result
         assert "creator_identifier" not in result
 
-    def test_values_of_the_flat_extras_are_indexed_one_by_one(self):
+    def test_values_of_the_flat_extras_are_indexed_one_by_one(self, indexing_schema):
         data_dict = {
             "extras_publisher__name": "Org",
             "extras_publisher__country": json.dumps([NLD, DEU]),
             "extras_publisher__identifier": "id-1",
         }
 
-        result = plugin.GdiUserPortalPlugin()._parse_agent_name(data_dict, "publisher")
+        result = _flatten(indexing_schema, data_dict, "publisher")
 
         assert result["publisher_name"] == ["Org"]
         assert sorted(result["publisher_country"]) == sorted([NLD, DEU])

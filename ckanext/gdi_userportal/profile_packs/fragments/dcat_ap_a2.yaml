@@ -38,6 +38,8 @@ dataset_fields:
     preset: dataset_series_in_series
     # A dataset that is in no series stores nothing: scheming_multiple_choice would store the empty list "[]".
     validators: ignore_empty scheming_multiple_choice series_validator
+    # ckanext-dataset-series runs after this plugin while indexing and reads in_series as the JSON text it is stored as.
+    solr: {decode: false}
     help_text: Dataset series this dataset belongs to.
 
   - field_name: version

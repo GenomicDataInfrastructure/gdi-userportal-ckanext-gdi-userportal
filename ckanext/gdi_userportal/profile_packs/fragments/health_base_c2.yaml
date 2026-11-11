@@ -4,6 +4,7 @@
 
 dataset_fields:
   - field_name: quality_annotation
+    solr: {flatten: [body, target, motivated_by], text: false}
     label: Quality annotations
     repeating_label: Quality annotation
     repeating_subfields:

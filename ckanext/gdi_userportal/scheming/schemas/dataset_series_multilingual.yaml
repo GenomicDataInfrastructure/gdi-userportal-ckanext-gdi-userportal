@@ -32,12 +32,14 @@ dataset_fields:
     help_text: A free-text account of the dataset series.
 
   - field_name: applicable_legislation
+    solr: {text: false}
     label: Applicable legislation
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
     help_text: The legislation that mandates the creation or management of the dataset series.
 
   - field_name: contact
+    solr: {prefix: contact_point, flatten: [name, email, url]}
     label: Contact points
     repeating_label: Contact point
     repeating_subfields:
@@ -86,6 +88,7 @@ dataset_fields:
     help_text: The CKAN organization the dataset series belongs to.
 
   - field_name: publisher
+    solr: {flatten: [name, email, url, type, identifier]}
     label: Publisher
     repeating_label: Publisher
     repeating_once: true
@@ -144,6 +147,7 @@ dataset_fields:
     help_text: The type of sorting that needs to be performed on series members.
 
   - field_name: spatial_coverage
+    solr: {flatten: [uri]}
     label: Spatial coverage
     repeating_subfields:
       - field_name: uri

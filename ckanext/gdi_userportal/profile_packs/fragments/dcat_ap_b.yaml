@@ -22,6 +22,7 @@ dataset_fields:
     help_text: A statement about the lineage of the dataset.
 
   - field_name: dcat_type
+    solr: {text: false}
     label: Type
     help_text: The type of the dataset.
     # TODO: controlled vocabulary?

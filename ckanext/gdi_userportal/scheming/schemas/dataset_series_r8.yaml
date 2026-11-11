@@ -38,11 +38,13 @@ dataset_fields:
   display_snippet: fluent_markdown.html
   help_text: A free-text account of the dataset series.
 - field_name: applicable_legislation
+  solr: {text: false}
   label: Applicable legislation
   preset: multiple_text
   validators: ignore_missing scheming_multiple_text
   help_text: The legislation that mandates the creation or management of the dataset series.
 - field_name: contact
+  solr: {prefix: contact_point, flatten: [uri, email, url]}
   label: Contact points
   repeating_label: Contact point
   repeating_subfields:
@@ -67,6 +69,7 @@ dataset_fields:
     nl: Gebruik deze filter om datasetreeksen op frequentie te zoeken.
   facet_key: frequency
 - field_name: spatial_coverage
+  solr: {flatten: [uri]}
   label: Geographical coverage
   repeating_subfields:
   - field_name: uri
@@ -95,6 +98,7 @@ dataset_fields:
   preset: dataset_organization
   help_text: The CKAN organization the dataset series belongs to.
 - field_name: publisher
+  solr: {flatten: [name, uri, type]}
   label: Publisher
   repeating_label: Publisher
   repeating_once: true

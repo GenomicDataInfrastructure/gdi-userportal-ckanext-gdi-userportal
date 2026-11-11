@@ -221,9 +221,9 @@ for a field whose key the shared RDF code also keeps as a free extra in every pr
 
 ## Solr schema
 
-`solr/schema.xml` is written by hand: field types, CKAN's own fields and the fields the plugin builds
-while indexing (agents, contact point, `vocab_*`). The dataset fields of the enabled profiles are not
-in it. Solr gives a field it does not know the catch-all `*` (not stored, **single valued**), so a
+`solr/schema.xml` is written by hand: field types, CKAN's own fields and some of the fields the plugin
+builds while indexing (agents, contact point, `vocab_*`). The dataset fields of the enabled profiles are
+not in it. Solr gives a field it does not know the catch-all `*` (not stored, **single valued**), so a
 profile field with several values fails the import ("multiple values encountered for non
 multiValued field"). `solr_schema.py` closes that:
 
@@ -244,12 +244,50 @@ multiValued field"). `solr_schema.py` closes that:
   the original value in a query; CKAN does not need that, it serves a dataset from the JSON in
   `validated_data_dict`. `type` must be a field type of `schema.xml`; `check` reports one that is not.
 - `check` (the drift test, `tests/profile_packs/test_solr_schema.py`, for every pack and pack pair)
-  fails when a list field would land in a single valued Solr field, and when a Solr field the plugin
-  fills while indexing (`flattened_field_names`: the agents, the contact point, `qualified_relation`,
-  `quality_annotation`, `retention_period`; the plugin reads the same constants) is not declared
-  `multiValued` in `schema.xml`. `url` and `dcat_type` are exempt:
-  the plugin flattens them to one value before indexing (`SINGLE_VALUED_SOLR_FIELDS`). Fix a failure by
-  making the field `multiValued` in `schema.xml`, or by flattening it in `before_dataset_index`.
+  fails when a list field would land in a single valued Solr field, when a `flatten` key (below) names a
+  subfield the field does not have, and when a Solr field the indexing fills is declared single valued in
+  `schema.xml`. A field with `solr: {multiple: false}` is exempt: the indexing keeps one value of the list.
+  Fix a failure by making the field `multiValued` in `schema.xml`, or by marking the field `multiple: false`.
+
+### What the indexing writes: the `solr` key
+
+CKAN hands the indexer a dataset whose list fields are JSON text and whose repeating fields are lists of
+objects; scheming turns those into one `extras_<field>__<subfield>` text field each, which Solr can search
+but neither filter nor facet on. `before_dataset_index` therefore writes plain multi valued Solr fields of its
+own, and which ones is decided by the `solr` key of the fields in the schema, not by a list of names in the
+plugin (`indexing.py`; the schema is read through `schema_fields.py`):
+
+```yaml
+- field_name: spatial_coverage
+  solr: {flatten: [uri]}                  # -> spatial_coverage_uri: one value per location
+- field_name: contact
+  solr: {prefix: contact_point, flatten: [uri, name, email]}   # -> contact_point_uri, contact_point_name, ...
+- field_name: qualified_attribution
+  solr: {prefix: vocab_qualified_attribution, flatten: [role, agent.name]}   # a dot reaches into a subfield
+- field_name: theme
+  solr: {text: false}                     # no extras_theme copy in the free text
+- field_name: dcat_type
+  solr: {multiple: false, all_values: vocab_dcat_type, text: false}   # the first value, and all of them
+```
+
+- `flatten` lists the subfields of a repeating field that get a Solr field each, `<prefix>_<subfield>`
+  (`prefix` is the name of the field unless it says otherwise; a path with a dot is joined with `_`). Only
+  what is listed is indexed: a geometry or a language map is not a useful filter. `derive_fields` makes the
+  Solr field (a multi valued string) when `schema.xml` does not declare it.
+- `text: false` marks a field that is indexed under its own name: the `extras_<field>` copy that CKAN adds
+  (and that Solr copies into the free-text field) is dropped, as it would only hold JSON text. On a
+  repeating field it drops the list once it is flattened, so scheming makes no `extras_<field>__<subfield>`
+  text of it either (those say `None` for every empty value).
+- `multiple: false` (with the `type`, `index` and `store` keys of the section above) says the Solr field
+  holds one value although the scheming field is a list, as for the landing page and the type of
+  `healthdcat_r8`; the first value is kept and `all_values` names a second Solr field that gets all of them.
+- A field that holds a list and has no repeating subfields has its JSON text decoded to a list. `decode:
+  false` leaves it as it is, for a field that another plugin reads as text while indexing: this plugin runs
+  before ckanext-dataset-series, which does `json.loads` on `in_series`.
+
+A pack states these next to the field it defines, so a pack that redefines a field (see `redefines`) states
+them again; the pack listed first wins as for any other key. The series schemas carry them too. A field
+without a mark is indexed as before: under its own name when it has a value, and as `extras_*` text.
 - `sync` runs from the start scripts after the generator: it compares `schema.xml` plus the derived
   fields with the running core and applies the difference through the Solr Schema API (`add-field`,
   `replace-field`, dynamic and copy fields). It never deletes a field and never stops CKAN when Solr
@@ -262,7 +300,7 @@ python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --dataset-schem
 
 Documents indexed before a change keep their old index: reindex (`ckan search-index rebuild`) after the
 sync reports changes. A field type that the core lacks is reported, not added: recreate the core.
-Fields the plugin builds itself while indexing stay hand-declared in `schema.xml`, and the check above keeps them in line with the plugin.
+The fields that `schema.xml` declares by hand (`publisher_name`, `contact_point_*`, ...) keep their own settings; a new `flatten` key needs no line in `schema.xml`.
 
 ## Running it
 
