@@ -30,6 +30,8 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 import yaml
 
+from ckanext.gdi_userportal.profile_packs.schema_fields import is_multiple
+
 DEFAULT_SCHEMA_XML = Path(__file__).resolve().parents[3] / "solr" / "schema.xml"
 ENV_SOLR_URL = "CKAN_SOLR_URL"
 CATCH_ALL = "*"
@@ -52,10 +54,6 @@ REPEATING_FLATTENED = {
 
 # A validator that fixes the type of the values; the Solr type it maps to.
 INFERRED_TYPES = {"int_validator": "long", "boolean_validator": "boolean"}
-
-# dataset_series_in_series and series_validator: ckanext-dataset-series keeps in_series as a list of series ids
-MULTIPLE_PRESETS = {"multiple_text", "multiple_select", "multiple_checkbox", "dataset_series_in_series"}
-MULTIPLE_VALIDATORS = {"scheming_multiple_choice", "scheming_multiple_text", "series_validator"}
 
 # Attributes of a field that are compared, with the value Solr uses when the attribute is absent.
 ATTRIBUTES = {"type": None, "multiValued": False, "indexed": True, "stored": True, "docValues": None}
@@ -105,15 +103,6 @@ def parse_schema_xml(path) -> SolrSchema:
     return schema
 
 
-def is_multivalued(field: dict) -> bool:
-    """Whether a scheming field holds a list: repeating subfields (more than one), multiple text or choice."""
-    if field.get("repeating_subfields"):
-        return not field.get("repeating_once")
-    if field.get("preset") in MULTIPLE_PRESETS:
-        return True
-    return bool(MULTIPLE_VALIDATORS & set(str(field.get("validators", "")).split()))
-
-
 def matching_dynamic_field(name: str, dynamic_fields: Iterable[str]) -> Optional[str]:
     """The dynamic field (other than the catch-all) that Solr applies to a field name, if any."""
     for pattern in dynamic_fields:
@@ -153,7 +142,7 @@ def solr_settings(field: dict) -> dict:
         "type": override.get("type", inferred_type(field)),
         "indexed": bool(override.get("index", True)),
         "stored": bool(override.get("store", False)),
-        "multiValued": bool(override.get("multiple", is_multivalued(field))),
+        "multiValued": bool(override.get("multiple", is_multiple(field))),
     }
 
 
@@ -198,7 +187,7 @@ def check(base: SolrSchema, dataset_fields: Iterable[dict]) -> List[str]:
             problems.append("dataset_fields.%s asks for the Solr type '%s', which solr/schema.xml does not define" % (field["field_name"], override))
     for field in dataset_fields:
         name = field["field_name"]
-        if name in SINGLE_VALUED_SOLR_FIELDS or not is_multivalued(field):
+        if name in SINGLE_VALUED_SOLR_FIELDS or not is_multiple(field):
             continue
         spec = wanted.fields.get(name)
         if spec is None:
