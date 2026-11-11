@@ -383,3 +383,108 @@ def test_every_field_of_the_schema_is_looked_at_and_nameless_ones_are_skipped():
     assert document["theme"] == ["a"]
     assert document["publisher_name"] == ["Org"]
     assert indexing.keep_one_value_all(document, fields) == document
+
+
+# -- free text -------------------------------------------------------------------------------------
+
+UTRECHT = "http://publications.europa.eu/resource/authority/place/NLD_UTC"
+
+
+def labels(terms):
+    known = {UTRECHT: ["Utrecht", "Utrecht (stad)"]}
+    return {term: known[term] for term in terms if term in known}
+
+
+def test_the_label_of_a_uri_in_a_property_is_searchable():
+    document = {"spatial_coverage": [{"uri": UTRECHT, "text": ""}], "title": "x"}
+
+    indexing.free_text_all(document, [field("spatial_coverage", "uri", "text")], translate=labels)
+
+    assert document["text"] == [UTRECHT, "Utrecht", "Utrecht (stad)"]
+
+
+def test_every_language_and_subfield_is_searchable_and_the_json_is_not_indexed():
+    document = {
+        "title_translated": {"en": "Heart", "nl": "Hart"},
+        "extras_title_translated": '{"en": "Heart", "nl": "Hart"}',
+        "contact": [{"name": "Health-RI", "email": "a@b.nl"}],
+        "extras_contact__name": "Health-RI",
+    }
+    fields = [{"field_name": "title_translated", "preset": "fluent_text"}, field("contact", "name", "email")]
+
+    indexing.free_text_all(document, fields)
+
+    assert set(document["text"]) == {"Heart", "Hart", "Health-RI", "a@b.nl"}
+    assert "title_translated" not in document and "extras_title_translated" not in document
+    assert "contact" not in document and "extras_contact__name" not in document
+
+
+def test_a_json_text_is_read_at_every_depth():
+    document = {"access": json.dumps([{"note": json.dumps({"en": "Open", "nl": "Open data"})}])}
+
+    indexing.free_text_all(document, [field("access", "note")])
+
+    assert set(document["text"]) == {"Open", "Open data"}
+
+
+def test_text_false_keeps_a_field_out_of_the_free_text():
+    document = {"in_series": '["uuid-1"]', "theme": ["http://x.org/t"]}
+    fields = [multiple("in_series", solr={"decode": False, "text": False}), multiple("theme")]
+
+    indexing.free_text_all(document, fields)
+
+    assert document["text"] == ["http://x.org/t"]
+    assert document["in_series"] == '["uuid-1"]'
+
+
+def test_a_plain_list_stays_under_its_own_name_for_the_filters():
+    document = {"theme": ["http://x.org/t"], "extras_theme": '["http://x.org/t"]'}
+
+    indexing.free_text_all(document, [multiple("theme")])
+
+    assert document["theme"] == ["http://x.org/t"] and "extras_theme" not in document
+
+
+def test_the_labels_of_the_terms_in_the_distributions_are_added():
+    document = {"res_extras_spatial": ['["%s"]' % UTRECHT, "[]"]}
+
+    indexing.free_text_all(document, [], translate=labels)
+
+    assert document["text"] == ["Utrecht", "Utrecht (stad)"]  # the values themselves are copied by Solr
+
+
+def test_a_distribution_field_marked_text_false_has_no_labels():
+    document = {"res_extras_spatial": ['["%s"]' % UTRECHT]}
+
+    indexing.free_text_all(document, [], translate=labels, resource_fields=[{"field_name": "spatial", "solr": {"text": False}}])
+
+    assert "text" not in document
+
+
+def test_only_a_term_is_looked_up_not_a_sentence():
+    asked = []
+
+    def translate(terms):
+        asked.extend(terms)
+        return {}
+
+    document = {"notes": "A long description with spaces", "theme": ["http://x.org/t"], "code": "C0009"}
+    indexing.free_text_all(document, [{"field_name": "notes"}, multiple("theme"), {"field_name": "code"}], translate=translate)
+
+    assert set(asked) == {"http://x.org/t", "C0009"}
+
+
+def test_what_is_in_the_free_text_already_stays():
+    document = {"text": "already", "theme": ["a"]}
+
+    indexing.free_text_all(document, [multiple("theme")])
+
+    assert document["text"] == ["already", "a"]
+
+
+def test_a_dataset_without_text_gets_no_free_text_field():
+    document = {"issued": None}
+
+    indexing.free_text_all(document, [{"field_name": "issued"}], translate=labels)
+
+    assert "text" not in document

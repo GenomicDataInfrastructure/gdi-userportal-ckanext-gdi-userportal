@@ -9,7 +9,6 @@ dataset_fields:
 
   - field_name: access_rights
     translate: true
-    solr: {text: false}
     label: Access rights
     validators: ignore_missing unicode_safe
     help_text: Information that indicates whether the dataset is Open Data, has access restrictions or is not public.
@@ -31,7 +30,6 @@ dataset_fields:
 
   - field_name: theme
     translate: true
-    solr: {text: false}
     label: Theme
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -43,7 +41,6 @@ dataset_fields:
 
   - field_name: language
     translate: true
-    solr: {text: false}
     label: Language
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -63,7 +60,6 @@ dataset_fields:
 
   - field_name: conforms_to
     translate: true
-    solr: {text: false}
     label: Conforms to
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -109,7 +105,6 @@ dataset_fields:
 
   - field_name: applicable_legislation
     translate: true
-    solr: {text: false}
     label: Applicable legislation
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text

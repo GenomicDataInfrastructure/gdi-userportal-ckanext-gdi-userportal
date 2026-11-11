@@ -16,10 +16,12 @@ the fields in the schema (``README.md``, section "Solr schema"):
     reaches into a subfield that has subfields itself;
 ``prefix``
     the start of those names when it is not the name of the field;
-``text: false``
-    the field is indexed under its own name, so the ``extras_<field>`` copy that CKAN adds (searched as free
-    text) is dropped; a repeating field with it is dropped from the document once it is flattened, so that
-    scheming makes no ``extras_<field>__<subfield>`` text of it either;
+``text``
+    whether the field is searched as free text: it is, unless it says ``text: false``. Every text in it (every
+    language, every subfield) goes into Solr's free-text field, and for a URI or code that has translations
+    (CKAN's ``term_translation``) its labels in every language too, so that "Utrecht" finds a dataset that has
+    ``.../place/NLD_UTC`` in a property. The JSON text CKAN made of the field (``extras_<field>``) and the objects
+    of a repeating field are not indexed: Solr would search their braces and keys (``free_text_all``);
 ``multiple: false``
     the Solr field holds one value although the scheming field is a list: the first value is kept, and
     ``all_values`` names a second Solr field that gets all of them.
@@ -207,4 +209,112 @@ def flatten_all(document: dict, fields: Iterable[Mapping]) -> dict:
 def keep_one_value_all(document: dict, fields: Iterable[Mapping]) -> dict:
     for field in _named(fields):
         keep_one_value(document, field)
+    return document
+
+
+FREE_TEXT_FIELD = "text"
+RESOURCE_EXTRAS_PREFIX = "res_extras_"
+_MAX_TERM_LENGTH = 200  # a longer text is a description, not a term that has a label
+
+
+def _texts(node: Any) -> List[str]:
+    """Every text in a value at any depth (a text per language, the subfields of a row); JSON texts are read."""
+    node = _decode(node)
+    if isinstance(node, str):
+        text = node.strip()
+        return [text] if text and text != "None" else []
+    if isinstance(node, Mapping):
+        return [text for item in node.values() for text in _texts(item)]
+    if isinstance(node, (list, tuple)):
+        return [text for item in node for text in _texts(item)]
+    return []
+
+
+def _is_structure(value: Any) -> bool:
+    """A value that is an object, or a list holding objects: JSON that Solr can do nothing with."""
+    value = _decode(value)
+    return isinstance(value, Mapping) or (
+        isinstance(value, (list, tuple)) and any(isinstance(item, Mapping) for item in value)
+    )
+
+
+def _field_texts(document: dict, name: str) -> List[str]:
+    """What a field says: its own value, or its ``extras_`` copy, and the texts scheming made of its subfields."""
+    value = document.get(name)
+    if value in (None, ""):
+        value = document.get(EXTRAS_PREFIX + name)
+    texts = _texts(value)
+    prefix = "%s%s__" % (EXTRAS_PREFIX, name)
+    for key, item in document.items():
+        if key.startswith(prefix):
+            texts.extend(_texts(item))
+    return texts
+
+
+def _drop_json_copies(document: dict, name: str) -> None:
+    """The ``extras_`` copies of a field and the object it holds: JSON text and objects are not searched."""
+    document.pop(EXTRAS_PREFIX + name, None)
+    prefix = "%s%s__" % (EXTRAS_PREFIX, name)
+    for key in [key for key in document if key.startswith(prefix)]:
+        del document[key]
+    if _is_structure(document.get(name)):
+        del document[name]
+
+
+def _lookupable(text: str) -> bool:
+    """Whether a text can be a term that has a label: a URI or a code, not a sentence."""
+    return len(text) <= _MAX_TERM_LENGTH and not any(char.isspace() for char in text)
+
+
+def free_text_all(
+    document: dict,
+    fields: Iterable[Mapping],
+    translate=None,
+    resource_fields: Iterable[Mapping] = (),
+) -> dict:
+    """Put what the fields say, and the labels of their terms, in the free-text Solr field.
+
+    A field is searched as free text unless it says ``solr: {text: false}``: every text in it, in every language
+    and subfield, and for a URI or code that has translations (CKAN's ``term_translation``) its labels in every
+    language, so that "Utrecht" finds the dataset that has ``.../place/NLD_UTC`` in a property. The JSON text
+    CKAN made of the field (``extras_<field>``) and the objects of a repeating field are dropped from the
+    document: Solr would index their braces and keys, or the objects as one string.
+
+    ``translate`` takes a list of terms and gives ``{term: [labels]}``. The labels of the terms in the extras of
+    the distributions (``res_extras_*``, which Solr copies to the free text itself) are added too.
+    """
+    texts: List[str] = []
+    for field in _named(fields):
+        name = field["field_name"]
+        if schema_fields.solr_options(field).get("text") is not False:
+            texts.extend(_field_texts(document, name))
+        _drop_json_copies(document, name)
+
+    skipped = {
+        RESOURCE_EXTRAS_PREFIX + field["field_name"]
+        for field in _named(resource_fields)
+        if schema_fields.solr_options(field).get("text") is False
+    }
+    resource_texts = [
+        text
+        for key, value in document.items()
+        if key.startswith(RESOURCE_EXTRAS_PREFIX) and key not in skipped
+        for text in _texts(value)
+    ]
+
+    terms = [text for text in dict.fromkeys(texts + resource_texts) if _lookupable(text)]
+    labels = translate(terms) if translate and terms else {}
+
+    found = []
+    for text in texts:
+        found.append(text)
+        found.extend(labels.get(text, []))
+    for text in resource_texts:
+        found.extend(labels.get(text, []))
+
+    existing = document.get(FREE_TEXT_FIELD) or []
+    existing = [existing] if isinstance(existing, str) else list(existing)
+    found = list(dict.fromkeys(item for item in existing + found if item))
+    if found:
+        document[FREE_TEXT_FIELD] = found
     return document

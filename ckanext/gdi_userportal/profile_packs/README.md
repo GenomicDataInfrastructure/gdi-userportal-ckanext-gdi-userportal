@@ -264,20 +264,25 @@ plugin (`indexing.py`; the schema is read through `schema_fields.py`):
   solr: {prefix: contact_point, flatten: [uri, name, email]}   # -> contact_point_uri, contact_point_name, ...
 - field_name: qualified_attribution
   solr: {prefix: vocab_qualified_attribution, flatten: [role, agent.name]}   # a dot reaches into a subfield
-- field_name: theme
-  solr: {text: false}                     # no extras_theme copy in the free text
+- field_name: in_series
+  solr: {text: false}                     # not searched as free text (ids); every other field is
 - field_name: dcat_type
-  solr: {multiple: false, all_values: vocab_dcat_type, text: false}   # the first value, and all of them
+  solr: {multiple: false, all_values: vocab_dcat_type}   # the first value, and all of them
 ```
 
 - `flatten` lists the subfields of a repeating field that get a Solr field each, `<prefix>_<subfield>`
   (`prefix` is the name of the field unless it says otherwise; a path with a dot is joined with `_`). Only
   what is listed is indexed: a geometry or a language map is not a useful filter. `derive_fields` makes the
   Solr field (a multi valued string) when `schema.xml` does not declare it.
-- `text: false` marks a field that is indexed under its own name: the `extras_<field>` copy that CKAN adds
-  (and that Solr copies into the free-text field) is dropped, as it would only hold JSON text. On a
-  repeating field it drops the list once it is flattened, so scheming makes no `extras_<field>__<subfield>`
-  text of it either (those say `None` for every empty value).
+- `text` says whether the field is searched as free text. It is, unless the field says `text: false` (for
+  identifiers, links, dates and ids that mean nothing as a search word). Every text in the field goes into
+  Solr's free-text field `text`, in every language and subfield, and so does every label that CKAN's
+  `term_translation` table has for a URI or code in it (in every language): a dataset that has
+  `.../authority/place/NLD_UTC` in `spatial_coverage` is found by "Utrecht". The labels of the terms in the
+  distributions (`res_extras_*`) are added the same way, so there is no list of fields in the plugin. The JSON
+  text CKAN makes of a field (`extras_<field>`, which the free text used to be made of: braces, quotes and
+  language codes were searched) and the objects of a repeating field are not indexed at all. A list of plain
+  values (`theme`) stays under its own name, for the filters.
 - `multiple: false` (with the `type`, `index` and `store` keys of the section above) says the Solr field
   holds one value although the scheming field is a list, as for the landing page and the type of
   `healthdcat_r8`; the first value is kept and `all_values` names a second Solr field that gets all of them.
@@ -356,6 +361,25 @@ Tests need only PyYAML, SQLAlchemy and pytest, and run on the host:
 ```
 uv run --no-project --with pyyaml --with sqlalchemy --with pytest python -I -m pytest ckanext/gdi_userportal/tests/profile_packs
 ```
+
+### Searching: what Solr does and what to run after a change
+
+CKAN searches one field, `text` (the default `qf` of `package_search` is `name^4 title^4 tags^2 groups^2 text`).
+Everything a user can search for has to end up there, which is what the `text` key above decides per field;
+`schema.xml` has the field and its analyzer and does not change for it. The other fields are for filtering and
+facets: a field marked with `flatten` or kept under its own name is an exact-match string, a list is multi valued.
+
+Solr's schema is kept as it is on purpose (no schemaless mode, no managed guessing of field types): a Solr
+field that is guessed from the first value it sees is typed by accident, and the next dataset with another shape
+fails the import. What is dynamic is the part that follows the dataset schema: `solr_schema.py sync` derives the
+fields from the dataset schema at every start, and the free text from the `text` key, so a new field needs a
+field in a pack and nothing in Solr.
+
+After upgrading to a version that changes what is indexed (this one: free text built from values and labels
+instead of JSON text; the `vocab_<field>_search` fields are gone, nothing read them), restart CKAN (the
+generator and `sync` run at start) and run `ckan search-index rebuild`. Without the rebuild the old documents
+keep their JSON text until they are saved again. A new translation (`ckan gdi-userportal translations migrate`)
+reaches the free text of a dataset when that dataset is reindexed, not before.
 
 ## Empty values are not saved
 

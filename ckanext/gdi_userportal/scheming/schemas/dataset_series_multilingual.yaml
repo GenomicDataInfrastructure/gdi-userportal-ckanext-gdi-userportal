@@ -33,7 +33,6 @@ dataset_fields:
 
   - field_name: applicable_legislation
     translate: true
-    solr: {text: false}
     label: Applicable legislation
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
