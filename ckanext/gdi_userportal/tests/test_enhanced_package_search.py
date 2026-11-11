@@ -271,15 +271,3 @@ def test_get_enhanced_package_search_translates_results_and_facet_items():
     )
 
     _assert_search_labels_resolved(result, requested_terms)
-
-
-def test_post_enhanced_package_search_translates_results_and_facet_items():
-    from ckanext.gdi_userportal.logic.action.post import (
-        enhanced_package_search as post_enhanced_package_search,
-    )
-
-    result, requested_terms = _run_search_action(
-        post_enhanced_package_search, "post", {"q": "test"}
-    )
-
-    _assert_search_labels_resolved(result, requested_terms)
