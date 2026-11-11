@@ -31,6 +31,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 import yaml
 
 from ckanext.gdi_userportal.profile_packs.schema_fields import (
+    FLUENT_TEXT_PRESETS,
     by_name,
     flatten_paths,
     flattened_solr_fields,
@@ -45,6 +46,18 @@ CATCH_ALL = "*"
 
 # A validator that fixes the type of the values; the Solr type it maps to.
 INFERRED_TYPES = {"int_validator": "long", "boolean_validator": "boolean"}
+
+# What a field gets when its ``solr`` key says nothing: stored (the Solr UI shows the value; it costs disk, CKAN
+# itself does not need it), indexed, and for a number or a date ``docValues``, which sorting, range filters and
+# range facets need.
+DEFAULT_STORED = True
+DOC_VALUES_TYPES = {"int", "long", "float", "double", "pint", "plong", "pfloat", "pdouble", "date", "pdate", "boolean"}
+
+# The fields CKAN indexes itself, whatever the dataset schema says: they stay declared in ``schema.xml``.
+CKAN_OWN_FIELDS = frozenset(
+    {"id", "name", "title", "notes", "url", "version", "license_id", "author", "author_email", "maintainer",
+     "maintainer_email", "state", "owner_org", "private", "type"}
+)
 
 # Attributes of a field that are compared, with the value Solr uses when the attribute is absent.
 ATTRIBUTES = {"type": None, "multiValued": False, "indexed": True, "stored": True, "docValues": None}
@@ -117,26 +130,36 @@ def inferred_type(field: dict) -> str:
 def solr_settings(field: dict) -> dict:
     """The Solr field a scheming field gets: what follows from the field, overridden by its ``solr`` key."""
     override = field.get("solr") or {}
-    return {
+    settings = {
         "name": field["field_name"],
         "type": override.get("type", inferred_type(field)),
         "indexed": bool(override.get("index", True)),
-        "stored": bool(override.get("store", False)),
+        "stored": bool(override.get("store", DEFAULT_STORED)),
         "multiValued": bool(override.get("multiple", is_multiple(field))),
     }
+    if settings["type"] in DOC_VALUES_TYPES:
+        settings["docValues"] = True
+    return settings
+
+
+def _is_row_field(field: dict) -> bool:
+    """A field that holds objects: a repeating field (rows) or a text per language (a map). The indexing writes
+    the values of its subfields (``solr: {flatten}``) and the free text, never the objects, so it has no Solr
+    field of its own."""
+    return bool(subfields(field)) or field.get("preset") in FLUENT_TEXT_PRESETS
 
 
 def derive_fields(dataset_fields: Iterable[dict], base: SolrSchema) -> List[dict]:
     """The Solr fields for the dataset fields that ``schema.xml`` does not declare, in schema order.
 
-    The fields the indexing fills from a repeating field (``solr: {flatten: ...}``) follow the dataset fields: a
-    multi valued string, indexed and not stored.
+    A field of objects gets none (see ``_is_row_field``). The fields the indexing fills from it
+    (``solr: {flatten: ...}``) follow the dataset fields: a multi valued string, indexed and stored.
     """
     dataset_fields = list(dataset_fields)
     derived = []
     for field in dataset_fields:
         name = field["field_name"]
-        if name in base.fields or matching_dynamic_field(name, base.dynamic_fields):
+        if _is_row_field(field) or name in base.fields or matching_dynamic_field(name, base.dynamic_fields):
             continue
         derived.append(solr_settings(field))
     known = {spec["name"] for spec in derived}
@@ -144,7 +167,7 @@ def derive_fields(dataset_fields: Iterable[dict], base: SolrSchema) -> List[dict
         if name in known or name in base.fields or matching_dynamic_field(name, base.dynamic_fields):
             continue
         known.add(name)
-        derived.append({"name": name, "type": "string", "indexed": True, "stored": False, "multiValued": True})
+        derived.append({"name": name, "type": "string", "indexed": True, "stored": DEFAULT_STORED, "multiValued": True})
     return derived
 
 
@@ -202,8 +225,8 @@ def _type_problems(base: SolrSchema, dataset_fields: List[dict]) -> List[str]:
 def _list_problems(wanted: SolrSchema, dataset_fields: List[dict]) -> List[str]:
     problems = []
     for field in dataset_fields:
-        # solr: {multiple: false}: the indexing keeps one value of the list
-        if solr_options(field).get("multiple") is False or not is_multiple(field):
+        # solr: {multiple: false}: the indexing keeps one value of the list; a field of objects is not indexed itself
+        if solr_options(field).get("multiple") is False or not is_multiple(field) or _is_row_field(field):
             continue
         spec = _solr_field(wanted, field["field_name"])
         if spec is not None and not spec.get("multiValued", False):
@@ -214,15 +237,33 @@ def _list_problems(wanted: SolrSchema, dataset_fields: List[dict]) -> List[str]:
     return problems
 
 
+def _duplicate_problems(base: SolrSchema, dataset_fields: List[dict]) -> List[str]:
+    """A dataset field (or a field made of one) that ``schema.xml`` declares as well: the declaration in
+    ``schema.xml`` wins, so the ``solr`` key of the field would silently do nothing."""
+    names = [field["field_name"] for field in dataset_fields] + list(flattened_solr_fields(dataset_fields))
+    return [
+        "%s is declared in solr/schema.xml and made from the dataset schema: remove it from schema.xml "
+        "(describe it with the 'solr' key of the field when it is not a plain stored string)" % name
+        for name in dict.fromkeys(names)
+        if name in base.fields and name not in CKAN_OWN_FIELDS
+    ]
+
+
 def check(base: SolrSchema, dataset_fields: Iterable[dict]) -> List[str]:
-    """The dataset fields whose Solr field is single valued while the scheming field holds a list.
+    """The dataset fields that ``schema.xml`` declares as well as the dataset schema, and those whose Solr field
+    is single valued while the scheming field holds a list.
 
     And the flattened fields (``solr: {flatten: ...}``): they must name subfields the field has, and the
     Solr field they are written to must be multi valued.
     """
     dataset_fields = list(dataset_fields)
     wanted = wanted_schema(base, dataset_fields)
-    return _flatten_problems(wanted, dataset_fields) + _type_problems(base, dataset_fields) + _list_problems(wanted, dataset_fields)
+    return (
+        _duplicate_problems(base, dataset_fields)
+        + _flatten_problems(wanted, dataset_fields)
+        + _type_problems(base, dataset_fields)
+        + _list_problems(wanted, dataset_fields)
+    )
 
 
 # -- compare the wanted schema with the running core ----------------------------------------------

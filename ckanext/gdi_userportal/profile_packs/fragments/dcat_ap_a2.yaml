@@ -18,6 +18,7 @@ dataset_fields:
   - field_name: issued
     label: Release date
     preset: datetime_flex
+    solr: {type: date}   # a Solr date: sorted and filtered as one (a partial date such as 2020 would not index)
     help_text: Date of publication of the dataset.
     filter_help_text:
       en: Use this filter to search datasets by release date.
@@ -28,6 +29,7 @@ dataset_fields:
   - field_name: modified
     label: Modification date
     preset: datetime_flex
+    solr: {type: date}   # a Solr date: sorted and filtered as one (a partial date such as 2020 would not index)
     help_text: Most recent date on which the dataset was changed, updated or modified.
     filter_help_text:
       en: Use this filter to search datasets by modification date.
