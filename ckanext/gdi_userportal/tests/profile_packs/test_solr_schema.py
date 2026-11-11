@@ -9,8 +9,16 @@ The drift tests fail when a dataset field of an enabled profile would be indexed
 field that rejects its values, so a pack change cannot ship a schema.xml that is out of date.
 """
 
+import sys
+
 import pytest
-from conftest import PACKAGE_DIR, PACKS_DIR, load_module
+from conftest import PACKAGE_DIR
+
+# solr_schema imports schema_fields by package, as it does when the start scripts run it with -m
+sys.path.insert(0, str(PACKAGE_DIR.parents[1]))
+
+from ckanext.gdi_userportal.profile_packs import solr_schema  # noqa: E402
+from ckanext.gdi_userportal.profile_packs.schema_fields import is_multiple  # noqa: E402
 
 SCHEMA_XML = PACKAGE_DIR.parents[1] / "solr" / "schema.xml"
 PACKS = [["gdi_current"], ["healthdcat_r8"], ["gdi_current", "healthdcat_r8"], ["healthdcat_r8", "gdi_current"]]
@@ -18,7 +26,7 @@ PACKS = [["gdi_current"], ["healthdcat_r8"], ["gdi_current", "healthdcat_r8"], [
 
 @pytest.fixture(scope="module")
 def solr():
-    return load_module("profile_pack_solr_schema", PACKS_DIR / "solr_schema.py")
+    return solr_schema
 
 
 @pytest.fixture(scope="module")
@@ -132,8 +140,8 @@ def test_a_list_field_that_the_plugin_flattens_is_not_reported(solr, base):
     (field("a", repeating_subfields=[field("b")]), True),
     (field("a", repeating_subfields=[field("b")], repeating_once=True), False),
 ])
-def test_a_scheming_field_is_multi_valued_when_it_holds_a_list(solr, scheming_field, multivalued):
-    assert solr.is_multivalued(scheming_field) is multivalued
+def test_a_scheming_field_is_multi_valued_when_it_holds_a_list(scheming_field, multivalued):
+    assert is_multiple(scheming_field) is multivalued
 
 
 def test_only_the_fields_that_schema_xml_does_not_declare_are_derived(solr):
