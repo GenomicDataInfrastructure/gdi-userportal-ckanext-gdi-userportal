@@ -27,6 +27,7 @@ from ckanext.gdi_userportal.temporal_coverage import (
     TEMPORAL_MIN_PARAM,
     TEMPORAL_MAX_PARAM,
 )
+from ckanext.gdi_userportal.logic.action import blank_values as blank_values_action
 from ckanext.gdi_userportal.logic.action.get import (
     gdi_dataset_help_texts_show,
     enhanced_package_search,
@@ -178,6 +179,9 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show,
             "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance,
             "gdi_metadata_profile_conformance_report": gdi_metadata_profile_conformance_report,
+            # a dataset is saved without the fields that hold nothing (logic/action/blank_values.py)
+            "package_create": blank_values_action.package_create,
+            "package_update": blank_values_action.package_update,
         }
 
     def get_helpers(self):

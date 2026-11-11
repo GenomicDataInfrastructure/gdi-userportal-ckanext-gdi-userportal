@@ -356,6 +356,56 @@ def conformance(profile, as_json):
         click.echo(line)
 
 
+@gdi_userportal.command("clean-blank-values")
+@click.option("--apply", "apply", is_flag=True, help="Remove the empty values. Without it nothing is changed.")
+@click.option("--yes", "-y", is_flag=True, help="With --apply: do not ask for confirmation")
+def clean_blank_values(apply, yes):
+    """List the empty values stored with datasets and resources, and with --apply remove them.
+
+    Datasets are saved without empty values now; this cleans up what was saved before: an extra that is
+    empty (``""``, ``[]``, ``{"en": "", "nl": ""}``) is removed, one with empty parts is rewritten without
+    them. Only the fields of the dataset schema are looked at. A dry run unless --apply is given.
+    """
+    import ckan.model as model
+    from ckan.lib import search
+    from ckanext.gdi_userportal import blank_values_cleanup, schema_access
+    from ckanext.gdi_userportal.logic.action import blank_values as blank_values_action
+
+    def field_names(dataset_type):
+        schema = schema_access.dataset_schema(dataset_type)
+        dataset = {f.get("field_name") for f in schema.get("dataset_fields") or []} - blank_values_action.core_dataset_fields()
+        resource = {f.get("field_name") for f in schema.get("resource_fields") or []} - blank_values_action.core_resource_fields()
+        return dataset, resource
+
+    session = model.Session
+    changes = blank_values_cleanup.find_changes(session, field_names)
+    for line in blank_values_cleanup.format_report(changes, deleting=apply):
+        click.echo(line)
+
+    if not apply or not changes:
+        return
+    if not yes:
+        click.confirm("Change these values? This cannot be undone.", abort=True)
+
+    try:
+        changed = blank_values_cleanup.apply_changes(session, changes)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    click.echo(click.style(f"Changed {changed} value(s).", fg="green"))
+
+    failed = []
+    for package_id in dict.fromkeys(change.package_id for change in changes):
+        try:
+            search.rebuild(package_id=package_id)
+        except Exception as error:  # the data is already clean; say which documents are stale
+            failed.append(package_id)
+            click.echo(click.style(f"  could not reindex {package_id}: {error}", fg="yellow"))
+    if failed:
+        click.echo(click.style("Run `ckan search-index rebuild` to refresh the index.", fg="yellow"))
+
+
 def get_commands():
     """Return CLI commands for this extension."""
     return [gdi_userportal]

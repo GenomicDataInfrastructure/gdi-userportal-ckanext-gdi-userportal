@@ -356,3 +356,28 @@ Tests need only PyYAML, SQLAlchemy and pytest, and run on the host:
 ```
 uv run --no-project --with pyyaml --with sqlalchemy --with pytest python -I -m pytest ckanext/gdi_userportal/tests/profile_packs
 ```
+
+## Empty values are not saved
+
+The edit form posts an input for every language and subfield, and the RDF profiles fill every form language with
+an empty text, so datasets used to be stored with `{"en": "", "nl": ""}`, `[]` and `""` as extras. A dataset is
+saved without them now (`blank_values.py`, `logic/action/blank_values.py`):
+
+- `package_create` and `package_update` are chained, so the form, the API, `package_patch` (it hands the merged
+  dataset to `package_update`: a field set to `""` is dropped and so cleared) and every harvester go through it.
+  The fields of the dataset schema (and of its resource fields) that end up as extras are looked at; the
+  columns CKAN has itself (`title`, `notes`, `url`, ...) are not.
+- A value is empty when it holds no text, item or language at any depth, as a list of rows that are all empty
+  is. A flat map loses its empty languages (`{"en": "Title", "nl": ""}` is saved as `{"en": "Title"}`) and a list
+  of texts its empty items. `0` and `false` are values.
+- **A row of a repeating field is never changed from the inside**: the validation of nested subfields (a
+  qualified attribution with an agent) fails for a row that lacks a key it had, and the dataset can then not be
+  indexed. Such a field is saved as it came, or not at all when every row is empty.
+- A required field that is empty is still reported by the validation, as missing. The code that reads a dataset
+  has to cope with a field that is not there; the harvesters pad every form language on purpose, that stays.
+- If dropping fails for any reason the dataset is saved as it came: a save is never stopped by this.
+
+`ckan gdi-userportal clean-blank-values` does the same for what is stored already: a dry run that lists what
+would be removed or rewritten, and with `--apply` (asks for confirmation unless `--yes`) removes it and reindexes
+the datasets. It looks at `package_extra` and the extras of the resources, never at deleted datasets. Take a
+database backup first.
