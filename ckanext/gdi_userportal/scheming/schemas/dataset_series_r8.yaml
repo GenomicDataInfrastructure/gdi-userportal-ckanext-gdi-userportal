@@ -90,6 +90,7 @@ dataset_fields:
     en: Modification date
     nl: Wijzigingsdatum
   preset: datetime_flex
+  solr: {type: date}   # a Solr date: sorted and filtered as one (a partial date such as 2020 would not index)
   help_text: Date on which the dataset series was changed.
   filter_help_text:
     en: Use this filter to search dataset series by modification date.
@@ -122,6 +123,7 @@ dataset_fields:
     en: Release date
     nl: Releasedatum
   preset: datetime_flex
+  solr: {type: date}   # a Solr date: sorted and filtered as one (a partial date such as 2020 would not index)
   help_text: Date of formal issuance of the dataset series. This is the moment when the dataset series was established
     as a managed resource.
   filter_help_text:

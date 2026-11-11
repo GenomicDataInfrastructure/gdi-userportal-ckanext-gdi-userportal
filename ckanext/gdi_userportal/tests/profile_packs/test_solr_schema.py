@@ -18,7 +18,7 @@ from conftest import PACKAGE_DIR
 sys.path.insert(0, str(PACKAGE_DIR.parents[1]))
 
 from ckanext.gdi_userportal.profile_packs import solr_schema  # noqa: E402
-from ckanext.gdi_userportal.profile_packs.schema_fields import flattened_solr_fields, is_multiple  # noqa: E402
+from ckanext.gdi_userportal.profile_packs.schema_fields import FLUENT_TEXT_PRESETS, flattened_solr_fields, is_multiple  # noqa: E402
 
 SCHEMA_XML = PACKAGE_DIR.parents[1] / "solr" / "schema.xml"
 PACKS = [["gdi_current"], ["healthdcat_r8"], ["gdi_current", "healthdcat_r8"], ["healthdcat_r8", "gdi_current"]]
@@ -77,7 +77,51 @@ def test_every_dataset_field_has_a_solr_field_of_its_own(generator, solr, base, 
 
     for f in fields:
         name = f["field_name"]
+        if f.get("repeating_subfields") or f.get("preset") in FLUENT_TEXT_PRESETS:
+            continue  # objects: the indexing writes their values, see the test below
         assert name in wanted.fields or solr.matching_dynamic_field(name, wanted.dynamic_fields), name
+
+
+@pytest.mark.parametrize("packs", PACKS, ids="+".join)
+def test_a_repeating_field_has_no_solr_field_of_its_own_but_the_fields_it_is_flattened_into(generator, solr, base, packs):
+    fields = generator.build_schema(packs).schema["dataset_fields"]
+    wanted = solr.wanted_schema(base, fields)
+
+    for f in fields:
+        if f.get("repeating_subfields") or f.get("preset") in FLUENT_TEXT_PRESETS:
+            assert f["field_name"] not in wanted.fields, f["field_name"]
+    assert "publisher_name" in wanted.fields
+
+
+@pytest.mark.parametrize("packs", PACKS, ids="+".join)
+def test_the_dataset_fields_are_made_from_the_dataset_schema_not_declared_in_schema_xml(generator, solr, base, packs):
+    fields = generator.build_schema(packs).schema["dataset_fields"]
+
+    assert [p for p in solr.check(base, fields) if "is declared in solr/schema.xml" in p] == []
+
+
+@pytest.mark.parametrize("packs", PACKS, ids="+".join)
+def test_the_numbers_and_dates_of_a_dataset_have_a_type_that_sorts_and_filters(generator, solr, base, packs):
+    fields = generator.build_schema(packs).schema["dataset_fields"]
+    wanted = solr.wanted_schema(base, fields)
+
+    for name in ("min_typical_age", "max_typical_age", "number_of_records", "number_of_unique_individuals"):
+        assert wanted.fields[name]["type"] == "long" and wanted.fields[name]["docValues"] is True, name
+    for name in ("issued", "modified"):
+        assert wanted.fields[name]["type"] == "date" and wanted.fields[name]["docValues"] is True, name
+    assert wanted.fields["min_typical_age"]["stored"] is True
+
+
+def test_a_field_declared_in_schema_xml_and_made_from_the_dataset_schema_is_reported(solr, base):
+    declared = solr.SolrSchema(fields={**base.fields, "theme": spec("theme", multiValued=True)}, field_types=base.field_types)
+
+    problems = solr.check(declared, [field("theme", preset="multiple_text")])
+
+    assert any("theme is declared in solr/schema.xml" in problem for problem in problems)
+
+
+def test_a_field_that_ckan_indexes_itself_may_be_declared_in_schema_xml_and_in_the_dataset_schema(solr, base):
+    assert solr.check(base, [field("version"), field("license_id"), field("url")]) == []
 
 
 AGENT = ["name", "uri", "email", "url", "type", "identifier", "country"]
@@ -173,7 +217,7 @@ def test_a_list_field_with_a_single_valued_solr_field_is_reported(solr, base):
     solr_base = solr.SolrSchema(fields={**base.fields, "theme": spec("theme", multiValued=False)}, field_types=base.field_types)
     problems = solr.check(solr_base, [field("theme", preset="multiple_text")])
 
-    assert problems and "dataset_fields.theme" in problems[0]
+    assert any("dataset_fields.theme" in problem and "single valued" in problem for problem in problems)
 
 
 def test_a_list_field_whose_solr_field_holds_one_value_is_not_reported(solr, base):
@@ -209,8 +253,8 @@ def test_only_the_fields_that_schema_xml_does_not_declare_are_derived(solr):
     fields = [field("declared"), field("vocab_thing"), field("own", preset="multiple_text"), field("plain")]
 
     assert solr.derive_fields(fields, base) == [
-        {"name": "own", "type": "string", "indexed": True, "stored": False, "multiValued": True},
-        {"name": "plain", "type": "string", "indexed": True, "stored": False, "multiValued": False},
+        {"name": "own", "type": "string", "indexed": True, "stored": True, "multiValued": True},
+        {"name": "plain", "type": "string", "indexed": True, "stored": True, "multiValued": False},
     ]
 
 
@@ -228,16 +272,29 @@ def test_the_type_follows_from_the_validators(solr, scheming_field, solr_type):
 
 def test_a_solr_key_on_the_field_overrides_what_follows_from_it(solr):
     settings = solr.solr_settings(
-        field("a", preset="datetime_flex", solr={"type": "date", "index": False, "store": True, "multiple": True})
+        field("a", preset="datetime_flex", solr={"type": "date", "index": False, "store": False, "multiple": True})
     )
 
-    assert settings == {"name": "a", "type": "date", "indexed": False, "stored": True, "multiValued": True}
+    assert settings == {"name": "a", "type": "date", "indexed": False, "stored": False, "multiValued": True, "docValues": True}
 
 
 def test_a_solr_key_with_part_of_the_settings_keeps_the_rest(solr):
-    settings = solr.solr_settings(field("a", validators="int_validator", solr={"store": True}))
+    settings = solr.solr_settings(field("a", validators="int_validator", solr={"store": False}))
 
-    assert settings == {"name": "a", "type": "long", "indexed": True, "stored": True, "multiValued": False}
+    assert settings == {"name": "a", "type": "long", "indexed": True, "stored": False, "multiValued": False, "docValues": True}
+
+
+def test_a_field_is_stored_and_a_string_has_no_doc_values_unless_it_says_so(solr):
+    assert solr.solr_settings(field("a")) == {"name": "a", "type": "string", "indexed": True, "stored": True, "multiValued": False}
+
+
+def test_a_field_of_objects_gets_no_solr_field(solr):
+    base = solr.SolrSchema(dynamic_fields={"*": spec("*")}, field_types={"string"})
+    fields = [field("contact", "name"), field("title_translated", preset="fluent_text"), field("plain")]
+
+    assert solr.derive_fields(fields, base) == [
+        {"name": "plain", "type": "string", "indexed": True, "stored": True, "multiValued": False}
+    ]
 
 
 def test_a_solr_type_that_schema_xml_does_not_define_is_reported(solr, base):
@@ -252,7 +309,7 @@ def test_the_solr_key_is_not_a_scheming_key_that_the_generator_rejects(generator
 
 
 def test_schema_xml_is_read_with_its_fields_dynamic_fields_and_copy_fields(solr, base):
-    assert base.fields["publisher_country"]["multiValued"] is True
+    assert base.fields["res_format"]["multiValued"] is True
     assert base.fields["id"]["required"] is True
     assert base.dynamic_fields["*"]["type"] == "string"
     assert ("title", "title_ngram") in base.copy_fields

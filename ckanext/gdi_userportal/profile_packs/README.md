@@ -221,33 +221,49 @@ for a field whose key the shared RDF code also keeps as a free extra in every pr
 
 ## Solr schema
 
-`solr/schema.xml` is written by hand: field types, CKAN's own fields and some of the fields the plugin
-builds while indexing (agents, contact point, `vocab_*`). The dataset fields of the enabled profiles are
-not in it. Solr gives a field it does not know the catch-all `*` (not stored, **single valued**), so a
-profile field with several values fails the import ("multiple values encountered for non
-multiValued field"). `solr_schema.py` closes that:
+`solr/schema.xml` is written by hand and holds what the dataset schema cannot say: the field types and their
+analyzers, CKAN's own fields (`id`, `name`, `title`, `res_*`, ...), the fields the plugin computes while indexing
+(temporal ranges, `permission_labels`) and the `copyField` rules. **The dataset fields are not in it**: `solr_schema.py`
+makes a Solr field of every dataset field, so a new field in a pack needs nothing in Solr. Solr gives a field it
+does not know the catch-all `*` (not stored, **single valued**), so a profile field with several values would fail the
+import ("multiple values encountered for non multiValued field"); `sync` closes that:
 
-- `derive_fields` makes a Solr field of every dataset field that `schema.xml` does not declare (and no
-  dynamic field other than `*` covers). Its type follows from the validators of the scheming field
-  (`int_validator` is a `long`, `boolean_validator` a `boolean`, anything else a `string`: a partial
-  date such as `2020` is not a Solr date, and a language map is stored as JSON text). It is multi valued
-  when the scheming field is a list (repeating subfields, `multiple_text`/`multiple_select`/
-  `multiple_checkbox`, `scheming_multiple_choice`/`scheming_multiple_text`, `dataset_series_in_series`,
-  `series_validator`), indexed and not stored. A `solr` key on the field overrides each of these:
+- `derive_fields` makes a Solr field of every dataset field, and of every field flattened from a repeating field
+  (`solr: {flatten}`, below). The defaults, so that most fields say nothing:
+
+  | | default | when to say it with a `solr` key |
+  |---|---|---|
+  | `type` | `string`; `long` for `int_validator`, `boolean` for `boolean_validator` | a date: `type: date` (a partial date such as `2020` is not a Solr date, so a date is never guessed) |
+  | `store` | **true** | `store: false` for a field that is never shown (it costs disk) |
+  | `index` | true | `index: false` for a field that is only shown, never searched, filtered or sorted |
+  | `multiple` | true when the scheming field is a list | `multiple: false` when the indexing keeps one value of the list |
+  | `docValues` | true for a number, a date and a boolean (sorting, range filters and range facets need it) | follows from `type` |
 
   ```yaml
   - field_name: issued
-    solr: {type: date, index: true, store: false, multiple: false}   # every key is optional
+    solr: {type: date}                       # every key is optional
+  - field_name: number_of_records
+    validators: ignore_missing int_validator # a long with docValues, stored: nothing else to say
   ```
 
-  *Indexed* means Solr can search, filter, facet and sort on the field. *Stored* means Solr can return
-  the original value in a query; CKAN does not need that, it serves a dataset from the JSON in
+  *Indexed* means Solr can search, filter, facet and sort on the field. *Stored* means Solr can return the original
+  value in a query (the Solr UI shows it); CKAN does not need that, it serves a dataset from the JSON in
   `validated_data_dict`. `type` must be a field type of `schema.xml`; `check` reports one that is not.
-- `check` (the drift test, `tests/profile_packs/test_solr_schema.py`, for every pack and pack pair)
-  fails when a list field would land in a single valued Solr field, when a `flatten` key (below) names a
-  subfield the field does not have, and when a Solr field the indexing fills is declared single valued in
-  `schema.xml`. A field with `solr: {multiple: false}` is exempt: the indexing keeps one value of the list.
-  Fix a failure by making the field `multiValued` in `schema.xml`, or by marking the field `multiple: false`.
+- A field of objects has no Solr field of its own: a repeating field (a list of rows) and a text per language
+  (`fluent_*`). The indexing writes their values (`flatten`, the free text), never the objects.
+- A field that `schema.xml` declares as well wins over the dataset schema, so its `solr` key would silently do
+  nothing. `check` fails for that (CKAN's own `name`, `url`, `version`, `license_id`, ... excepted): delete the line
+  from `schema.xml` and describe the field with the `solr` key.
+- `check` (the drift test, `tests/profile_packs/test_solr_schema.py`, for every pack and pack pair) also fails when a
+  list field would land in a single valued Solr field, when a `flatten` key (below) names a subfield the field does
+  not have, and when a Solr field the indexing fills is declared single valued in `schema.xml`. A field with
+  `solr: {multiple: false}` is exempt.
+
+**After a change of the type, the index or the docValues of an existing field** (a new default such as this one
+included) Lucene refuses to mix old and new documents in one core, and `sync` only changes the schema:
+`ckan search-index clear`, reload the core (`curl 'http://solr:8983/solr/admin/cores?action=RELOAD&core=ckan'`),
+then `ckan search-index rebuild`. Without the reload the rebuild stops at the first dataset with "cannot change field
+... from index options=NONE to inconsistent index options=DOCS". A change of `store` alone needs a rebuild only.
 
 ### What the indexing writes: the `solr` key
 
@@ -273,7 +289,7 @@ plugin (`indexing.py`; the schema is read through `schema_fields.py`):
 - `flatten` lists the subfields of a repeating field that get a Solr field each, `<prefix>_<subfield>`
   (`prefix` is the name of the field unless it says otherwise; a path with a dot is joined with `_`). Only
   what is listed is indexed: a geometry or a language map is not a useful filter. `derive_fields` makes the
-  Solr field (a multi valued string) when `schema.xml` does not declare it.
+  Solr field (a multi valued, stored string).
 - `text` says whether the field is searched as free text. It is, unless the field says `text: false` (for
   identifiers, links, dates and ids that mean nothing as a search word). Every text in the field goes into
   Solr's free-text field `text`, in every language and subfield, and so does every label that CKAN's
@@ -378,7 +394,9 @@ field in a pack and nothing in Solr.
 After upgrading to a version that changes what is indexed (this one: free text built from values and labels
 instead of JSON text; the `vocab_<field>_search` fields are gone, nothing read them), restart CKAN (the
 generator and `sync` run at start) and run `ckan search-index rebuild`. Without the rebuild the old documents
-keep their JSON text until they are saved again. A new translation (`ckan gdi-userportal translations migrate`)
+keep their JSON text until they are saved again. When the release also changes the type, `index` or `docValues` of a
+field (the one that moved the dataset fields out of `schema.xml` did: counts and ages are `long` now, more fields
+are indexed), clear the index and reload the core first, as the section above says. A new translation (`ckan gdi-userportal translations migrate`)
 reaches the free text of a dataset when that dataset is reindexed, not before.
 
 ## Empty values are not saved
