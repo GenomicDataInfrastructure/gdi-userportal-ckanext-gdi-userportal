@@ -13,7 +13,7 @@ import ckan.plugins.toolkit as toolkit
 from ckan import model
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
 from ckanext.gdi_userportal.languages import fall_back_to_available_languages
-from ckanext.gdi_userportal import indexing
+from ckanext.gdi_userportal import indexing, schema_access
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     SEARCH_INDEX_TRANSLATED_FIELDS,
     get_all_translations,
@@ -527,12 +527,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
     def _dataset_fields(self, data_dict):
         """The fields of the schema of this dataset type; none when the schema cannot be read."""
-        try:
-            schema = toolkit.h.scheming_get_dataset_schema(data_dict.get("type") or "dataset")
-        except Exception:  # noqa: BLE001 - a dataset that cannot be flattened is still indexed
-            log.warning("Could not read the dataset schema while indexing", exc_info=True)
-            return []
-        return (schema or {}).get("dataset_fields") or []
+        return schema_access.dataset_fields(data_dict.get("type"))
 
     def before_dataset_index(self, data_dict):
         data_dict = self._build_temporal_coverage_ranges(data_dict)

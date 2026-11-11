@@ -4,6 +4,7 @@
 
 dataset_fields:
   - field_name: dataset_status
+    translate: true
     label: Dataset status
     preset: select
     validators: ignore_missing scheming_choices

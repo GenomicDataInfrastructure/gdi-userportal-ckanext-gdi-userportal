@@ -22,4 +22,5 @@
   help_text: The name of the entity or person in each language; R8 allows one or more names.
 
 - field_name: type
+  translate: true
   label: Type

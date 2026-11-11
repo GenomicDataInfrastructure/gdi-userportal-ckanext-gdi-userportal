@@ -9,5 +9,6 @@ resource_fields:
     help_text: Checksum of the downloaded file.
 
   - field_name: hash_algorithm
+    translate: true
     label: Hash Algorithm
     help_text: Algorithm used to calculate to checksum.

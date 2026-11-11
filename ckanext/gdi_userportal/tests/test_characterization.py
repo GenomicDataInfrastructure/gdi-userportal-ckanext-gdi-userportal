@@ -43,8 +43,9 @@ from ckanext.gdi_userportal.profile_packs import generator
 
 # The profiles the corpus was recorded with, in their order: GDI_METADATA_PROFILES="gdi_current healthdcat_r8".
 PROFILES = ["gdi_current", "healthdcat_r8"]
+_GENERATED = generator.build_schema(PROFILES).schema
 SCHEMAS = {
-    "dataset": generator.build_schema(PROFILES).schema["dataset_fields"],
+    "dataset": _GENERATED["dataset_fields"],
     # the series schema of the main profile (gdi_current)
     "dataset_series": yaml.safe_load(
         (Path(generator.__file__).parent.parent / "scheming" / "schemas" / "dataset_series_multilingual.yaml").read_text(
@@ -53,12 +54,55 @@ SCHEMAS = {
     )["dataset_fields"],
 }
 
+RESOURCE_FIELDS = _GENERATED["resource_fields"]
+# CKAN core fields that are not in the schema and are shown as {name, display_name} all the same
+CORE_TRANSLATED_FIELDS = ("type",)
+# The names the plugin listed when the corpus was recorded: a listed field the dataset had no value for was given
+# as None.
+RECORDED_PACKAGE_LIST = (
+    "access_rights applicable_legislation code_values coding_system creator conforms_to dataset_status dcat_type "
+    "has_version health_category health_theme frequency language legal_basis personal_data was_generated_by "
+    "publisher publisher_type purpose qualified_attribution qualified_relation quality_annotation spatial_coverage "
+    "status theme type"
+).split()
+RECORDED_RESOURCE_LIST = (
+    "access_rights applicable_legislation compress_format conforms_to format hash_algorithm language license "
+    "mimetype package_format status"
+).split()
+
 CORPUS = json.loads((Path(__file__).parent / "fixtures" / "index_and_api_corpus.json").read_text(encoding="utf-8"))
 DATASETS = CORPUS["datasets"]
 NAMES = [record["name"] for record in DATASETS]
 
 # {(dataset name, language): {api key: expected value}}: what the API serves now and did not when it was recorded.
 DELIBERATE_API_CHANGES: dict = {}
+
+
+def expected_api(record, language):
+    """The recorded dataset as the API serves it now.
+
+    The fields that are shown as ``{name, display_name}`` are the ones the schema marks ``translate`` (they used to
+    be a list of names in the plugin). A listed field the dataset had no value for was given as None, and so was a
+    listed name that is not a field of the schema at all (``status`` of a dataset, ``access_rights`` of a
+    distribution): those are not made up any more.
+    """
+    expected = deepcopy(record["api_output"][language])
+    names = {field["field_name"] for field in SCHEMAS[record["type"]]} | set(CORE_TRANSLATED_FIELDS)
+    resource_names = {field["field_name"] for field in RESOURCE_FIELDS}
+    for key in RECORDED_PACKAGE_LIST:
+        if key in expected and expected[key] is None and key not in names:
+            del expected[key]
+    for resource in expected.get("resources") or []:
+        for key in RECORDED_RESOURCE_LIST:
+            if key in resource and resource[key] is None and key not in resource_names:
+                del resource[key]
+    if record["type"] == "dataset_series":
+        # the note of a series publisher is plain text in the schema of the series, so only a text per language
+        # in a field that the schema calls multilingual is flattened to one language
+        for publisher, raw in zip(expected.get("publisher") or [], record["api_package"].get("publisher") or []):
+            if isinstance(raw.get("publisher_note"), dict):
+                publisher["publisher_note"] = raw["publisher_note"]
+    return {**expected, **DELIBERATE_API_CHANGES.get((record["name"], language), {})}
 
 # List fields that were indexed as the JSON text CKAN gives (``'["a"]'``) and are decoded to a list now: the
 # fields that hold a list are read from the schema, not from a list of names kept in the plugin.
@@ -140,6 +184,5 @@ def test_the_terms_to_translate_are_the_recorded_ones(record):
 @pytest.mark.parametrize("record", DATASETS, ids=NAMES)
 def test_the_api_dataset_is_the_recorded_one(record, language):
     shown = replace_package(deepcopy(record["api_package"]), record["term_translations"][language], lang=language)
-    expected = {**record["api_output"][language], **DELIBERATE_API_CHANGES.get((record["name"], language), {})}
 
-    assert _canonical(shown) == _canonical(expected)
+    assert _canonical(shown) == _canonical(expected_api(record, language))

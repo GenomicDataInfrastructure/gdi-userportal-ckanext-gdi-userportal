@@ -12,12 +12,14 @@ dataset_fields:
     repeating_label: Attribution
     repeating_subfields:
       - field_name: agent
+        agent: true
         label: Agent
         repeating_label: Agent
         repeating_once: true
         repeating_subfields: !snippet agent_basic_subfields_r8
 
       - field_name: role
+        translate: true
         label: Role
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text

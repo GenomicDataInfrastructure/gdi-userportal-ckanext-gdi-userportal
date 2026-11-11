@@ -302,6 +302,46 @@ Documents indexed before a change keep their old index: reindex (`ckan search-in
 sync reports changes. A field type that the core lacks is reported, not added: recreate the core.
 The fields that `schema.xml` declares by hand (`publisher_name`, `contact_point_*`, ...) keep their own settings; a new `flatten` key needs no line in `schema.xml`.
 
+## What the API shows: the `translate` and `agent` keys
+
+`package_show`, `package_search` and the other actions of the plugin show the codes of a controlled
+vocabulary with their label, and give every agent one shape. Which fields that concerns is decided by the
+schema, not by a list of names in the plugin (`logic/action/translation_utils.py`; the schema is read through
+`schema_access.py` and `schema_fields.py`):
+
+```yaml
+- field_name: theme
+  translate: true                          # "http://.../data-theme/HEAL" -> {name, display_name, count}
+- field_name: was_generated_by
+  repeating_subfields:
+    - field_name: type
+      translate: true                      # a subfield of a repeating field
+    - field_name: dct_type
+      translate: {label_in: label}         # the value stays, its label goes to the subfield `label`
+    - field_name: wasAssociatedWith
+      agent: true                          # an agent: its identifier is always a list
+```
+
+- `translate: true` shows the value of a field (a list: each value) as `{name, display_name, count}`, with the
+  label in the language of the request, English when there is none. A repeating field needs no mark of its
+  own: it is walked when one of its subfields has one. `translate: {label_in: <subfield>}` leaves the value
+  and writes its label to that sibling subfield, as the discovery API wants for `dct_type`.
+- `agent: true` says the field holds organisations or persons; each of them gets an `identifier` list, an empty
+  one when it has none, whatever the way it was created. It nests: an agent can hold agents.
+- The subfields every agent has (`type`, `publisher_type`, `country`) are marked in the agent snippets, so a
+  pack that uses a snippet has them translated; `hdab_*` snippets are not marked.
+- The multilingual text fields (`fluent_markdown`, `fluent_text`: `provenance`, `version_notes`, the note of
+  a publisher, ...) and every `<field>_translated` show the text of the requested language, then English,
+  then any language. No mark is needed: they are found by their preset.
+- The API answers in English and Dutch, and in every other language of `form_languages` (what the form offers,
+  `GDI_METADATA_FORM_LANGUAGES`); a form limited to English does not take Dutch away.
+- Only `type`, the CKAN core field that is not in the schema, is named in the plugin.
+
+The terms that `package_show` looks up in `term_translation_show` are collected from the same marks, so a
+new marked field needs no other change. A marked field the dataset has no value for is `null`
+(`[]` for a repeating field of a distribution, `access_services`); a name that is not a field of the schema
+is not made up.
+
 ## Running it
 
 ```

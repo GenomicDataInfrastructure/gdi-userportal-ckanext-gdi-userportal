@@ -17,17 +17,20 @@ resource_fields:
         help_text: A free-text account of the data service.
 
       - field_name: access_rights
+        translate: true
         label: Access rights
         validators: ignore_missing unicode_safe
         help_text: Information regarding access or restrictions based on privacy, security, or other policies.
 
       - field_name: applicable_legislation
+        translate: true
         label: Applicable legislation
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text
         help_text: The legislation that mandates the creation or management of the data service.
 
       - field_name: conforms_to
+        translate: true
         label: Conforms to
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text
@@ -63,6 +66,7 @@ resource_fields:
         help_text: Contact information for enquiries about the data service.
 
       - field_name: creator
+        agent: true
         label: Creator
         repeating_label: Creator
         repeating_subfields: !snippet agent_subfields
@@ -75,11 +79,13 @@ resource_fields:
         preset: multiple_text
 
       - field_name: format
+        translate: true
         label: Format
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text
 
       - field_name: hvd_category
+        translate: true
         label: HVD Category
         help_text: A data category defined in the High Value Dataset Implementing Regulation.
         preset: multiple_text
@@ -104,11 +110,13 @@ resource_fields:
         validators: ignore_missing scheming_multiple_text
 
       - field_name: language
+        translate: true
         label: Language
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text
 
       - field_name: license
+        translate: true
         label: License
         help_text: License in which the data service is made available.
 
@@ -124,6 +132,7 @@ resource_fields:
         help_text: A secondary identifier of the data service, distinct from its primary identifier above.
 
       - field_name: publisher
+        agent: true
         label: Publisher
         repeating_label: Publisher
         repeating_once: true
@@ -141,6 +150,7 @@ resource_fields:
         validators: ignore_missing scheming_multiple_text
 
       - field_name: theme
+        translate: true
         label: Theme
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text

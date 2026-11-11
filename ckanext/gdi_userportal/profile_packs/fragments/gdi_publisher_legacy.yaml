@@ -12,6 +12,7 @@ dataset_fields:
     help_text: A description of the publisher activities.
 
   - field_name: publisher_type
+    translate: true
     solr: {text: false}
     label: Publisher type
     preset: multiple_text

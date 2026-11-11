@@ -53,14 +53,18 @@ def _names(fields):
     return [field["field_name"] for field in fields]
 
 
-def _without_indexing_keys(value):
-    """The schema without the ``solr`` key of its fields.
+# What the fields say about the Solr indexing and the translation of the API (README.md, "the solr key", "the
+# translate and agent keys"); they were added after the baseline and the form and the display do not read them.
+INDEXING_KEYS = ("solr", "translate", "agent")
 
-    The key says what the indexing writes to Solr (see ``indexing.py``); it was added after the baseline and the
-    form and the display do not read it. ``test_solr_schema.py`` checks it.
+
+def _without_indexing_keys(value):
+    """The schema without the ``solr``, ``translate`` and ``agent`` keys of its fields.
+
+    ``test_solr_schema.py`` and ``test_schema_fields.py`` check them.
     """
     if isinstance(value, dict):
-        return {key: _without_indexing_keys(item) for key, item in value.items() if key != "solr"}
+        return {key: _without_indexing_keys(item) for key, item in value.items() if key not in INDEXING_KEYS}
     if isinstance(value, list):
         return [_without_indexing_keys(item) for item in value]
     return value
@@ -109,7 +113,9 @@ def test_every_field_is_identical(generator):
 
 
 def test_the_data_service_has_the_subfields_of_the_baseline(generator):
-    generated = _by_name(generator.build_schema(["gdi_current"]).schema["resource_fields"])["access_services"]
+    generated = _by_name(_without_indexing_keys(generator.build_schema(["gdi_current"]).schema)["resource_fields"])[
+        "access_services"
+    ]
     baseline = _by_name(_baseline()["resource_fields"])["access_services"]
 
     assert {k: v for k, v in generated.items() if k != "repeating_subfields"} == {

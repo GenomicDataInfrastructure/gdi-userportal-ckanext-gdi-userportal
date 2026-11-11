@@ -13,88 +13,18 @@ from ckan.common import config
 # -*- coding: utf-8 -*-
 from ckan.plugins import toolkit
 
-PACKAGE_REPLACE_FIELDS = [
-    "access_rights",
-    "applicable_legislation",
-    "code_values",
-    "coding_system",
-    "creator",
-    "conforms_to",
-    "dataset_status",
-    "dcat_type",
-    "has_version",
-    "health_category",
-    "health_theme",
-    "frequency",
-    "language",
-    "legal_basis",
-    "personal_data",
-    "was_generated_by",
-    "publisher",
-    "publisher_type",
-    "purpose",
-    "qualified_attribution",
-    "qualified_relation",
-    "quality_annotation",
-    "spatial_coverage",
-    "status",
-    "theme",
-    "type",
-]
-RESOURCE_REPLACE_FIELDS = [
-    "access_rights",
-    "applicable_legislation", 
-    "compress_format",
-    "conforms_to",
-    "format",
-    "hash_algorithm",
-    "language",
-    "license",
-    "mimetype",
-    "package_format",
-    "status",
-]
-ACCESS_SERVICES_REPLACE_FIELDS = [
-    "access_rights",
-    "applicable_legislation", 
-    "conforms_to",
-    "creator", 
-    "format",
-    "hvd_category",
-    "language",
-    "license",
-    "publisher",
-    "theme",
-]
+from ckanext.gdi_userportal import schema_access
+from ckanext.gdi_userportal.profile_packs import schema_fields
 
-NESTED_FIELD_TRANSLATIONS = {
-    "qualified_relation": {"role"},
-    "qualified_attribution": {"role", "agent"},
-    "agent": {"publisher_type", "type", "country"},
-    "quality_annotation": {"body"},
-    "spatial_coverage": {"uri"},
-    "creator": {"publisher_type", "type", "country"},
-    "publisher": {"publisher_type", "type", "country"},
-    "was_generated_by": {"type", "wasAssociatedWith"},
-    "wasAssociatedWith": {"type", "actedOnBehalfOf"},
-    "actedOnBehalfOf": {"type"},
-}
-
-# Fields holding agents, besides the agents nested in other fields
-AGENT_FIELDS = ("publisher", "creator", "hdab")
-ACCESS_SERVICE_AGENT_FIELDS = ("creator", "publisher")
+# Which fields of a dataset are shown as {name, display_name}, which hold agents, and which hold a text per
+# language is not decided here but by the ``translate``, ``agent`` and fluent fields of the dataset schema
+# (profile_packs/README.md). Only the CKAN core fields that are not in the schema are named here.
+CORE_TRANSLATED_FIELDS = ("type",)
 
 TRANSLATED_SUFFIX = "_translated"
-LANGUAGE_VALUE_FIELDS = {
-    "population_coverage",
-    "publisher_note",
-    "provenance",
-    "rights",
-    "version_notes"
-}
 
 DEFAULT_FALLBACK_LANG = "en"
-SUPPORTED_LANGUAGES = {DEFAULT_FALLBACK_LANG, "nl"}
+DEFAULT_LANGUAGES = (DEFAULT_FALLBACK_LANG, "nl")
 SEARCH_INDEX_TRANSLATED_FIELDS = (
     "conforms_to",
     "code_values",
@@ -206,6 +136,17 @@ def _normalize_language(lang_value: Any) -> str:
     return primary.lower()
 
 
+def supported_languages() -> List[str]:
+    """The languages the API answers in: English and Dutch, and every other ``form_languages`` of the dataset schema.
+
+    ``form_languages`` (GDI_METADATA_FORM_LANGUAGES) says what the metadata form offers, which a deployment may
+    limit to English while its portal still shows the labels in Dutch, so it adds languages and never removes one.
+    """
+    languages = schema_access.dataset_schema().get("form_languages")
+    extra = [_normalize_language(code) for code in languages] if isinstance(languages, list) else []
+    return list(dict.fromkeys([*DEFAULT_LANGUAGES, *(code for code in extra if code)]))
+
+
 def get_preferred_language(lang: Optional[str]) -> str:
     """
     Tries to get default language from environment variables/ckan config, defaults to English
@@ -218,66 +159,59 @@ def get_preferred_language(lang: Optional[str]) -> str:
         )
         language = _normalize_language(config.get("ckan.locale_default"))
 
-    if language not in SUPPORTED_LANGUAGES:
+    if language not in supported_languages():
         language = DEFAULT_FALLBACK_LANG
 
     return language
 
 
-def _get_language(lang: str) -> str:
-    return get_preferred_language(lang)
+@dataclass(frozen=True)
+class SchemaPlans:
+    """What the schema of a dataset type says about the translation of its datasets, resources and their agents."""
+
+    package: Dict[str, dict]
+    resource: Dict[str, dict]
+    package_agents: Dict[str, dict]
+    resource_agents: Dict[str, dict]
+    language_fields: frozenset
 
 
-def _select_and_append_values(
-    data_item: Dict, fields_list: List, target_list: List
-) -> List:
-    for key, value in data_item.items():
-        if key in fields_list:
-            target_list = _collect_values_for_field(key, value, target_list)
+def plans_for(dataset_type: Optional[str]) -> SchemaPlans:
+    """The plans of a dataset type, read from its schema (see ``schema_fields.translation_plan``)."""
+    schema = schema_access.dataset_schema(dataset_type)
+    dataset_fields = schema.get("dataset_fields") or []
+    resource_fields = schema.get("resource_fields") or []
+    package = {name: {"mark": {}, "children": {}} for name in CORE_TRANSLATED_FIELDS}
+    package.update(schema_fields.translation_plan(dataset_fields))
+    return SchemaPlans(
+        package=package,
+        resource=schema_fields.translation_plan(resource_fields),
+        package_agents=schema_fields.agent_plan(dataset_fields),
+        resource_agents=schema_fields.agent_plan(resource_fields),
+        language_fields=frozenset(schema_fields.fluent_text_fields(dataset_fields, resource_fields)),
+    )
+
+
+def _collect_record(record: Dict, plan: Dict[str, dict], target_list: List) -> List:
+    for name, node in plan.items():
+        if name in record:
+            target_list = _collect_value(record[name], node, target_list)
     return target_list
 
 
-def _collect_values_for_field(field: str, value: Any, target_list: List) -> List:
+def _collect_value(value: Any, node: dict, target_list: List) -> List:
+    """The values of a field that are looked up: all strings and numbers of a translated field, those of the
+    translated subfields of a field that has some (the value of ``label_in`` field is looked up too)."""
     if value is None:
         return target_list
+    if not node["children"]:
+        return _append_atomic_value(value, target_list)
 
-    nested_fields = NESTED_FIELD_TRANSLATIONS.get(field)
-
-    if isinstance(value, list):
-        for item in value:
-            if nested_fields and isinstance(item, dict):
-                for nested_field in nested_fields:
-                    if nested_field in item:
-                        target_list = _collect_values_for_field(
-                            nested_field, item[nested_field], target_list
-                        )
-                if field == "was_generated_by":
-                    target_list = _collect_was_generated_by_dct_type(
-                        item, target_list
-                    )
-            else:
-                target_list = _append_atomic_value(item, target_list)
-        return target_list
-
-    if isinstance(value, dict):
-        if nested_fields:
-            for nested_field in nested_fields:
-                if nested_field in value:
-                    target_list = _collect_values_for_field(
-                        nested_field, value[nested_field], target_list
-                    )
-        return target_list
-
-    return _append_atomic_value(value, target_list)
-
-
-def _collect_was_generated_by_dct_type(item: Dict, target_list: List) -> List:
-    """dct_type isn't a NESTED_FIELD_TRANSLATIONS entry (it stays a raw URI,
-    see _apply_was_generated_by_dct_type_label), but its value still needs
-    to reach term_translation_show so a label can be resolved for it."""
-    dct_type = item.get("dct_type")
-    if isinstance(dct_type, str) and dct_type:
-        target_list.append(dct_type)
+    for item in value if isinstance(value, list) else [value]:
+        if isinstance(item, dict):
+            target_list = _collect_record(item, node["children"], target_list)
+        else:
+            target_list = _append_atomic_value(item, target_list)
     return target_list
 
 
@@ -301,19 +235,10 @@ def collect_values_to_translate(data: Any) -> List:
     if not isinstance(data, List):
         data = [data]
     for package in data:
-        values_to_translate = _select_and_append_values(
-            package, PACKAGE_REPLACE_FIELDS, values_to_translate
-        )
-        resources = package.get("resources", [])
-        for resource in resources:
-            values_to_translate = _select_and_append_values(
-                resource, RESOURCE_REPLACE_FIELDS, values_to_translate
-            )
-            access_services = resource.get("access_services", [])
-            for access_service in access_services:
-                values_to_translate = _select_and_append_values(
-                    access_service, ACCESS_SERVICES_REPLACE_FIELDS, values_to_translate
-                )
+        plans = plans_for(package.get("type"))
+        values_to_translate = _collect_record(package, plans.package, values_to_translate)
+        for resource in package.get("resources", []):
+            values_to_translate = _collect_record(resource, plans.resource, values_to_translate)
     return list(set(values_to_translate))
 
 
@@ -330,60 +255,49 @@ def collect_search_values_to_translate(result: Dict) -> List:
 
 def replace_package(data, translation_dict, lang: Optional[str] = None):
     preferred_lang = get_preferred_language(lang)
+    plans = plans_for(data.get("type"))
 
-    _apply_translated_properties(data, preferred_lang)
+    _apply_translated_properties(data, preferred_lang, language_fields=plans.language_fields)
     _select_keywords_in_language(data, "tags", "tags_translated", preferred_lang)
     _normalize_tags_field(data)
 
-    data = _translate_fields(data, PACKAGE_REPLACE_FIELDS, translation_dict)
+    data = _translate_record(data, plans.package, translation_dict)
     resources = data.get("resources", [])
 
     for resource in resources:
-        resource = _translate_fields(resource, RESOURCE_REPLACE_FIELDS, translation_dict)
-        access_services = resource.get("access_services") or []
-        for access_service in access_services:
+        # a translated repeating field of a distribution (its access services) is a list, empty when it is absent
+        resource = _translate_record(resource, plans.resource, translation_dict, absent_list=[])
+        for access_service in resource.get("access_services") or []:
             _select_keywords_in_language(
                 access_service, "keyword", "keyword_translated", preferred_lang
             )
-        resource["access_services"] = [
-            _translate_fields(access_service, ACCESS_SERVICES_REPLACE_FIELDS, translation_dict)
-            for access_service in access_services
-        ]
     data["resources"] = resources
-    _normalize_agent_identifiers(data)
+    _normalize_agent_identifiers(data, plans)
 
     return data
 
 
-def _normalize_agent_identifiers(package: dict) -> None:
+def _normalize_agent_identifiers(package: dict, plans: SchemaPlans) -> None:
     """
     Makes the identifier of every agent a list, also when the agent has no identifier,
     so that clients get one shape for all agents, whatever the way they were created.
+    The fields that hold agents are the ones marked ``agent: true`` in the schema.
     """
-    for field in AGENT_FIELDS:
-        _normalize_agents(package.get(field))
-
-    for activity in _dicts(package.get("was_generated_by")):
-        _normalize_agents(activity.get("wasAssociatedWith"))
-
-    for attribution in _dicts(package.get("qualified_attribution")):
-        _normalize_agents(attribution.get("agent"))
-
+    _normalize_agents_in(package, plans.package_agents)
     for resource in _dicts(package.get("resources")):
-        for access_service in _dicts(resource.get("access_services")):
-            for field in ACCESS_SERVICE_AGENT_FIELDS:
-                _normalize_agents(access_service.get(field))
+        _normalize_agents_in(resource, plans.resource_agents)
 
 
-def _normalize_agents(agents: Any) -> None:
-    for agent in _dicts(agents):
-        identifier = agent.get("identifier")
-        if identifier is None or identifier == "":
-            agent["identifier"] = []
-        elif not isinstance(identifier, list):
-            agent["identifier"] = [identifier]
-
-        _normalize_agents(agent.get("actedOnBehalfOf"))
+def _normalize_agents_in(record: dict, plan: Dict[str, dict]) -> None:
+    for name, node in plan.items():
+        for item in _dicts(record.get(name)):
+            if node["mark"]:
+                identifier = item.get("identifier")
+                if identifier is None or identifier == "":
+                    item["identifier"] = []
+                elif not isinstance(identifier, list):
+                    item["identifier"] = [identifier]
+            _normalize_agents_in(item, node["children"])
 
 
 def _dicts(values: Any) -> List[dict]:
@@ -449,36 +363,34 @@ def _normalize_tags_field(data: Any) -> None:
     data["tags"] = normalized_tags
 
 
-def _translate_fields(data, fields_list, translation_dict):
-    for field in fields_list:
-        value = data.get(field)
+def _translate_record(record, plan, translation_dict, absent_list=None):
+    """Show the fields of ``plan`` of a dataset or resource as ``{name, display_name}``.
+
+    A planned field the record does not have is None (``absent_list`` for one that has translated subfields).
+    """
+    for field, node in plan.items():
+        value = record.get(field)
         if value is None:
-            data[field] = None
-            continue
-
-        if field in NESTED_FIELD_TRANSLATIONS:
-            data[field] = _translate_nested_field(field, value, translation_dict)
-            continue
-
-        if isinstance(value, List):
-            data[field] = [
+            record[field] = absent_list if node["children"] else None
+        elif node["children"]:
+            record[field] = _translate_nested(value, node, translation_dict)
+        elif isinstance(value, List):
+            record[field] = [
                 ValueLabel(name=x, display_name=translation_dict.get(x, x)).__dict__
                 for x in value
             ]
-            continue
+        else:
+            record[field] = ValueLabel(
+                name=value, display_name=translation_dict.get(value, value)
+            ).__dict__
+    return record
 
-        data[field] = ValueLabel(
-            name=value, display_name=translation_dict.get(value, value)
-        ).__dict__
-    return data
 
-
-def _translate_nested_field(field: str, value: Any, translation_dict: Dict[str, str]) -> Any:
-    nested_fields = NESTED_FIELD_TRANSLATIONS.get(field, set())
-
+def _translate_nested(value: Any, node: dict, translation_dict: Dict[str, str]) -> Any:
+    """Translate the subfields of a repeating field that ``translate`` marks (``node["children"]``)."""
     if isinstance(value, list):
         return [
-            _translate_nested_field(field, item, translation_dict)
+            _translate_nested(item, node, translation_dict)
             if isinstance(item, (list, dict))
             else _translate_atomic_value(item, translation_dict)
             for item in value
@@ -488,36 +400,27 @@ def _translate_nested_field(field: str, value: Any, translation_dict: Dict[str, 
         if _is_value_label_dict(value):
             return value
         translated = value.copy()
-        for nested_field in nested_fields:
-            if nested_field in translated:
-                nested_value = translated[nested_field]
-                if nested_field in NESTED_FIELD_TRANSLATIONS:
-                    translated[nested_field] = _translate_nested_field(
-                        nested_field, nested_value, translation_dict
-                    )
-                else:
-                    translated[nested_field] = _translate_atomic_or_collection(
-                        nested_value, translation_dict
-                    )
-        if field == "was_generated_by":
-            translated = _apply_was_generated_by_dct_type_label(
-                translated, translation_dict
-            )
+        for name, child in node["children"].items():
+            if name not in translated:
+                continue
+            if child["children"]:
+                translated[name] = _translate_nested(translated[name], child, translation_dict)
+            elif child["mark"].get("label_in"):
+                _label_in(translated, name, child["mark"]["label_in"], translation_dict)
+            else:
+                translated[name] = _translate_atomic_or_collection(translated[name], translation_dict)
         return translated
 
     return _translate_atomic_value(value, translation_dict)
 
 
-def _apply_was_generated_by_dct_type_label(
-    item: Dict, translation_dict: Dict[str, str]
-) -> Dict:
-    """dct_type stays the raw controlled-vocabulary URI; label is overwritten
-    with its resolved display name (falling back to the URI itself if
-    untranslated), per the discovery API's dct_type/label contract."""
-    dct_type = item.get("dct_type")
-    if isinstance(dct_type, str) and dct_type:
-        item["label"] = translation_dict.get(dct_type, dct_type)
-    return item
+def _label_in(item: Dict, name: str, label_field: str, translation_dict: Dict[str, str]) -> None:
+    """``translate: {label_in: label}``: the value stays the raw controlled-vocabulary URI, and ``label_field``
+    is overwritten with its resolved display name (the URI itself when it has no translation), as the discovery
+    API's ``dct_type``/``label`` contract wants."""
+    value = item.get(name)
+    if isinstance(value, str) and value:
+        item[label_field] = translation_dict.get(value, value)
 
 
 def _translate_atomic_or_collection(value: Any, translation_dict: Dict[str, str]) -> Any:
@@ -588,28 +491,28 @@ def replace_search_facets(data, translation_dict, lang):
     return new_facets
 
 
-def _apply_translated_properties(data: Any, preferred_lang: str, fallback_lang: str = DEFAULT_FALLBACK_LANG):
+def _apply_translated_properties(
+    data: Any,
+    preferred_lang: str,
+    fallback_lang: str = DEFAULT_FALLBACK_LANG,
+    language_fields: frozenset = frozenset(),
+):
+    """Replace every ``<x>_translated`` dict, and every field of ``language_fields`` (the multilingual text fields
+    of the schema), by its text in the preferred language, at any depth."""
     if not isinstance(data, (dict, list)):
         return data
 
+    def apply(item):
+        return _apply_translated_properties(item, preferred_lang, fallback_lang, language_fields)
+
     if isinstance(data, list):
-        return [
-            _apply_translated_properties(item, preferred_lang, fallback_lang)
-            if isinstance(item, (dict, list))
-            else item
-            for item in data
-        ]
+        return [apply(item) if isinstance(item, (dict, list)) else item for item in data]
 
     for key, value in list(data.items()):
         if isinstance(value, dict):
-            _apply_translated_properties(value, preferred_lang, fallback_lang)
+            apply(value)
         elif isinstance(value, list):
-            data[key] = [
-                _apply_translated_properties(item, preferred_lang, fallback_lang)
-                if isinstance(item, (dict, list))
-                else item
-                for item in value
-            ]
+            data[key] = [apply(item) if isinstance(item, (dict, list)) else item for item in value]
 
     for key, value in list(data.items()):
         if key.endswith(TRANSLATED_SUFFIX) and isinstance(value, dict):
@@ -624,7 +527,7 @@ def _apply_translated_properties(data: Any, preferred_lang: str, fallback_lang: 
             data[base_key] = _select_translated_value(
                 merged_values, preferred_lang, fallback_lang
             )
-        elif key in LANGUAGE_VALUE_FIELDS and isinstance(value, dict):
+        elif key in language_fields and isinstance(value, dict):
             data[key] = _select_translated_value(value, preferred_lang, fallback_lang)
 
     return data

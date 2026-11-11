@@ -9,6 +9,7 @@ dataset_fields:
     repeating_label: Quality annotation
     repeating_subfields:
       - field_name: body
+        translate: true
         label: Body
         help_text: Content of the quality annotation (e.g., URL to certificate, measurement value, assessment result).
 
