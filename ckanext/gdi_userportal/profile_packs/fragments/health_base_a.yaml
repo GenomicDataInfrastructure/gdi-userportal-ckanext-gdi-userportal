@@ -5,7 +5,6 @@
 dataset_fields:
   - field_name: code_values
     translate: true
-    solr: {text: false}
     label: Code values
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -17,7 +16,6 @@ dataset_fields:
 
   - field_name: coding_system
     translate: true
-    solr: {text: false}
     label: Coding system
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -31,7 +29,6 @@ dataset_fields:
 
   - field_name: purpose
     translate: true
-    solr: {text: false}
     label: Purpose
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -39,7 +36,6 @@ dataset_fields:
 
   - field_name: health_category
     translate: true
-    solr: {text: false}
     label: Health category
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -50,7 +46,6 @@ dataset_fields:
 
   - field_name: health_theme
     translate: true
-    solr: {text: false}
     label: Health theme
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -63,7 +58,6 @@ dataset_fields:
 
   - field_name: legal_basis
     translate: true
-    solr: {text: false}
     label: Legal basis
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text

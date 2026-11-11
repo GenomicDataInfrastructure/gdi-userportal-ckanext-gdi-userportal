@@ -25,13 +25,6 @@ TRANSLATED_SUFFIX = "_translated"
 
 DEFAULT_FALLBACK_LANG = "en"
 DEFAULT_LANGUAGES = (DEFAULT_FALLBACK_LANG, "nl")
-SEARCH_INDEX_TRANSLATED_FIELDS = (
-    "conforms_to",
-    "code_values",
-    "coding_system",
-)
-
-
 
 log = logging.getLogger(__name__)
 

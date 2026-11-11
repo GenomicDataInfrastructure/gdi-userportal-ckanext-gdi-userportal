@@ -127,14 +127,35 @@ def expected_document(record):
     uris = [location["uri"] for location in locations if isinstance(location, dict) and location.get("uri")]
     if uris:
         expected["spatial_coverage_uri"] = uris
+    # the labels of the terms were a Solr field of their own (vocab_<field>_search, three fields named in the
+    # plugin); they are part of the free text now, with what every field says (test below)
+    for key in [key for key in expected if key.startswith("vocab_") and key.endswith("_search")]:
+        del expected[key]
+    # the JSON text and the objects of the fields of the schema are not indexed: their texts are in the free text
+    for name in (field["field_name"] for field in SCHEMAS[record["type"]]):
+        for key in [key for key in expected if key == "extras_" + name or key.startswith("extras_%s__" % name)]:
+            del expected[key]
+        if _is_json_structure(expected.get(name)):
+            del expected[name]
     return expected
+
+
+def _is_json_structure(value):
+    if isinstance(value, str) and value.strip()[:1] in ("[", "{"):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            return False
+    return isinstance(value, dict) or (isinstance(value, list) and any(isinstance(item, dict) for item in value))
 
 
 def _comparable(record, document):
     """The document as it is compared (see the module docstring)."""
     repeating = {field["field_name"] for field in SCHEMAS[record["type"]] if field.get("repeating_subfields")}
     kept = {
-        key: value for key, value in document.items() if key not in repeating and value not in (None, "", [], {})
+        key: value
+        for key, value in document.items()
+        if key not in repeating and key != "text" and value not in (None, "", [], {})
     }
     return _canonical(kept)
 
@@ -167,6 +188,30 @@ def _index(record):
 @pytest.mark.parametrize("record", DATASETS, ids=NAMES)
 def test_the_indexed_document_is_the_recorded_one(record):
     assert _comparable(record, _index(record)) == _comparable(record, expected_document(record))
+
+
+@pytest.mark.parametrize("record", DATASETS, ids=NAMES)
+def test_the_free_text_has_the_labels_the_search_fields_had(record):
+    text = set(_index(record).get("text") or [])
+    labels = {
+        label
+        for key, values in record["index_output"].items()
+        if key.startswith("vocab_") and key.endswith("_search")
+        for label in values
+    }
+
+    assert labels <= text
+
+
+@pytest.mark.parametrize("record", DATASETS, ids=NAMES)
+def test_no_object_and_no_json_text_of_a_schema_field_reaches_solr(record):
+    document = _index(record)
+    names = {field["field_name"] for field in SCHEMAS[record["type"]]}
+
+    for key, value in document.items():
+        assert not key.startswith("extras_") or key[len("extras_") :].split("__")[0] not in names, key
+        if key in names:
+            assert not _is_json_structure(value), key
 
 
 @pytest.mark.parametrize("record", DATASETS, ids=NAMES)

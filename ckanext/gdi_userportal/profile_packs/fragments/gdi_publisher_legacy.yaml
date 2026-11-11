@@ -13,7 +13,6 @@ dataset_fields:
 
   - field_name: publisher_type
     translate: true
-    solr: {text: false}
     label: Publisher type
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text

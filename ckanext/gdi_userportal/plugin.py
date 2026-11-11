@@ -14,11 +14,7 @@ from ckan import model
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
 from ckanext.gdi_userportal.languages import fall_back_to_available_languages
 from ckanext.gdi_userportal import indexing, schema_access
-from ckanext.gdi_userportal.logic.action.translation_utils import (
-    SEARCH_INDEX_TRANSLATED_FIELDS,
-    get_all_translations,
-    _deduplicate_non_empty_strings,
-)
+from ckanext.gdi_userportal.logic.action.translation_utils import get_all_translations
 from ckanext.gdi_userportal.validation import enforce_utc_time
 from ckanext.gdi_userportal.temporal_coverage import (
     TEMPORAL_COVERAGE_RANGE_FIELD as TEMPORAL_COVERAGE_SOLR_FIELD,
@@ -80,13 +76,6 @@ else:
     from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
-TRANSLATED_SEARCH_SOLR_FIELDS = {
-    field_name: f"vocab_{field_name}_search"
-    for field_name in SEARCH_INDEX_TRANSLATED_FIELDS
-}
-RESOURCE_TRANSLATED_SEARCH_FIELDS = ("conforms_to",)
-RESOURCE_TRANSLATED_SEARCH_EXTRA_FIELDS = ("res_extras_conforms_to", "resource_conforms_to")
-ACCESS_SERVICE_TRANSLATED_SEARCH_SOURCE = "res_extras_access_services"
 PUBLICATIONS_DATA_THEME_HTTP_PREFIX = (
     "http://publications.europa.eu/resource/authority/data-theme/"  # NOSONAR - canonical authority URI
 )
@@ -390,28 +379,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         return []
 
-    def _extract_string_values(self, value):
-        if value is None:
-            return []
-
-        if isinstance(value, str):
-            return [item for item in indexing.values_of(value) if isinstance(item, str)]
-
-        if isinstance(value, list):
-            extracted = []
-            for item in value:
-                extracted.extend(self._extract_string_values(item))
-            return extracted
-
-        if isinstance(value, dict):
-            extracted = []
-            name = value.get("name")
-            if isinstance(name, str):
-                extracted.append(name)
-            return extracted
-
-        return []
-
     def _parse_json_if_possible(self, value):
         if not isinstance(value, str):
             return value
@@ -456,78 +423,13 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         return deduplicated
 
-    def _collect_resource_conforms_to_terms(self, data_dict):
-        values = []
-
-        for field_name in RESOURCE_TRANSLATED_SEARCH_EXTRA_FIELDS:
-            values.extend(
-                self._extract_string_values(
-                    self._parse_json_if_possible(data_dict.get(field_name))
-                )
-            )
-
-        resources = data_dict.get("resources")
-        if isinstance(resources, list):
-            for resource in resources:
-                if not isinstance(resource, dict):
-                    continue
-
-                for field_name in RESOURCE_TRANSLATED_SEARCH_FIELDS:
-                    values.extend(self._extract_string_values(resource.get(field_name)))
-
-                access_services = resource.get("access_services")
-                if isinstance(access_services, list):
-                    for access_service in access_services:
-                        if not isinstance(access_service, dict):
-                            continue
-                        values.extend(
-                            self._extract_string_values(
-                                access_service.get("conforms_to")
-                            )
-                        )
-
-        access_services = self._parse_json_if_possible(
-            data_dict.get(ACCESS_SERVICE_TRANSLATED_SEARCH_SOURCE)
-        )
-        if isinstance(access_services, list):
-            for access_service in access_services:
-                if not isinstance(access_service, dict):
-                    continue
-                values.extend(
-                    self._extract_string_values(access_service.get("conforms_to"))
-                )
-
-        return _deduplicate_non_empty_strings(values)
-
-    def _add_translated_search_fields(self, data_dict):
-        field_terms = {}
-        for field_name in SEARCH_INDEX_TRANSLATED_FIELDS:
-            values = self._extract_string_values(data_dict.get(field_name))
-            if field_name == "conforms_to":
-                values.extend(self._collect_resource_conforms_to_terms(data_dict))
-            field_terms[field_name] = values
-
-        all_terms = []
-        for values in field_terms.values():
-            all_terms.extend(values)
-
+    def _labels_of(self, terms):
+        """The labels the term translations have for each of the terms; none when they cannot be read."""
         try:
-            translations_by_term = get_all_translations(all_terms)
-        except Exception:
+            return get_all_translations(terms)
+        except Exception:  # noqa: BLE001 - a dataset is indexed without the labels
             log.exception("Failed to load term translations for Solr indexing")
-            translations_by_term = {}
-
-        for field_name, solr_field in TRANSLATED_SEARCH_SOLR_FIELDS.items():
-            search_terms = []
-            for term in _deduplicate_non_empty_strings(field_terms[field_name]):
-                search_terms.append(term)
-                search_terms.extend(translations_by_term.get(term, []))
-
-            search_terms = _deduplicate_non_empty_strings(search_terms)
-            if search_terms:
-                data_dict[solr_field] = search_terms
-
-        return data_dict
+            return {}
 
     def _dataset_fields(self, data_dict):
         """The fields of the schema of this dataset type; none when the schema cannot be read."""
@@ -578,7 +480,13 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         data_dict = indexing.flatten_all(data_dict, fields)
 
         data_dict = self._merge_tags_translated_for_indexing(data_dict)
-        data_dict = self._add_translated_search_fields(data_dict)
+        # the free text: what the fields say and the labels of their terms (the "text" key of the fields)
+        data_dict = indexing.free_text_all(
+            data_dict,
+            fields,
+            translate=self._labels_of,
+            resource_fields=schema_access.resource_fields(data_dict.get("type")),
+        )
         data_dict = indexing.keep_one_value_all(data_dict, fields)
 
         return data_dict
