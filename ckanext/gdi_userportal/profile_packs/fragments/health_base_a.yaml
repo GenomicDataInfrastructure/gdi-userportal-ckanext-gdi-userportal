@@ -4,6 +4,7 @@
 
 dataset_fields:
   - field_name: code_values
+    solr: {text: false}
     label: Code values
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -14,6 +15,7 @@ dataset_fields:
     facet_key: code_values
 
   - field_name: coding_system
+    solr: {text: false}
     label: Coding system
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -26,12 +28,14 @@ dataset_fields:
     facet_key: coding_system
 
   - field_name: purpose
+    solr: {text: false}
     label: Purpose
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
     help_text: A free text statement of the purpose of the processing of data or personal data.
 
   - field_name: health_category
+    solr: {text: false}
     label: Health category
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -41,6 +45,7 @@ dataset_fields:
       secondary use, Art.33.
 
   - field_name: health_theme
+    solr: {text: false}
     label: Health theme
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -52,6 +57,7 @@ dataset_fields:
     facet_key: health_theme
 
   - field_name: legal_basis
+    solr: {text: false}
     label: Legal basis
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -95,6 +101,7 @@ dataset_fields:
     help_text: Number of records for unique individuals.
 
   - field_name: personal_data
+    solr: {text: false}
     label: Personal data
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text

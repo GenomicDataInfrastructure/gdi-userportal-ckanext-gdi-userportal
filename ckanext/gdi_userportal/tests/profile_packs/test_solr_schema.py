@@ -18,7 +18,7 @@ from conftest import PACKAGE_DIR
 sys.path.insert(0, str(PACKAGE_DIR.parents[1]))
 
 from ckanext.gdi_userportal.profile_packs import solr_schema  # noqa: E402
-from ckanext.gdi_userportal.profile_packs.schema_fields import is_multiple  # noqa: E402
+from ckanext.gdi_userportal.profile_packs.schema_fields import flattened_solr_fields, is_multiple  # noqa: E402
 
 SCHEMA_XML = PACKAGE_DIR.parents[1] / "solr" / "schema.xml"
 PACKS = [["gdi_current"], ["healthdcat_r8"], ["gdi_current", "healthdcat_r8"], ["healthdcat_r8", "gdi_current"]]
@@ -34,8 +34,12 @@ def base(solr):
     return solr.parse_schema_xml(SCHEMA_XML)
 
 
-def field(name, **attributes):
-    return {"field_name": name, **attributes}
+def field(name, *subfields, **attributes):
+    """A scheming field; the names after it are its repeating subfields."""
+    made = {"field_name": name, **attributes}
+    if subfields:
+        made["repeating_subfields"] = [{"field_name": sub} for sub in subfields]
+    return made
 
 
 def spec(name, **attributes):
@@ -76,41 +80,93 @@ def test_every_dataset_field_has_a_solr_field_of_its_own(generator, solr, base, 
         assert name in wanted.fields or solr.matching_dynamic_field(name, wanted.dynamic_fields), name
 
 
-def test_the_flattened_fields_are_the_ones_the_plugin_flattens(solr):
-    source = (PACKAGE_DIR / "plugin.py").read_text(encoding="utf-8")
+AGENT = ["name", "uri", "email", "url", "type", "identifier", "country"]
+# What the plugin used to flatten by name, and what it fills from the solr key of the fields now.
+FLATTENED = {
+    "gdi_current": {
+        *("publisher_" + sub for sub in AGENT),
+        *("creator_" + sub for sub in AGENT),
+        *("contact_point_" + sub for sub in ("uri", "name", "email", "identifier", "url")),
+        "qualified_relation_uri", "qualified_relation_relation", "qualified_relation_role",
+        "quality_annotation_body", "quality_annotation_target", "quality_annotation_motivated_by",
+        "retention_period_start", "retention_period_end",
+        "spatial_coverage_uri",
+        "vocab_qualified_attribution_role", "vocab_qualified_attribution_agent_name",
+    },
+    "healthdcat_r8": {
+        *("publisher_" + sub for sub in ("name", "uri", "email", "url", "type")),
+        *("creator_" + sub for sub in ("name", "uri", "type")),
+        *("contact_point_" + sub for sub in ("uri", "email", "url")),
+        "qualified_relation_uri", "qualified_relation_relation", "qualified_relation_role",
+        "quality_annotation_body", "quality_annotation_target", "quality_annotation_motivated_by",
+        "retention_period_start", "retention_period_end",
+        "spatial_coverage_uri",
+        "vocab_qualified_attribution_role", "vocab_qualified_attribution_agent_name",
+    },
+}
 
-    assert "_SINGLE_VALUED_SOLR_FIELDS = SINGLE_VALUED_SOLR_FIELDS" in source
-    assert set(solr.SINGLE_VALUED_SOLR_FIELDS) == {"url", "dcat_type"}
-    # the plugin builds its Solr fields from the constants that the check reads
-    assert "_agent_subfields = AGENT_SUBFIELDS" in source
-    assert "_contact_subfields = CONTACT_SUBFIELDS" in source
-    for name in solr.REPEATING_FLATTENED:
-        assert 'REPEATING_FLATTENED["%s"]' % name in source
+
+@pytest.mark.parametrize("pack", ["gdi_current", "healthdcat_r8"])
+def test_a_pack_marks_the_fields_the_plugin_used_to_flatten_by_name(generator, pack):
+    fields = generator.build_schema([pack]).schema["dataset_fields"]
+
+    assert set(flattened_solr_fields(fields)) == FLATTENED[pack]
 
 
-def test_every_field_the_plugin_fills_while_indexing_is_declared_multi_valued_in_schema_xml(solr, base):
-    names = solr.flattened_field_names()
+@pytest.mark.parametrize("packs", PACKS, ids="+".join)
+def test_every_field_the_indexing_fills_is_multi_valued(generator, solr, base, packs):
+    fields = generator.build_schema(packs).schema["dataset_fields"]
+    wanted = solr.wanted_schema(base, fields)
 
-    assert {"publisher_country", "creator_name", "contact_point_url", "qualified_relation_role", "retention_period_end"} <= set(names)
+    names = flattened_solr_fields(fields)
+    assert names
     for name in names:
-        assert base.fields[name].get("multiValued") is True, name
+        spec = wanted.fields.get(name) or wanted.dynamic_fields.get(solr.matching_dynamic_field(name, wanted.dynamic_fields))
+        assert spec and spec.get("multiValued") is True, name
 
 
-def test_a_field_the_plugin_fills_but_schema_xml_lacks_is_reported(solr, base):
+@pytest.mark.parametrize("packs", PACKS, ids="+".join)
+def test_a_flattened_subfield_is_one_the_field_has(generator, solr, base, packs):
+    # check() reports a flatten key that names a subfield the field lacks
+    assert not [p for p in solr.check(base, generator.build_schema(packs).schema["dataset_fields"]) if "flattens" in p]
+
+
+def test_a_flattened_field_that_schema_xml_lacks_is_derived_multi_valued(solr, base):
     without = solr.SolrSchema(
         fields={k: v for k, v in base.fields.items() if k != "publisher_country"}, field_types=set(base.field_types)
     )
+    publisher = field("publisher", "country", solr={"flatten": ["country"]})
 
-    assert any("publisher_country" in problem for problem in solr.check(without, []))
+    derived = {spec["name"]: spec for spec in solr.derive_fields([publisher], without)}
+
+    assert derived["publisher_country"]["multiValued"] is True
+    assert derived["publisher_country"]["type"] == "string"
 
 
-def test_a_field_the_plugin_fills_with_a_list_but_schema_xml_declares_single_valued_is_reported(solr, base):
+def test_a_flattened_field_that_schema_xml_declares_single_valued_is_reported(solr, base):
     single = solr.SolrSchema(
         fields={**base.fields, "publisher_country": spec("publisher_country", multiValued=False)},
         field_types=set(base.field_types),
     )
+    publisher = field("publisher", "country", solr={"flatten": ["country"]})
 
-    assert any("publisher_country" in problem and "single valued" in problem for problem in solr.check(single, []))
+    assert any("publisher_country" in problem and "single valued" in problem for problem in solr.check(single, [publisher]))
+
+
+def test_a_flatten_key_that_names_a_missing_subfield_is_reported(solr, base):
+    publisher = field("publisher", "name", solr={"flatten": ["name", "nme"]})
+
+    problems = solr.check(base, [publisher])
+
+    assert any("dataset_fields.publisher" in p and "'nme'" in p for p in problems)
+
+
+def test_a_dotted_flatten_path_reaches_into_a_subfield_with_subfields(solr, base):
+    attribution = field("qualified_attribution", "role", solr={"flatten": ["agent.name"]})
+    attribution["repeating_subfields"].append(field("agent", "name"))
+
+    assert solr.check(base, [attribution]) == []
+    assert any("agent.nme" in p for p in solr.check(base, [{**attribution, "solr": {"flatten": ["agent.nme"]}}]))
 
 
 def test_a_list_field_with_a_single_valued_solr_field_is_reported(solr, base):
@@ -120,10 +176,10 @@ def test_a_list_field_with_a_single_valued_solr_field_is_reported(solr, base):
     assert problems and "dataset_fields.theme" in problems[0]
 
 
-def test_a_list_field_that_the_plugin_flattens_is_not_reported(solr, base):
+def test_a_list_field_whose_solr_field_holds_one_value_is_not_reported(solr, base):
     solr_base = solr.SolrSchema(fields={**base.fields, "url": spec("url")}, field_types=base.field_types)
 
-    assert solr.check(solr_base, [field("url", preset="multiple_text")]) == []
+    assert solr.check(solr_base, [field("url", preset="multiple_text", solr={"multiple": False})]) == []
 
 
 # -- the fields that are derived ---------------------------------------------------------------------

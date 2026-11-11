@@ -30,27 +30,18 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 import yaml
 
-from ckanext.gdi_userportal.profile_packs.schema_fields import is_multiple
+from ckanext.gdi_userportal.profile_packs.schema_fields import (
+    by_name,
+    flatten_paths,
+    flattened_solr_fields,
+    is_multiple,
+    solr_options,
+    subfields,
+)
 
 DEFAULT_SCHEMA_XML = Path(__file__).resolve().parents[3] / "solr" / "schema.xml"
 ENV_SOLR_URL = "CKAN_SOLR_URL"
 CATCH_ALL = "*"
-
-# Fields the plugin flattens to one value before indexing (plugin._flatten_single_valued_solr_fields);
-# their Solr field is single valued although the scheming field is a list.
-SINGLE_VALUED_SOLR_FIELDS = ("url", "dcat_type")
-
-# The fields the plugin builds itself while indexing (plugin.before_dataset_index), from the values
-# of a field that holds agents, a contact point or repeated subfields. The plugin reads these
-# constants, so the Solr fields they produce can be checked against schema.xml.
-AGENT_FIELDS = ("publisher", "creator")
-AGENT_SUBFIELDS = ("uri", "email", "url", "type", "identifier", "country")
-CONTACT_SUBFIELDS = ("uri", "name", "email", "identifier", "url")
-REPEATING_FLATTENED = {
-    "qualified_relation": ("uri", "relation", "role"),
-    "quality_annotation": ("body", "target", "motivated_by"),
-    "retention_period": ("start", "end"),
-}
 
 # A validator that fixes the type of the values; the Solr type it maps to.
 INFERRED_TYPES = {"int_validator": "long", "boolean_validator": "boolean"}
@@ -115,17 +106,6 @@ def matching_dynamic_field(name: str, dynamic_fields: Iterable[str]) -> Optional
     return None
 
 
-def flattened_field_names() -> List[str]:
-    """The Solr fields the plugin fills while indexing agents, the contact point and repeated subfields."""
-    names = []
-    for agent in AGENT_FIELDS:
-        names += ["%s_%s" % (agent, sub) for sub in ("name",) + AGENT_SUBFIELDS]
-    names += ["contact_point_%s" % sub for sub in CONTACT_SUBFIELDS]
-    for field, subfields in REPEATING_FLATTENED.items():
-        names += ["%s_%s" % (field, sub) for sub in subfields]
-    return names
-
-
 def inferred_type(field: dict) -> str:
     """The Solr type for the values of a scheming field, from its validators; a string when none says more."""
     for validator in str(field.get("validators", "")).split():
@@ -147,13 +127,24 @@ def solr_settings(field: dict) -> dict:
 
 
 def derive_fields(dataset_fields: Iterable[dict], base: SolrSchema) -> List[dict]:
-    """The Solr fields for the dataset fields that ``schema.xml`` does not declare, in schema order."""
+    """The Solr fields for the dataset fields that ``schema.xml`` does not declare, in schema order.
+
+    The fields the indexing fills from a repeating field (``solr: {flatten: ...}``) follow the dataset fields: a
+    multi valued string, indexed and not stored.
+    """
+    dataset_fields = list(dataset_fields)
     derived = []
     for field in dataset_fields:
         name = field["field_name"]
         if name in base.fields or matching_dynamic_field(name, base.dynamic_fields):
             continue
         derived.append(solr_settings(field))
+    known = {spec["name"] for spec in derived}
+    for name in flattened_solr_fields(dataset_fields):
+        if name in known or name in base.fields or matching_dynamic_field(name, base.dynamic_fields):
+            continue
+        known.add(name)
+        derived.append({"name": name, "type": "string", "indexed": True, "stored": False, "multiValued": True})
     return derived
 
 
@@ -170,35 +161,68 @@ def wanted_schema(base: SolrSchema, dataset_fields: Iterable[dict]) -> SolrSchem
     return wanted
 
 
-def check(base: SolrSchema, dataset_fields: Iterable[dict]) -> List[str]:
-    """The dataset fields whose Solr field is single valued while the scheming field holds a list."""
-    dataset_fields = list(dataset_fields)
-    wanted = wanted_schema(base, dataset_fields)
+def _has_subfield(field: dict, path: Tuple[str, ...]) -> bool:
+    """Whether ``path`` (names of subfields, each inside the one before) exists below ``field``."""
+    named = by_name(subfields(field))
+    return path[0] in named and (len(path) == 1 or _has_subfield(named[path[0]], path[1:]))
+
+
+def _solr_field(wanted: SolrSchema, name: str) -> Optional[dict]:
+    """The field Solr would index ``name`` into: the declared or derived field, else a dynamic field."""
+    spec = wanted.fields.get(name)
+    if spec is None:
+        pattern = matching_dynamic_field(name, wanted.dynamic_fields)
+        spec = wanted.dynamic_fields.get(pattern) if pattern else None
+    return spec
+
+
+def _flatten_problems(wanted: SolrSchema, dataset_fields: List[dict]) -> List[str]:
+    problems = [
+        "dataset_fields.%s flattens '%s', which the field has no subfield for" % (field["field_name"], ".".join(path))
+        for field in dataset_fields
+        for path in flatten_paths(field)
+        if not _has_subfield(field, path)
+    ]
+    for name in flattened_solr_fields(dataset_fields):
+        spec = _solr_field(wanted, name)
+        if spec is not None and not spec.get("multiValued", False):
+            problems.append("the indexing fills the Solr field %s with a list but it is single valued" % name)
+    return problems
+
+
+def _type_problems(base: SolrSchema, dataset_fields: List[dict]) -> List[str]:
+    return [
+        "dataset_fields.%s asks for the Solr type '%s', which solr/schema.xml does not define"
+        % (field["field_name"], solr_options(field)["type"])
+        for field in dataset_fields
+        if solr_options(field).get("type") and solr_options(field)["type"] not in base.field_types
+    ]
+
+
+def _list_problems(wanted: SolrSchema, dataset_fields: List[dict]) -> List[str]:
     problems = []
-    for name in flattened_field_names():
-        spec = wanted.fields.get(name)
-        if spec is None:
-            problems.append("the plugin fills the Solr field %s while indexing but solr/schema.xml does not declare it" % name)
-        elif not spec.get("multiValued", False):
-            problems.append("the plugin fills the Solr field %s with a list but it is single valued" % name)
     for field in dataset_fields:
-        override = (field.get("solr") or {}).get("type")
-        if override and override not in base.field_types:
-            problems.append("dataset_fields.%s asks for the Solr type '%s', which solr/schema.xml does not define" % (field["field_name"], override))
-    for field in dataset_fields:
-        name = field["field_name"]
-        if name in SINGLE_VALUED_SOLR_FIELDS or not is_multiple(field):
+        # solr: {multiple: false}: the indexing keeps one value of the list
+        if solr_options(field).get("multiple") is False or not is_multiple(field):
             continue
-        spec = wanted.fields.get(name)
-        if spec is None:
-            pattern = matching_dynamic_field(name, wanted.dynamic_fields)
-            spec = wanted.dynamic_fields.get(pattern) if pattern else None
+        spec = _solr_field(wanted, field["field_name"])
         if spec is not None and not spec.get("multiValued", False):
             problems.append(
                 "dataset_fields.%s is a list in the schema but its Solr field is single valued; "
-                "make it multiValued in solr/schema.xml, or flatten it before indexing" % name
+                "make it multiValued in solr/schema.xml, or flatten it before indexing" % field["field_name"]
             )
     return problems
+
+
+def check(base: SolrSchema, dataset_fields: Iterable[dict]) -> List[str]:
+    """The dataset fields whose Solr field is single valued while the scheming field holds a list.
+
+    And the flattened fields (``solr: {flatten: ...}``): they must name subfields the field has, and the
+    Solr field they are written to must be multi valued.
+    """
+    dataset_fields = list(dataset_fields)
+    wanted = wanted_schema(base, dataset_fields)
+    return _flatten_problems(wanted, dataset_fields) + _type_problems(base, dataset_fields) + _list_problems(wanted, dataset_fields)
 
 
 # -- compare the wanted schema with the running core ----------------------------------------------

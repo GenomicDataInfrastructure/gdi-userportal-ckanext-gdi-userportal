@@ -53,6 +53,19 @@ def _names(fields):
     return [field["field_name"] for field in fields]
 
 
+def _without_indexing_keys(value):
+    """The schema without the ``solr`` key of its fields.
+
+    The key says what the indexing writes to Solr (see ``indexing.py``); it was added after the baseline and the
+    form and the display do not read it. ``test_solr_schema.py`` checks it.
+    """
+    if isinstance(value, dict):
+        return {key: _without_indexing_keys(item) for key, item in value.items() if key != "solr"}
+    if isinstance(value, list):
+        return [_without_indexing_keys(item) for item in value]
+    return value
+
+
 # What gdi_current changed on purpose since the baseline: a dataset that is in no series stores nothing
 # (scheming_multiple_choice stored the empty list "[]" in package_extra).
 DELIBERATE_CHANGES = {
@@ -84,7 +97,7 @@ def test_the_fields_are_the_fields_of_the_baseline(generator):
 
 
 def test_every_field_is_identical(generator):
-    generated = generator.build_schema(["gdi_current"]).schema
+    generated = _without_indexing_keys(generator.build_schema(["gdi_current"]).schema)
     baseline = _baseline()
 
     for section in ("dataset_fields", "resource_fields"):
@@ -106,7 +119,7 @@ def test_the_data_service_has_the_subfields_of_the_baseline(generator):
 
 
 def test_generated_schema_equals_the_static_schema(generator):
-    generated = generator.build_schema(["gdi_current"]).schema
+    generated = _without_indexing_keys(generator.build_schema(["gdi_current"]).schema)
 
     assert _in_baseline_order(generated) == _in_baseline_order(_baseline())
 
@@ -116,7 +129,7 @@ def test_the_rendered_yaml_loads_back_to_the_generated_schema(generator):
     rendered = generator.render_schema(schema)
 
     assert yaml.safe_load(rendered) == schema
-    assert _in_baseline_order(yaml.safe_load(rendered)) == _in_baseline_order(_baseline())
+    assert _in_baseline_order(_without_indexing_keys(yaml.safe_load(rendered))) == _in_baseline_order(_baseline())
 
 
 def test_rendered_yaml_has_no_anchors(generator):

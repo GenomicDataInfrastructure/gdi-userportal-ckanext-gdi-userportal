@@ -6,6 +6,7 @@
 
 dataset_fields:
   - field_name: contact
+    solr: {prefix: contact_point, flatten: [uri, email, url]}
     label: Contact points
     repeating_label: Contact point
     repeating_subfields:

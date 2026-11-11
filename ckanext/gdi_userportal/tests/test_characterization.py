@@ -14,10 +14,15 @@ translation were made to follow the generated schema.
 * what ``package_show`` returned, the terms the translation layer asks for, the translations it got back, and what
   ``replace_package`` made of the dataset in English and Dutch.
 
-A change that moves any of this has to say so: list it in ``DELIBERATE_INDEX_CHANGES`` or
-``DELIBERATE_API_CHANGES`` with the reason, as ``test_gdi_current_golden.py`` does for the schema.
+A change that moves any of this has to say so, with the reason, in ``expected_document`` or
+``DELIBERATE_API_CHANGES``, as ``test_gdi_current_golden.py`` does for the schema.
 
-The order of a list of plain values is not compared: Solr does not care, and the plugin builds some of them from sets.
+What is not compared, because it does not reach Solr or does not mean anything to it:
+
+* the order of a list of plain values (the plugin builds some of them from sets), and the white space around
+  its values (the indexing strips what it flattens);
+* a field with no value against a field that is not there (an empty list or an empty string);
+* the repeating fields: scheming, which runs after this plugin, drops them from the document.
 """
 
 import json
@@ -26,6 +31,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 from ckan.plugins import toolkit
 
 from ckanext.gdi_userportal.logic.action.translation_utils import (
@@ -33,15 +39,30 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
     replace_package,
 )
 from ckanext.gdi_userportal.plugin import GdiUserPortalPlugin
+from ckanext.gdi_userportal.profile_packs import generator
+
+# The profiles the corpus was recorded with, in their order: GDI_METADATA_PROFILES="gdi_current healthdcat_r8".
+PROFILES = ["gdi_current", "healthdcat_r8"]
+SCHEMAS = {
+    "dataset": generator.build_schema(PROFILES).schema["dataset_fields"],
+    # the series schema of the main profile (gdi_current)
+    "dataset_series": yaml.safe_load(
+        (Path(generator.__file__).parent.parent / "scheming" / "schemas" / "dataset_series_multilingual.yaml").read_text(
+            encoding="utf-8"
+        )
+    )["dataset_fields"],
+}
 
 CORPUS = json.loads((Path(__file__).parent / "fixtures" / "index_and_api_corpus.json").read_text(encoding="utf-8"))
 DATASETS = CORPUS["datasets"]
 NAMES = [record["name"] for record in DATASETS]
 
-# {dataset name: {solr field: expected value}}: what indexing does now and did not when the corpus was recorded.
-DELIBERATE_INDEX_CHANGES: dict = {}
-# {(dataset name, language): {api key: expected value}}: the same for what the API serves.
+# {(dataset name, language): {api key: expected value}}: what the API serves now and did not when it was recorded.
 DELIBERATE_API_CHANGES: dict = {}
+
+# List fields that were indexed as the JSON text CKAN gives (``'["a"]'``) and are decoded to a list now: the
+# fields that hold a list are read from the schema, not from a list of names kept in the plugin.
+NOW_DECODED = ("alternative_title", "analytics", "distribution", "related_resource", "sample", "source")
 
 
 def _canonical(value):
@@ -51,9 +72,33 @@ def _canonical(value):
     if isinstance(value, list):
         items = [_canonical(item) for item in value]
         if all(item is None or isinstance(item, (str, int, float, bool)) for item in items):
+            items = [item.strip() if isinstance(item, str) else item for item in items]
             return sorted(items, key=repr)
         return items
     return value
+
+
+def expected_document(record):
+    """The recorded document with what indexing does differently now: what changed on purpose."""
+    expected = dict(record["index_output"])
+    for key in NOW_DECODED:
+        if isinstance(expected.get(key), str):
+            expected[key] = json.loads(expected[key])
+    # the locations of a dataset are a filter now: one Solr value per location (solr: {flatten: [uri]})
+    locations = record["index_input"].get("spatial_coverage") or []
+    uris = [location["uri"] for location in locations if isinstance(location, dict) and location.get("uri")]
+    if uris:
+        expected["spatial_coverage_uri"] = uris
+    return expected
+
+
+def _comparable(record, document):
+    """The document as it is compared (see the module docstring)."""
+    repeating = {field["field_name"] for field in SCHEMAS[record["type"]] if field.get("repeating_subfields")}
+    kept = {
+        key: value for key, value in document.items() if key not in repeating and value not in (None, "", [], {})
+    }
+    return _canonical(kept)
 
 
 def _series_lookup(name):
@@ -74,17 +119,16 @@ def _index_translations(terms):
 
 
 def _index(record):
+    fields = SCHEMAS[record["type"]]
     with patch("ckanext.gdi_userportal.plugin.toolkit.get_action", side_effect=_series_lookup), patch(
         "ckanext.gdi_userportal.plugin.get_all_translations", side_effect=_index_translations
-    ):
+    ), patch.object(GdiUserPortalPlugin, "_dataset_fields", return_value=fields):
         return GdiUserPortalPlugin().before_dataset_index(deepcopy(record["index_input"]))
 
 
 @pytest.mark.parametrize("record", DATASETS, ids=NAMES)
 def test_the_indexed_document_is_the_recorded_one(record):
-    expected = {**record["index_output"], **DELIBERATE_INDEX_CHANGES.get(record["name"], {})}
-
-    assert _canonical(_index(record)) == _canonical(expected)
+    assert _comparable(record, _index(record)) == _comparable(record, expected_document(record))
 
 
 @pytest.mark.parametrize("record", DATASETS, ids=NAMES)

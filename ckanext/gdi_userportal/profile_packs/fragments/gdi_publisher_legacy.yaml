@@ -12,6 +12,7 @@ dataset_fields:
     help_text: A description of the publisher activities.
 
   - field_name: publisher_type
+    solr: {text: false}
     label: Publisher type
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text

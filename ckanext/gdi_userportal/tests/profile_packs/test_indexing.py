@@ -1,0 +1,385 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""
+What the indexing writes for the ``solr`` key of a field (indexing.py).
+
+The fields are made here, as small as the case needs. That the packs mark the fields the stack indexes is
+checked by ``test_solr_schema.py`` and by ``test_characterization.py``, which indexes recorded datasets.
+"""
+
+import json
+import sys
+
+import pytest
+from conftest import PACKAGE_DIR
+
+sys.path.insert(0, str(PACKAGE_DIR.parents[1]))
+
+from ckanext.gdi_userportal import indexing  # noqa: E402
+
+
+def field(name, *subfields, **attributes):
+    return {"field_name": name, "repeating_subfields": [{"field_name": sub} for sub in subfields], **attributes}
+
+
+def agent(name="publisher"):
+    subfields = ("name", "uri", "email", "url", "type", "identifier", "country")
+    return field(name, *subfields, solr={"flatten": list(subfields)})
+
+
+def contact():
+    subfields = ("uri", "name", "email", "identifier", "url")
+    return field("contact", *subfields, solr={"prefix": "contact_point", "flatten": list(subfields)})
+
+
+def relation():
+    return field("qualified_relation", "uri", "relation", "role", solr={"flatten": ["uri", "relation", "role"]})
+
+
+def attribution():
+    return field(
+        "qualified_attribution",
+        "agent",
+        "role",
+        solr={"prefix": "vocab_qualified_attribution", "flatten": ["role", "agent.name"]},
+    )
+
+
+# -- agents ----------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", ["publisher", "creator"])
+def test_an_agent_has_its_identifier_and_country_indexed(name):
+    document = {
+        name: [
+            {
+                "name": "Health-RI",
+                "identifier": "https://ror.org/05sk8w809",
+                "country": "http://publications.europa.eu/resource/authority/country/NLD",
+            }
+        ]
+    }
+
+    result = indexing.flatten(document, agent(name))
+
+    assert result[f"{name}_name"] == ["Health-RI"]
+    assert result[f"{name}_identifier"] == ["https://ror.org/05sk8w809"]
+    assert result[f"{name}_country"] == ["http://publications.europa.eu/resource/authority/country/NLD"]
+
+
+def test_the_values_of_several_agents_are_indexed_once_each():
+    document = {
+        "creator": [
+            {"name": "Org 1", "identifier": "same-id", "country": "same-country"},
+            {"name": "Org 2", "identifier": "same-id", "country": "other-country"},
+        ]
+    }
+
+    result = indexing.flatten(document, agent("creator"))
+
+    assert result["creator_identifier"] == ["same-id"]
+    assert result["creator_country"] == ["same-country", "other-country"]
+    assert result["creator_name"] == ["Org 1", "Org 2"]
+
+
+def test_an_agent_without_a_value_gets_no_field_for_it():
+    result = indexing.flatten({"publisher": [{"name": "Org without extra fields"}]}, agent())
+
+    assert result["publisher_name"] == ["Org without extra fields"]
+    assert "publisher_identifier" not in result
+    assert "publisher_country" not in result
+
+
+def test_agents_given_as_json_text_are_read():
+    document = {"creator": json.dumps([{"name": "Creator Org", "identifier": "creator-id"}])}
+
+    assert indexing.flatten(document, agent("creator"))["creator_identifier"] == ["creator-id"]
+
+
+def test_the_extras_stand_in_for_a_field_that_scheming_already_flattened():
+    document = {
+        "extras_publisher__name": "Health-RI",
+        "extras_publisher__identifier": "https://ror.org/05sk8w809",
+        "extras_publisher__country": json.dumps(["NLD", "DEU"]),
+    }
+
+    result = indexing.flatten(document, agent())
+
+    assert result["publisher_name"] == ["Health-RI"]
+    assert result["publisher_identifier"] == ["https://ror.org/05sk8w809"]
+    assert result["publisher_country"] == ["NLD", "DEU"]
+
+
+def test_the_extras_fallback_leaves_out_what_is_missing():
+    result = indexing.flatten({"extras_creator__name": "Creator Org"}, agent("creator"))
+
+    assert result["creator_name"] == ["Creator Org"]
+    assert "creator_identifier" not in result
+
+
+def test_the_space_joined_extras_of_several_entries_stay_one_value():
+    # CKAN joins the subfield of every entry with a space: nothing can tell them apart afterwards
+    assert indexing.flatten({"extras_creator__name": "Org 1 Org 2"}, agent("creator"))["creator_name"] == ["Org 1 Org 2"]
+
+
+def test_nothing_to_flatten_changes_nothing():
+    assert indexing.flatten({"unrelated": "value"}, agent()) == {"unrelated": "value"}
+
+
+def test_the_values_a_subfield_holds_as_a_list_are_indexed_one_by_one():
+    document = {"publisher": [{"name": "Org", "country": ["NLD", "DEU"], "identifier": ["id-1", "id-2"]}]}
+
+    result = indexing.flatten(document, agent())
+
+    assert result["publisher_country"] == ["NLD", "DEU"]
+    assert result["publisher_identifier"] == ["id-1", "id-2"]
+
+
+def test_empty_lists_add_no_field():
+    result = indexing.flatten({"creator": [{"name": "Org", "country": [], "identifier": []}]}, agent("creator"))
+
+    assert "creator_country" not in result
+    assert "creator_identifier" not in result
+
+
+# -- the contact point, named by solr.prefix --------------------------------------------------------
+
+
+def test_the_contact_point_fields_start_with_the_prefix_of_the_field():
+    document = {"contact": [{"uri": "internalURI:c0", "name": "Service desk", "email": "mailto:sd@example.org"}]}
+
+    result = indexing.flatten(document, contact())
+
+    assert result["contact_point_uri"] == ["internalURI:c0"]
+    assert result["contact_point_name"] == ["Service desk"]
+    assert result["contact_point_email"] == ["mailto:sd@example.org"]
+
+
+def test_a_url_that_is_a_json_list_gives_one_value_per_url():
+    document = {"contact": [{"name": "Contact Point", "url": json.dumps(["https://www.example.com/a", "https://www.example.com/b"])}]}
+
+    assert indexing.flatten(document, contact())["contact_point_url"] == ["https://www.example.com/a", "https://www.example.com/b"]
+
+
+def test_a_contact_point_given_as_its_name_only():
+    assert indexing.flatten({"contact": "Health-RI service desk"}, contact())["contact_point_name"] == ["Health-RI service desk"]
+
+
+def test_a_single_contact_point_object_is_one_entry():
+    result = indexing.flatten({"contact": {"name": "Service desk", "email": "mailto:sd@health-ri.nl"}}, contact())
+
+    assert result["contact_point_name"] == ["Service desk"]
+    assert result["contact_point_email"] == ["mailto:sd@health-ri.nl"]
+
+
+def test_the_contact_extras_stand_in_for_the_field():
+    result = indexing.flatten({"extras_contact__name": "Service desk", "extras_contact__email": "mailto:sd@x.org"}, contact())
+
+    assert result["contact_point_name"] == ["Service desk"]
+    assert result["contact_point_email"] == ["mailto:sd@x.org"]
+
+
+# -- the other repeating fields ---------------------------------------------------------------------
+
+
+def test_a_relationship_gives_each_subfield_its_values_without_joining_them():
+    document = {
+        "qualified_relation": [
+            {"uri": "https://example.org/relation/1", "relation": "https://example.org/r/1", "role": "related"},
+            {"uri": "https://example.org/relation/2", "relation": "https://example.org/r/2", "role": "references"},
+        ]
+    }
+
+    result = indexing.flatten(document, relation())
+
+    assert result["qualified_relation_uri"] == ["https://example.org/relation/1", "https://example.org/relation/2"]
+    assert result["qualified_relation_role"] == ["related", "references"]
+
+
+def test_a_subfield_that_holds_a_list_inside_an_entry_is_expanded():
+    document = {"qualified_relation": [{"relation": json.dumps(["a", "b"]), "role": ["x", "y"]}]}
+
+    result = indexing.flatten(document, relation())
+
+    assert result["qualified_relation_relation"] == ["a", "b"]
+    assert result["qualified_relation_role"] == ["x", "y"]
+
+
+def test_a_single_object_is_one_entry():
+    result = indexing.flatten({"qualified_relation": {"uri": "https://example.org/relation/1"}}, relation())
+
+    assert result["qualified_relation_uri"] == ["https://example.org/relation/1"]
+
+
+@pytest.mark.parametrize("value", ["not valid json", 42])
+def test_a_value_that_is_no_entry_changes_nothing(value):
+    assert indexing.flatten({"qualified_relation": value}, relation()) == {"qualified_relation": value}
+
+
+def test_a_field_without_a_flatten_key_is_left_alone():
+    document = {"retention_period": [{"start": "2026-01-01"}]}
+
+    assert indexing.flatten(document, field("retention_period", "start")) == {"retention_period": [{"start": "2026-01-01"}]}
+
+
+def test_the_relation_extras_stand_in_for_the_field():
+    result = indexing.flatten({"extras_qualified_relation__uri": "https://example.org/relation/1"}, relation())
+
+    assert result["qualified_relation_uri"] == ["https://example.org/relation/1"]
+    assert "qualified_relation_role" not in result
+
+
+def test_a_repeating_field_marked_text_false_is_dropped_once_it_is_flattened():
+    marked = field("retention_period", "start", "end", solr={"flatten": ["start", "end"], "text": False})
+
+    result = indexing.flatten({"retention_period": [{"start": "2026-01-01", "end": None}]}, marked)
+
+    assert result == {"retention_period_start": ["2026-01-01"]}
+
+
+def test_flattened_values_are_stripped_and_empty_ones_dropped():
+    result = indexing.flatten({"publisher": [{"name": "Org\n"}, {"name": "  "}, {"name": "Org"}]}, agent())
+
+    assert result["publisher_name"] == ["Org"]
+
+
+# -- a path into a subfield that has subfields ------------------------------------------------------
+
+
+def test_the_roles_and_agent_names_of_an_attribution_are_indexed():
+    document = {
+        "qualified_attribution": [
+            {"role": "http://example.org/role/processor", "agent": [{"name": "Org A"}, {"name": "Org B"}]},
+            {"role": "http://example.org/role/controller", "agent": {"name": "Org C"}},
+        ]
+    }
+
+    result = indexing.flatten(document, attribution())
+
+    assert result["vocab_qualified_attribution_role"] == ["http://example.org/role/processor", "http://example.org/role/controller"]
+    assert result["vocab_qualified_attribution_agent_name"] == ["Org A", "Org B", "Org C"]
+
+
+@pytest.mark.parametrize(
+    "agents, expected",
+    [
+        (None, []),
+        (42, []),
+        ("plain-org", ["plain-org"]),
+        ('{"name": ["Org D", {"nested": "Org E"}]}', ["Org D", "Org E"]),
+    ],
+)
+def test_the_agent_of_an_attribution_may_be_given_in_other_shapes(agents, expected):
+    result = indexing.flatten({"qualified_attribution": [{"role": "r", "agent": agents}]}, attribution())
+
+    assert result.get("vocab_qualified_attribution_agent_name", []) == expected
+
+
+def test_an_agent_name_that_is_a_nested_object_gives_all_its_strings():
+    document = {"qualified_attribution": [{"role": "r", "agent": {"name": {"primary": "Org B", "aliases": ["Org C"]}}}]}
+
+    assert indexing.flatten(document, attribution())["vocab_qualified_attribution_agent_name"] == ["Org B", "Org C"]
+
+
+@pytest.mark.parametrize("value", [123, ["skip me"]])
+def test_attributions_that_are_no_objects_give_nothing(value):
+    assert indexing.flatten({"qualified_attribution": value}, attribution()) == {"qualified_attribution": value}
+
+
+# -- list fields and the extras copy ------------------------------------------------------------------
+
+
+def multiple(name, **attributes):
+    return {"field_name": name, "preset": "multiple_text", **attributes}
+
+
+def test_the_json_text_of_a_list_field_becomes_a_list():
+    document = {"theme": '["a", "b"]', "extras_theme": '["a", "b"]'}
+
+    assert indexing.normalise(document, multiple("theme"))["theme"] == ["a", "b"]
+
+
+def test_a_list_field_that_only_has_its_extras_copy_gets_its_value_from_there():
+    assert indexing.normalise({"extras_theme": '["a"]'}, multiple("theme"))["theme"] == ["a"]
+
+
+def test_decode_false_leaves_the_json_text_for_a_plugin_that_reads_it():
+    # ckanext-dataset-series runs after this plugin and does json.loads(in_series)
+    document = {"in_series": '["id1"]'}
+
+    assert indexing.normalise(document, multiple("in_series", solr={"decode": False}))["in_series"] == '["id1"]'
+
+
+def test_a_value_that_is_no_list_stays_as_it_is():
+    assert indexing.normalise({"theme": "internalURI:x"}, multiple("theme"))["theme"] == "internalURI:x"
+
+
+def test_the_extras_copy_stays_unless_the_field_says_text_false():
+    kept = indexing.normalise({"theme": '["a"]', "extras_theme": '["a"]'}, multiple("theme"))
+    dropped = indexing.normalise({"theme": '["a"]', "extras_theme": '["a"]'}, multiple("theme", solr={"text": False}))
+
+    assert "extras_theme" in kept
+    assert "extras_theme" not in dropped
+
+
+def test_text_false_drops_the_extras_copy_of_a_single_value_too():
+    result = indexing.normalise({"access_rights": "PUBLIC", "extras_access_rights": "PUBLIC"}, {"field_name": "access_rights", "solr": {"text": False}})
+
+    assert result == {"access_rights": "PUBLIC"}
+
+
+def test_a_field_that_holds_no_list_is_left_alone():
+    document = {"frequency": '["not a list field"]', "extras_frequency": "x"}
+
+    assert indexing.normalise(dict(document), {"field_name": "frequency"}) == document
+
+
+def test_a_repeating_field_that_only_has_its_extras_copy_gets_its_value_from_there():
+    result = indexing.normalise({"extras_contact": json.dumps([{"name": "Desk"}])}, field("contact", "name"))
+
+    assert result == {"contact": [{"name": "Desk"}]}
+
+
+# -- one value of a list --------------------------------------------------------------------------
+
+
+def single(**solr):
+    return multiple("dcat_type", solr={"multiple": False, **solr})
+
+
+def test_the_first_value_is_kept_and_all_of_them_go_to_the_second_field():
+    document = {"dcat_type": ["a", "b", "a"]}
+
+    result = indexing.keep_one_value(document, single(all_values="vocab_dcat_type"))
+
+    assert result["dcat_type"] == "a"
+    assert result["vocab_dcat_type"] == ["a", "b"]
+
+
+def test_a_json_list_is_read_and_a_single_value_is_left_alone():
+    assert indexing.keep_one_value({"dcat_type": '["a", "b"]'}, single())["dcat_type"] == "a"
+    assert indexing.keep_one_value({"dcat_type": "a"}, single()) == {"dcat_type": "a"}
+
+
+def test_an_empty_list_leaves_no_value():
+    assert indexing.keep_one_value({"dcat_type": []}, single(all_values="vocab_dcat_type")) == {}
+
+
+def test_a_field_that_is_not_marked_single_valued_keeps_its_list():
+    assert indexing.keep_one_value({"dcat_type": ["a", "b"]}, multiple("dcat_type")) == {"dcat_type": ["a", "b"]}
+
+
+# -- the whole schema ------------------------------------------------------------------------------
+
+
+def test_every_field_of_the_schema_is_looked_at_and_nameless_ones_are_skipped():
+    fields = [agent(), {"label": "no name"}, multiple("theme")]
+
+    document = indexing.normalise_all({"theme": '["a"]'}, fields)
+    document = indexing.flatten_all({**document, "publisher": [{"name": "Org"}]}, fields)
+
+    assert document["theme"] == ["a"]
+    assert document["publisher_name"] == ["Org"]
+    assert indexing.keep_one_value_all(document, fields) == document
