@@ -118,6 +118,8 @@ dataset_fields:
 
       - field_name: publisher_note
         label: Publisher note
+        preset: fluent_markdown
+        help_text: A description of the activities of the agent.
 
       - field_name: publisher_type
         translate: true

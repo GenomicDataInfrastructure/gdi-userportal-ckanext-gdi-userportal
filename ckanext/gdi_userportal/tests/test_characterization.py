@@ -96,12 +96,6 @@ def expected_api(record, language):
         for key in RECORDED_RESOURCE_LIST:
             if key in resource and resource[key] is None and key not in resource_names:
                 del resource[key]
-    if record["type"] == "dataset_series":
-        # the note of a series publisher is plain text in the schema of the series, so only a text per language
-        # in a field that the schema calls multilingual is flattened to one language
-        for publisher, raw in zip(expected.get("publisher") or [], record["api_package"].get("publisher") or []):
-            if isinstance(raw.get("publisher_note"), dict):
-                publisher["publisher_note"] = raw["publisher_note"]
     return {**expected, **DELIBERATE_API_CHANGES.get((record["name"], language), {})}
 
 # List fields that were indexed as the JSON text CKAN gives (``'["a"]'``) and are decoded to a list now: the
