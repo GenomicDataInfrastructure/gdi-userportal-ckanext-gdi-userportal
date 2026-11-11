@@ -21,6 +21,7 @@ dataset_fields:
         help_text: The resources related to the source resource (dct:relation), one or more.
 
       - field_name: role
+        translate: true
         label: Role
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text

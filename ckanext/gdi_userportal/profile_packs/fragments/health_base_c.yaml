@@ -16,6 +16,7 @@ dataset_fields:
         help_text: The resource related to the source resource.
 
       - field_name: role
+        translate: true
         label: Role
         help_text: The function of an entity or agent with respect to another entity or resource.
     help_text: A description of a relationship with another resource.

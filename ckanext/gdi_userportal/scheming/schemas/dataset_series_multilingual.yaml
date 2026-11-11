@@ -32,6 +32,7 @@ dataset_fields:
     help_text: A free-text account of the dataset series.
 
   - field_name: applicable_legislation
+    translate: true
     solr: {text: false}
     label: Applicable legislation
     preset: multiple_text
@@ -62,6 +63,7 @@ dataset_fields:
     help_text: Contact information for enquiries about the dataset series.
 
   - field_name: frequency
+    translate: true
     label:
       en: Frequency
       nl: Frequentie
@@ -88,6 +90,7 @@ dataset_fields:
     help_text: The CKAN organization the dataset series belongs to.
 
   - field_name: publisher
+    agent: true
     solr: {flatten: [name, email, url, type, identifier]}
     label: Publisher
     repeating_label: Publisher
@@ -117,9 +120,11 @@ dataset_fields:
         label: Publisher note
 
       - field_name: publisher_type
+        translate: true
         label: Publisher type
 
       - field_name: type
+        translate: true
         label: Type
 
       - field_name: url
@@ -151,6 +156,7 @@ dataset_fields:
     label: Spatial coverage
     repeating_subfields:
       - field_name: uri
+        translate: true
         label: URI
 
       - field_name: text

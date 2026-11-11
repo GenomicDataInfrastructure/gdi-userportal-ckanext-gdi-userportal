@@ -39,3 +39,35 @@ def r8_indexing_schema():
     fields, patched = _patched_schema(["healthdcat_r8", "gdi_current"])
     with patched:
         yield fields
+
+
+_SCHEMAS = {}
+
+
+def _portal_schemas():
+    """The schemas of the dataset types, as the generator makes them (the stack loads these): built once."""
+    if not _SCHEMAS:
+        from pathlib import Path
+
+        import yaml
+
+        from ckanext.gdi_userportal.profile_packs import generator
+
+        built = generator.build_schema(["gdi_current", "healthdcat_r8"]).schema
+        series = Path(generator.__file__).parent.parent / "scheming" / "schemas" / "dataset_series_multilingual.yaml"
+        _SCHEMAS.update({"dataset": built, "dataset_series": yaml.safe_load(series.read_text(encoding="utf-8"))})
+    return _SCHEMAS
+
+
+@pytest.fixture(autouse=True)
+def portal_schema(request):
+    """The translation of the API reads the schema of the dataset type from scheming (``schema_access``); a
+    test gets the generated schema instead of a running scheming plugin. A test that wants another one patches
+    ``schema_access.dataset_schema`` itself."""
+    if "profile_packs" in request.node.path.parts:
+        yield  # these tests run without CKAN
+        return
+
+    schemas = _portal_schemas()
+    with patch("ckanext.gdi_userportal.schema_access.dataset_schema", side_effect=lambda t=None: schemas.get(t or "dataset", {})):
+        yield schemas

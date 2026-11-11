@@ -8,6 +8,7 @@ dataset_fields:
     label: Spatial coverage
     repeating_subfields:
       - field_name: uri
+        translate: true
         label: URI
 
       - field_name: text

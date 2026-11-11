@@ -9,12 +9,14 @@ dataset_fields:
     repeating_label: Attribution
     repeating_subfields:
       - field_name: agent
+        agent: true
         label: Agent
         repeating_label: Agent
         repeating_once: true
         repeating_subfields: !snippet agent_subfields
 
       - field_name: role
+        translate: true
         label: Role
         help_text: Role of the agent (e.g., data processor, contributor).
     help_text: Structured qualified attribution information including agent and role.

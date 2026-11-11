@@ -21,6 +21,8 @@ from typing import Dict, Iterable, Iterator, List, Mapping, Tuple
 # dataset_series_in_series and series_validator: ckanext-dataset-series keeps in_series as a list of series ids
 MULTIPLE_PRESETS = {"multiple_text", "multiple_select", "multiple_checkbox", "dataset_series_in_series"}
 MULTIPLE_VALIDATORS = {"scheming_multiple_choice", "scheming_multiple_text", "series_validator"}
+# ckanext-fluent presets that store one text per language: {"en": "...", "nl": "..."}
+FLUENT_TEXT_PRESETS = {"fluent_markdown", "fluent_text"}
 
 
 def subfields(field: Mapping) -> List[dict]:
@@ -70,6 +72,63 @@ def flattened_solr_fields(fields: Iterable[Mapping]) -> List[str]:
         if isinstance(field, Mapping)
         for path in flatten_paths(field)
     ]
+
+
+def translate_options(field: Mapping) -> dict | None:
+    """The ``translate`` key of a field: None when the field is not translated, otherwise its options (``{}`` for ``true``).
+
+    ``translate: true`` shows the value of the field, or each value of a list, as ``{name, display_name}``.
+    ``translate: {label_in: <sibling>}`` leaves the value as it is and writes its translation to the sibling
+    field instead.
+    """
+    value = field.get("translate") if isinstance(field, Mapping) else None
+    if isinstance(value, Mapping):
+        return dict(value)
+    return {} if value is True else None
+
+
+def is_agent(field: Mapping) -> bool:
+    """Whether the field holds agents (``agent: true``): organisations or persons that have an ``identifier`` list."""
+    return isinstance(field, Mapping) and field.get("agent") is True
+
+
+def _plan(fields: Iterable[Mapping], marks) -> Dict[str, dict]:
+    """``{field name: node}`` of the fields that ``marks`` selects and of the fields that have such a subfield.
+
+    A node is ``{"mark": <what marks returned>, "children": {...}}``; ``mark`` is None for a field that is only
+    there for the subfields below it.
+    """
+    plan: Dict[str, dict] = {}
+    for name, field in by_name(fields).items():
+        children = _plan(subfields(field), marks)
+        mark = marks(field)
+        if mark is not None or children:
+            plan[name] = {"mark": mark, "children": children}
+    return plan
+
+
+def translation_plan(fields: Iterable[Mapping]) -> Dict[str, dict]:
+    """The fields the API shows as ``{name, display_name}``: ``{name: {"mark": options | None, "children": {...}}}``."""
+    return _plan(fields, translate_options)
+
+
+def agent_plan(fields: Iterable[Mapping]) -> Dict[str, dict]:
+    """The fields that hold agents, and the fields that hold such fields: ``{name: {"mark": True | None, "children": {...}}}``."""
+    return _plan(fields, lambda field: True if is_agent(field) else None)
+
+
+def fluent_text_fields(*field_lists: Iterable[Mapping]) -> List[str]:
+    """Names of the multilingual text fields (``fluent_markdown``, ``fluent_text``) at any depth, in any list of fields.
+
+    A field named ``<x>_translated`` is not among them: it is the multilingual version of ``<x>`` and is read as such.
+    """
+    names: Dict[str, None] = {}
+    for fields in field_lists:
+        for path, field in walk(fields):
+            name = path[-1]
+            if str(field.get("preset", "")) in FLUENT_TEXT_PRESETS and not name.endswith("_translated"):
+                names[name] = None
+    return list(names)
 
 
 def by_name(fields: Iterable[Mapping]) -> Dict[str, dict]:

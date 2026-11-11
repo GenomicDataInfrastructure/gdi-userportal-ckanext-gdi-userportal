@@ -17,6 +17,7 @@ dataset_fields:
         help_text: Human-readable label for the activity.
 
       - field_name: type
+        translate: true
         label: Activity type
         help_text: Type of the activity.
 
@@ -25,6 +26,7 @@ dataset_fields:
         help_text: Related link for the activity.
 
       - field_name: dct_type
+        translate: {label_in: label}
         label: Type
         help_text: Type of the activity (URI).
 
@@ -34,6 +36,7 @@ dataset_fields:
         help_text: When the activity started (ISO 8601).
 
       - field_name: wasAssociatedWith
+        agent: true
         label: Associated agent
         repeating_label: Agent
         repeating_once: true
@@ -57,12 +60,14 @@ dataset_fields:
             display_snippet: link.html
 
           - field_name: type
+            translate: true
             label: Type
 
           - field_name: identifier
             label: Identifier
 
           - field_name: actedOnBehalfOf
+            agent: true
             label: Acted on behalf of
             repeating_label: Organization
             repeating_once: true
@@ -82,6 +87,7 @@ dataset_fields:
                 display_snippet: link.html
 
               - field_name: type
+                translate: true
                 label: Type
 
               - field_name: identifier

@@ -12,6 +12,7 @@ resource_fields:
     help_text: Minimum spatial separation resolvable in the distribution, measured in meters.
 
   - field_name: language
+    translate: true
     label: Language
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
@@ -24,12 +25,14 @@ resource_fields:
     help_text: A page or document about this resource.
 
   - field_name: conforms_to
+    translate: true
     label: Conforms to
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
     help_text: An established schema to which the described resource conforms.
 
   - field_name: applicable_legislation
+    translate: true
     label: Applicable legislation
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text

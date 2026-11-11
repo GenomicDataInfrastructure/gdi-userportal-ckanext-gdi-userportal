@@ -8,6 +8,7 @@ dataset_fields:
     help_text: Minimum spatial separation resolvable in a dataset, measured in meters.
 
   - field_name: access_rights
+    translate: true
     solr: {text: false}
     label: Access rights
     validators: ignore_missing unicode_safe
@@ -29,6 +30,7 @@ dataset_fields:
     facet_key: alternate_identifier
 
   - field_name: theme
+    translate: true
     solr: {text: false}
     label: Theme
     preset: multiple_text
@@ -40,6 +42,7 @@ dataset_fields:
     facet_key: theme
 
   - field_name: language
+    translate: true
     solr: {text: false}
     label: Language
     preset: multiple_text
@@ -59,6 +62,7 @@ dataset_fields:
     help_text: A page or document about this dataset.
 
   - field_name: conforms_to
+    translate: true
     solr: {text: false}
     label: Conforms to
     preset: multiple_text
@@ -104,6 +108,7 @@ dataset_fields:
       or analytics services.
 
   - field_name: applicable_legislation
+    translate: true
     solr: {text: false}
     label: Applicable legislation
     preset: multiple_text
@@ -111,6 +116,7 @@ dataset_fields:
     help_text: The legislation that mandates the creation or management of the dataset.
 
   - field_name: has_version
+    translate: true
     solr: {text: false}
     label: Has version
     preset: multiple_text
@@ -120,20 +126,24 @@ dataset_fields:
 
 resource_fields:
   - field_name: format
+    translate: true
     label: Format
     preset: resource_format_autocomplete
     help_text: File format. If not provided it will be guessed.
 
   - field_name: mimetype
+    translate: true
     label: Media type
     validators: if_empty_guess_format ignore_missing unicode_safe
     help_text: Media type for this format. If not provided it will be guessed.
 
   - field_name: compress_format
+    translate: true
     label: Compress format
     help_text: The format of the file in which the data is contained in a compressed form.
 
   - field_name: package_format
+    translate: true
     label: Package format
     help_text: The format of the file in which one or more data files are grouped together.
 

@@ -4,6 +4,7 @@
 
 dataset_fields:
   - field_name: creator
+    agent: true
     solr: {flatten: [name, uri, type]}
     label: Creator
     repeating_label: Creator
