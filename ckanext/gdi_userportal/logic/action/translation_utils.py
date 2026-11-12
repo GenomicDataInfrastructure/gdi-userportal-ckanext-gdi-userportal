@@ -251,7 +251,7 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
     plans = plans_for(data.get("type"))
 
     _apply_translated_properties(data, preferred_lang, language_fields=plans.language_fields)
-    _select_keywords_in_language(data, "tags", "tags_translated", preferred_lang)
+    _select_keywords_everywhere(data, preferred_lang)
     _normalize_tags_field(data)
 
     data = _translate_record(data, plans.package, translation_dict)
@@ -260,10 +260,6 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
     for resource in resources:
         # a translated repeating field of a distribution (its access services) is a list, empty when it is absent
         resource = _translate_record(resource, plans.resource, translation_dict, absent_list=[])
-        for access_service in resource.get("access_services") or []:
-            _select_keywords_in_language(
-                access_service, "keyword", "keyword_translated", preferred_lang
-            )
     data["resources"] = resources
     _normalize_agent_identifiers(data, plans)
 
@@ -307,6 +303,25 @@ def _keywords_of(values: Any) -> List[str]:
         if isinstance(value, str) and value.strip() and value.strip() not in keywords:
             keywords.append(value.strip())
     return keywords
+
+
+def _select_keywords_everywhere(data: Any, lang: str) -> None:
+    """Give every ``<x>`` the keywords of ``<x>_translated`` in the preferred language, at any depth.
+
+    ``tags_translated`` of a dataset and ``keyword_translated`` of an access service are two of them. A
+    ``<x>_translated`` that holds a text per language, not a list of keywords, is left alone (``_keywords_of``).
+    """
+    if isinstance(data, list):
+        for item in data:
+            _select_keywords_everywhere(item, lang)
+        return
+    if not isinstance(data, dict):
+        return
+    for key in [key for key, value in data.items() if key.endswith(TRANSLATED_SUFFIX) and isinstance(value, dict)]:
+        _select_keywords_in_language(data, key[: -len(TRANSLATED_SUFFIX)], key, lang)
+    for value in list(data.values()):
+        if isinstance(value, (dict, list)):
+            _select_keywords_everywhere(value, lang)
 
 
 def _select_keywords_in_language(

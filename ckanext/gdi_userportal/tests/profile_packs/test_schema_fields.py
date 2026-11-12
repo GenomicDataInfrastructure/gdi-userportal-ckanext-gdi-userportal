@@ -6,6 +6,8 @@
 
 import sys
 
+import pytest
+
 from conftest import PACKAGE_DIR
 
 sys.path.insert(0, str(PACKAGE_DIR.parents[1]))
@@ -125,3 +127,31 @@ def test_the_fluent_text_fields_are_found_at_any_depth_and_the_translated_ones_a
         "publisher_note",
         "rights",
     ]
+
+
+@pytest.mark.parametrize(
+    "mark, expected",
+    [
+        ({"canonical_prefix": "http://example.org/v/"}, "http://example.org/v/"),
+        ({"canonical_prefix": 5}, ""),
+        ({}, ""),
+        (None, ""),
+    ],
+)
+def test_the_canonical_prefix_is_the_text_of_the_solr_mark(mark, expected):
+    assert fields.canonical_prefix(field("theme", solr=mark)) == expected
+
+
+@pytest.mark.parametrize(
+    "candidate, expected",
+    [
+        (field("tags_translated", preset="fluent_tags"), "tags"),
+        (field("keyword_translated", preset="fluent_tags"), "keyword"),
+        (field("tags_translated"), ""),
+        (field("tags", preset="fluent_tags"), ""),
+        (field("title_translated", preset="fluent_text"), ""),
+        (None, ""),
+    ],
+)
+def test_a_multilingual_keyword_field_is_the_translation_of_its_base_field(candidate, expected):
+    assert fields.translated_keywords_of(candidate) == expected

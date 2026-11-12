@@ -128,3 +128,26 @@ class TestAccessServiceKeywords:
 
         assert len(result["resources"]) == len(resources)
         assert [r["access_services"] for r in result["resources"]] == [[]] * len(resources)
+
+
+class TestAnyKeywordField:
+    """No field name is known to the code: every ``<x>_translated`` that holds keywords per language gives ``<x>``."""
+
+    def test_a_keyword_field_of_another_name_follows_the_language(self):
+        package = {"themes_translated": TRANSLATED, "resources": []}
+
+        assert replace_package(package, {}, "nl")["themes"] == ["genomica", "gezondheid"]
+
+    def test_a_keyword_field_deeper_in_the_record_follows_the_language(self):
+        package = {"resources": [{"nested": [{"keyword_translated": TRANSLATED}]}]}
+
+        result = replace_package(package, {}, "nl")
+
+        assert result["resources"][0]["nested"][0]["keyword"] == ["genomica", "gezondheid"]
+
+    def test_a_text_per_language_is_not_a_keyword_list(self):
+        package = {"title_translated": {"en": "Title", "nl": "Titel"}, "resources": []}
+
+        result = replace_package(package, {}, "nl")
+
+        assert result["title"] == "Titel"

@@ -488,3 +488,64 @@ def test_a_dataset_without_text_gets_no_free_text_field():
     indexing.free_text_all(document, [{"field_name": "issued"}], translate=labels)
 
     assert "text" not in document
+
+
+DATA_THEME = "http://publications.europa.eu/resource/authority/data-theme/"
+THEME = {"field_name": "theme", "solr": {"canonical_prefix": DATA_THEME}}
+
+
+class TestCanonicalUris:
+    """``solr: {canonical_prefix}``: one form of the URI, so that one term is one filter value."""
+
+    def test_the_other_scheme_of_the_prefix_is_rewritten_and_doubles_go(self):
+        document = {"theme": [DATA_THEME.replace("http:", "https:") + "HEAL", DATA_THEME + "HEAL", DATA_THEME + "ENER"]}
+
+        indexing.canonicalise_uris(document, THEME)
+
+        assert document["theme"] == [DATA_THEME + "HEAL", DATA_THEME + "ENER"]
+
+    def test_other_uris_stay_as_they_are(self):
+        document = {"theme": ["https://example.org/theme/custom", DATA_THEME + "HEAL"]}
+
+        indexing.canonicalise_uris(document, THEME)
+
+        assert document["theme"] == ["https://example.org/theme/custom", DATA_THEME + "HEAL"]
+
+    def test_a_single_value_is_rewritten_too(self):
+        document = {"theme": DATA_THEME.replace("http:", "https:") + "HEAL"}
+
+        indexing.canonicalise_uris(document, THEME)
+
+        assert document["theme"] == DATA_THEME + "HEAL"
+
+    @pytest.mark.parametrize("document", [{}, {"theme": None}])
+    def test_a_field_without_a_value_is_left_alone(self, document):
+        assert indexing.canonicalise_uris(dict(document), THEME) == document
+
+    def test_a_field_without_the_mark_is_left_alone(self):
+        document = {"theme": [DATA_THEME.replace("http:", "https:") + "HEAL"]}
+
+        assert indexing.canonicalise_uris(dict(document), {"field_name": "theme"}) == document
+
+    @pytest.mark.parametrize("prefix", ["urn:x:", "", None, 5])
+    def test_a_prefix_without_a_scheme_to_swap_changes_nothing(self, prefix):
+        document = {"theme": ["urn:x:a", "https://example.org/a"]}
+
+        field = {"field_name": "theme", "solr": {"canonical_prefix": prefix}}
+
+        assert indexing.canonicalise_uris(dict(document), field) == document
+
+    def test_the_prefix_can_be_the_https_form(self):
+        field = {"field_name": "x", "solr": {"canonical_prefix": "https://example.org/v/"}}
+        document = {"x": ["http://example.org/v/a", "https://example.org/v/a"]}
+
+        indexing.canonicalise_uris(document, field)
+
+        assert document["x"] == ["https://example.org/v/a"]
+
+    def test_values_that_are_not_texts_are_kept(self):
+        document = {"theme": [{"name": "x"}, DATA_THEME + "HEAL", DATA_THEME + "HEAL"]}
+
+        indexing.canonicalise_uris(document, THEME)
+
+        assert document["theme"] == [{"name": "x"}, DATA_THEME + "HEAL"]
