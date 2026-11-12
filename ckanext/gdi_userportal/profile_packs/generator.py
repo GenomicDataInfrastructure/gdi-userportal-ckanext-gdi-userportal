@@ -51,8 +51,11 @@ DEFAULT_PROFILE = "gdi_current"
 ENV_PROFILES = "GDI_METADATA_PROFILES"
 ENV_MAIN_PROFILE = "GDI_METADATA_MAIN_PROFILE"
 # The languages the edit form offers for the multilingual fields, in this order (a space or comma separated
-# list of codes). Unset: the list of the schemas, which is "en nl".
+# list of codes). Unset: the languages the catalogue offers (the CKAN setting below) and, without that, the
+# list of the schemas, which is "en nl".
 ENV_FORM_LANGUAGES = "GDI_METADATA_FORM_LANGUAGES"
+# The languages the catalogue offers (a CKAN setting): the form languages when ``ENV_FORM_LANGUAGES`` is unset
+ENV_LOCALES_OFFERED = "CKAN__LOCALES_OFFERED"
 # The language of the plain title and description, and the one text falls back to (a CKAN setting)
 ENV_LOCALE_DEFAULT = "CKAN__LOCALE_DEFAULT"
 SERIES_FILENAME = "dataset_series.yaml"
@@ -349,18 +352,30 @@ def parse_profiles(raw):
     return names
 
 
-def parse_form_languages(raw):
-    """The languages of the edit form, in order; None when unset or empty (the schemas keep their own list)."""
+def parse_form_languages(raw, setting=ENV_FORM_LANGUAGES):
+    """The languages of the edit form, in order; None when unset or empty (the schemas keep their own list).
+
+    ``setting`` names where ``raw`` came from, for the error messages.
+    """
     if raw is None or not raw.strip():
         return None
     languages = [token for token in _SEPARATORS.split(raw.strip()) if token]
     invalid = [token for token in languages if not _LANGUAGE_CODE.match(token)]
     if invalid:
-        raise ProfileError(f"{ENV_FORM_LANGUAGES} has invalid language codes: {', '.join(invalid)}")
+        raise ProfileError(f"{setting} has invalid language codes: {', '.join(invalid)}")
     duplicates = [token for token in _unique(languages) if languages.count(token) > 1]
     if duplicates:
-        raise ProfileError(f"{ENV_FORM_LANGUAGES} lists a language twice: {', '.join(duplicates)}")
+        raise ProfileError(f"{setting} lists a language twice: {', '.join(duplicates)}")
     return languages
+
+
+def form_languages_setting(environ):
+    """``(raw value, setting name)`` the form languages come from: their own setting, else the locales offered."""
+    for name in (ENV_FORM_LANGUAGES, ENV_LOCALES_OFFERED):
+        raw = environ.get(name)
+        if raw is not None and raw.strip():
+            return raw, name
+    return None, ENV_FORM_LANGUAGES
 
 
 def parse_main_profile(raw, profiles):
@@ -702,13 +717,20 @@ def _write_atomically(path, text):
 
 
 def generate(
-    raw_profiles, raw_main, output_dir, root=PACK_ROOT, installed=None, raw_form_languages=None, locale_default=None
+    raw_profiles,
+    raw_main,
+    output_dir,
+    root=PACK_ROOT,
+    installed=None,
+    raw_form_languages=None,
+    locale_default=None,
+    form_languages_from=ENV_FORM_LANGUAGES,
 ):
     """The whole start-up step. ``installed`` (RDF profile names) enables the entry point check."""
     profiles = parse_profiles(raw_profiles)
     build = build_schema(profiles, root)  # first: an unknown pack is the root cause of a main profile mismatch
     main = parse_main_profile(raw_main, profiles)
-    languages = parse_form_languages(raw_form_languages)
+    languages = parse_form_languages(raw_form_languages, form_languages_from)
     if languages:
         build.form_languages = languages
         build.schema["form_languages"] = languages
@@ -727,6 +749,7 @@ def generate(
 
 def main(argv=None, environ=None):
     environ = os.environ if environ is None else environ
+    env_languages, env_languages_name = form_languages_setting(environ)
     parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     parser.add_argument("--output-dir", required=True, help="where dataset.yaml and provenance.json are written")
     parser.add_argument("--profiles", default=environ.get(ENV_PROFILES), help=f"default: ${ENV_PROFILES}")
@@ -735,8 +758,11 @@ def main(argv=None, environ=None):
     )
     parser.add_argument(
         "--form-languages",
-        default=environ.get(ENV_FORM_LANGUAGES),
-        help=f"the languages of the edit form, in order (default: ${ENV_FORM_LANGUAGES}, else the schemas' own)",
+        default=env_languages,
+        help=(
+            f"the languages of the edit form, in order (default: ${ENV_FORM_LANGUAGES}, else "
+            f"${ENV_LOCALES_OFFERED}, else the schemas' own)"
+        ),
     )
     parser.add_argument(
         "--skip-entry-point-check",
@@ -756,6 +782,7 @@ def main(argv=None, environ=None):
             args.output_dir,
             installed=installed,
             raw_form_languages=args.form_languages,
+            form_languages_from=env_languages_name if args.form_languages == env_languages else "--form-languages",
             locale_default=environ.get(ENV_LOCALE_DEFAULT),
         )
     except ProfileError as error:

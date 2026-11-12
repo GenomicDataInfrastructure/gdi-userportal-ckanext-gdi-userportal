@@ -355,7 +355,7 @@ schema, not by a list of names in the plugin (`logic/action/translation_utils.py
   a publisher, ...) and every `<field>_translated` show the text of the requested language, then English,
   then any language. No mark is needed: they are found by their preset.
 - The API answers in English and Dutch, and in every other language of `form_languages` (what the form offers,
-  `GDI_METADATA_FORM_LANGUAGES`); a form limited to English does not take Dutch away.
+  `GDI_METADATA_FORM_LANGUAGES`, which defaults to the `CKAN__LOCALES_OFFERED` languages); a form limited to English does not take Dutch away.
 - Only `type`, the CKAN core field that is not in the schema, is named in the plugin.
 
 The terms that `package_show` looks up in `term_translation_show` are collected from the same marks, so a

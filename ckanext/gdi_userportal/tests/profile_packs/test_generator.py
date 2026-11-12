@@ -993,6 +993,63 @@ def test_a_bad_form_language_stops_the_command_line(generator, tmp_path, capsys)
     assert "GDI_METADATA_FORM_LANGUAGES" in capsys.readouterr().err
 
 
+def run_command(generator, tmp_path, environ, *args):
+    environ = {"GDI_METADATA_PROFILES": "gdi_current", **environ}
+    code = generator.main(["--output-dir", str(tmp_path), "--skip-entry-point-check", *args], environ=environ)
+    return code, yaml.safe_load((tmp_path / "dataset.yaml").read_text()) if code == 0 else None
+
+
+def test_the_form_languages_default_to_the_locales_the_catalogue_offers(generator, tmp_path):
+    code, schema = run_command(generator, tmp_path, {"CKAN__LOCALES_OFFERED": "en nl de"})
+
+    assert code == 0
+    assert schema["form_languages"] == ["en", "nl", "de"]
+
+
+def test_the_form_languages_setting_wins_over_the_locales_offered(generator, tmp_path):
+    code, schema = run_command(
+        generator, tmp_path, {"GDI_METADATA_FORM_LANGUAGES": "nl en", "CKAN__LOCALES_OFFERED": "en nl de"}
+    )
+
+    assert code == 0
+    assert schema["form_languages"] == ["nl", "en"]
+
+
+def test_the_command_line_option_wins_over_both_settings(generator, tmp_path):
+    code, schema = run_command(
+        generator,
+        tmp_path,
+        {"GDI_METADATA_FORM_LANGUAGES": "nl en", "CKAN__LOCALES_OFFERED": "en nl de"},
+        "--form-languages",
+        "fr",
+    )
+
+    assert code == 0
+    assert schema["form_languages"] == ["fr"]
+
+
+@pytest.mark.parametrize("offered", ["", "   "])
+def test_empty_locales_offered_leave_the_schemas_as_they_are(generator, tmp_path, offered):
+    code, schema = run_command(generator, tmp_path, {"CKAN__LOCALES_OFFERED": offered})
+
+    assert code == 0
+    assert schema["form_languages"] == ["en", "nl"]
+
+
+def test_a_bad_locale_offered_names_the_setting_it_came_from(generator, tmp_path, capsys):
+    code, _ = run_command(generator, tmp_path, {"CKAN__LOCALES_OFFERED": "english"})
+
+    assert code == 1
+    assert "CKAN__LOCALES_OFFERED" in capsys.readouterr().err
+
+
+def test_a_bad_command_line_language_names_the_option(generator, tmp_path, capsys):
+    code, _ = run_command(generator, tmp_path, {"GDI_METADATA_FORM_LANGUAGES": "nl en"}, "--form-languages", "english")
+
+    assert code == 1
+    assert "--form-languages" in capsys.readouterr().err
+
+
 def test_a_series_copy_of_an_earlier_start_is_removed_when_the_languages_are_unset(generator, tmp_path):
     generator.generate("healthdcat_r8", None, tmp_path, raw_form_languages="en nl fr")
     assert (tmp_path / "dataset_series.yaml").exists()
