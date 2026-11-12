@@ -351,7 +351,7 @@ def test_the_defaults_of_solr_count_when_an_attribute_is_absent(solr):
     assert solr.plan(wanted, live_schema(solr, a={**spec("a"), "multiValued": True}))[0] != []
 
 
-def test_a_field_that_only_the_core_has_is_never_removed(solr):
+def test_a_field_that_only_the_core_has_is_not_removed_unless_asked_for(solr):
     wanted = solr.SolrSchema(field_types={"string"})
 
     assert solr.plan(wanted, live_schema(solr, old=spec("old")))[0] == []
@@ -411,3 +411,200 @@ def test_a_schema_api_error_is_raised(solr, monkeypatch):
 
     with pytest.raises(solr.SolrSchemaError, match="nope"):
         solr.apply_commands("http://solr", [("add-field", spec("a"))])
+
+
+# -- the fields nothing describes any more -------------------------------------------------------------
+
+
+def test_a_field_that_nothing_describes_is_deleted_when_asked_for(solr):
+    wanted = solr.SolrSchema(fields={"kept": spec("kept")}, field_types={"string"})
+    live = live_schema(solr, kept=spec("kept"), old=spec("old"))
+
+    commands, problems = solr.plan(wanted, live, remove_leftovers=True)
+
+    assert commands == [("delete-field", {"name": "old"})] and problems == []
+
+
+def test_the_copy_fields_of_a_deleted_field_go_first(solr):
+    wanted = solr.SolrSchema(fields={"kept": spec("kept")}, copy_fields=[("kept", "text")], field_types={"string"})
+    live = solr.SolrSchema(
+        fields={"kept": spec("kept"), "old": spec("old")},
+        copy_fields=[("kept", "text"), ("old", "text"), ("kept", "old")],
+        field_types={"string"},
+    )
+
+    commands, _ = solr.plan(wanted, live, remove_leftovers=True)
+
+    assert commands == [
+        ("delete-copy-field", {"source": "old", "dest": "text"}),
+        ("delete-copy-field", {"source": "kept", "dest": "old"}),
+        ("delete-field", {"name": "old"}),
+    ]
+
+
+def test_the_fields_solr_keeps_for_itself_and_the_dynamic_fields_are_never_deleted(solr):
+    wanted = solr.SolrSchema(field_types={"string"})
+    live = solr.SolrSchema(
+        fields={"_version_": spec("_version_"), "_root_": spec("_root_")},
+        dynamic_fields={"old_*": spec("old_*")},
+        field_types={"string"},
+    )
+
+    assert solr.plan(wanted, live, remove_leftovers=True)[0] == []
+
+
+def test_the_fields_of_every_dataset_type_are_wanted_so_none_of_them_is_a_leftover(solr, base):
+    dataset = [field("title"), field("keyword")]
+    series = [field("series_order_field")]
+    live = solr.SolrSchema(
+        fields={**base.fields, "series_order_field": spec("series_order_field"), "old": spec("old")},
+        field_types=set(base.field_types) | {"string"},
+    )
+
+    complete = solr.leftovers(solr.wanted_schema(base, solr.merge_fields([dataset, series])), live)
+    partial = solr.leftovers(solr.wanted_schema(base, dataset), live)
+
+    assert complete == ["old"]
+    assert partial == ["old", "series_order_field"]
+
+
+def test_the_first_definition_of_a_field_wins_when_the_types_share_it(solr):
+    merged = solr.merge_fields([[field("a", "x")], [field("a"), field("b")], [None, {"x": 1}]])
+
+    assert [f["field_name"] for f in merged] == ["a", "b"]
+    assert merged[0]["repeating_subfields"]
+
+
+def test_a_delete_is_described(solr):
+    assert solr.describe(("delete-field", {"name": "old"})) == "delete-field old"
+
+
+# -- the command line ----------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def stack(solr, tmp_path, monkeypatch):
+    """A CKAN ini with two dataset schemas, and a core that has one field too many; the commands sent are recorded."""
+    (tmp_path / "dataset.yaml").write_text("dataset_fields:\n- field_name: keyword\n")
+    (tmp_path / "series.yaml").write_text("dataset_fields:\n- field_name: series_order_field\n")
+    ini = tmp_path / "ckan.ini"
+    ini.write_text(
+        "[app:main]\nuse = egg:ckan\nscheming.dataset_schemas = %s %s\n"
+        % ((tmp_path / "dataset.yaml").as_uri(), (tmp_path / "series.yaml").as_uri())
+    )
+    live = solr.SolrSchema(
+        fields={"keyword": spec("keyword"), "series_order_field": spec("series_order_field"), "old": spec("old")},
+        field_types={"string"},
+    )
+    sent = []
+    monkeypatch.setattr(solr, "wait_for_solr", lambda url, seconds: True)
+    monkeypatch.setattr(solr, "read_live_schema", lambda url: live)
+    monkeypatch.setattr(solr, "apply_commands", lambda url, commands: sent.extend(commands))
+    # schema.xml of the test: nothing declared, so that only the dataset schemas count
+    xml = tmp_path / "schema.xml"
+    xml.write_text("<schema><types><fieldType name='string'/></types></schema>")
+
+    class Stack:
+        pass
+
+    result = Stack()
+    result.ini, result.dataset, result.series, result.xml, result.sent = ini, tmp_path / "dataset.yaml", tmp_path / "series.yaml", xml, sent
+    return result
+
+
+def sync(solr, stack, *args):
+    return solr.main(["sync", "--schema-xml", str(stack.xml), "--solr-url", "http://solr/solr/ckan", *args])
+
+
+def test_sync_removes_the_leftover_fields_of_the_stack(solr, stack, capsys):
+    code = sync(solr, stack, "--ckan-ini", str(stack.ini))
+
+    assert code == 0
+    assert stack.sent == [("delete-field", {"name": "old"})]
+    assert "delete-field old" in capsys.readouterr().out
+
+
+def test_sync_with_a_dry_run_applies_nothing(solr, stack, capsys):
+    sync(solr, stack, "--ckan-ini", str(stack.ini), "--dry-run")
+
+    assert stack.sent == []
+    assert "delete-field old" in capsys.readouterr().out
+
+
+def test_sync_keeps_the_leftovers_when_asked_to(solr, stack):
+    sync(solr, stack, "--ckan-ini", str(stack.ini), "--keep-leftovers")
+
+    assert stack.sent == []
+
+
+def test_sync_keeps_the_leftovers_when_it_does_not_know_every_schema(solr, stack, capsys):
+    """Only one schema file: the fields of the others would look like leftovers."""
+    code = sync(solr, stack, "--dataset-schema", str(stack.dataset))
+
+    assert code == 0
+    assert stack.sent == []
+    assert "--ckan-ini" in capsys.readouterr().out
+
+
+def test_sync_stops_when_a_schema_of_the_ini_cannot_be_found(solr, stack, capsys):
+    stack.series.unlink()
+
+    code = sync(solr, stack, "--ckan-ini", str(stack.ini))
+
+    assert code == 1
+    assert stack.sent == []
+    assert "not found" in capsys.readouterr().err
+
+
+def test_sync_stops_without_a_schema(solr, stack, capsys):
+    assert sync(solr, stack) == 1
+    assert "no dataset schema" in capsys.readouterr().err
+
+
+def test_an_ini_without_dataset_schemas_is_an_error(solr, tmp_path):
+    ini = tmp_path / "ckan.ini"
+    ini.write_text("[app:main]\nuse = egg:ckan\n")
+
+    with pytest.raises(solr.SolrSchemaError, match="scheming.dataset_schemas"):
+        solr.schema_files_from_ini(ini)
+
+
+def test_a_module_reference_names_a_file_inside_the_package(solr, tmp_path):
+    path = solr.schema_files_from_ini(_ini_with(tmp_path, "ckanext.gdi_userportal:scheming/schemas/dataset_series_r8.yaml"))[0]
+
+    assert path.name == "dataset_series_r8.yaml" and path.is_file()
+
+
+def test_a_module_that_cannot_be_found_is_an_error(solr, tmp_path):
+    with pytest.raises(solr.SolrSchemaError, match="no_such_module"):
+        solr.schema_files_from_ini(_ini_with(tmp_path, "no_such_module:schemas/x.yaml"))
+
+
+def _ini_with(tmp_path, value):
+    ini = tmp_path / "ckan.ini"
+    ini.write_text("[app:main]\nscheming.dataset_schemas = %s\n" % value)
+    return ini
+
+
+def test_a_copy_field_that_schema_xml_still_declares_is_added_again_after_its_source_is_deleted(solr):
+    """A field made explicit before a dynamic field covered it: the copy field must survive, with the dynamic field as source."""
+    wanted = solr.SolrSchema(
+        fields={"ngram": spec("ngram")},
+        dynamic_fields={"vocab_*": spec("vocab_*")},
+        copy_fields=[("vocab_x", "ngram")],
+        field_types={"string"},
+    )
+    live = solr.SolrSchema(
+        fields={"ngram": spec("ngram"), "vocab_x": spec("vocab_x")},
+        dynamic_fields={"vocab_*": spec("vocab_*")},
+        copy_fields=[("vocab_x", "ngram")],
+        field_types={"string"},
+    )
+
+    commands, _ = solr.plan(wanted, live, remove_leftovers=True)
+
+    assert commands == [
+        ("delete-copy-field", {"source": "vocab_x", "dest": "ngram"}),
+        ("delete-field", {"name": "vocab_x"}),
+        ("add-copy-field", {"source": "vocab_x", "dest": "ngram"}),
+    ]
