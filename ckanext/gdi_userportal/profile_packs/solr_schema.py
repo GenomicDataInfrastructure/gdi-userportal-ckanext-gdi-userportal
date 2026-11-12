@@ -5,13 +5,16 @@
 """
 The Solr schema that follows the generated dataset schema: ``derive_fields`` makes a Solr field of
 every dataset field that ``schema.xml`` does not declare, ``sync`` applies the difference to the
-running core through the Solr Schema API (it never deletes a field), and ``check`` is the drift test.
+running core through the Solr Schema API (it removes the fields nothing describes any more, see
+``leftovers``), and ``check`` is the drift test.
 The rules, including the ``solr`` key that overrides a derived field, are in ``README.md``, section
 "Solr schema".
 
-It runs from the container start scripts and imports nothing but the standard library and PyYAML::
+It runs from the container start scripts and imports nothing but the standard library and PyYAML. The
+fields come from every schema in ``scheming.dataset_schemas`` of the CKAN ini (the generated dataset schema
+and the series schema), so that a field of one dataset type is not taken for a leftover of another::
 
-    python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --dataset-schema DIR/dataset.yaml
+    python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --ckan-ini /srv/app/ckan.ini
 """
 
 from __future__ import annotations
@@ -23,7 +26,10 @@ import os
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
+import configparser
+import importlib.util
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -280,8 +286,22 @@ def _differs(wanted: dict, live: dict) -> bool:
     return any(wanted[key] != live[key] for key in ATTRIBUTES if wanted[key] is not None)
 
 
-def plan(wanted: SolrSchema, live: SolrSchema) -> Tuple[List[Command], List[str]]:
-    """The Schema API commands that bring the core to the wanted schema, and the problems that need more."""
+def leftovers(wanted: SolrSchema, live: SolrSchema) -> List[str]:
+    """The fields of the core that nothing describes any more: not in ``schema.xml``, not made from a dataset schema.
+
+    A field Solr keeps for itself (``_version_``, ``_root_``, ...) is never one. Dynamic fields are not looked at:
+    they are written by hand in ``schema.xml``.
+    """
+    return sorted(name for name in live.fields if name not in wanted.fields and not name.startswith("_"))
+
+
+def plan(wanted: SolrSchema, live: SolrSchema, remove_leftovers: bool = False) -> Tuple[List[Command], List[str]]:
+    """The Schema API commands that bring the core to the wanted schema, and the problems that need more.
+
+    With ``remove_leftovers`` the fields in ``leftovers`` are deleted too, after the copy fields that name them
+    (Solr refuses to delete a field a copy field uses); a copy field the wanted schema still has is added again. Only a caller that knows every schema of the stack asks
+    for it: with a part of them, the fields of the others would be removed.
+    """
     commands: List[Command] = []
     problems: List[str] = []
 
@@ -309,6 +329,20 @@ def plan(wanted: SolrSchema, live: SolrSchema) -> Tuple[List[Command], List[str]
     for source, dest in wanted.copy_fields:
         if (source, dest) not in live_copies:
             commands.append(("add-copy-field", {"source": source, "dest": dest}))
+
+    if remove_leftovers:
+        gone = leftovers(wanted, live)
+        touching = [(source, dest) for source, dest in live.copy_fields if source in gone or dest in gone]
+        commands.extend(("delete-copy-field", {"source": source, "dest": dest}) for source, dest in touching)
+        commands.extend(("delete-field", {"name": name}) for name in gone)
+        # A copy field that ``schema.xml`` still declares has to be there afterwards: its source is a dynamic
+        # field now (a field made explicit before the dynamic field covered it)
+        wanted_copies = set(wanted.copy_fields)
+        commands.extend(
+            ("add-copy-field", {"source": source, "dest": dest})
+            for source, dest in touching
+            if (source, dest) in wanted_copies and dest not in gone
+        )
 
     return commands, problems
 
@@ -365,6 +399,8 @@ def describe(command: Command) -> str:
     name, spec = command
     if name.endswith("copy-field"):
         return "%s %s -> %s" % (name, spec["source"], spec["dest"])
+    if name == "delete-field":
+        return "%s %s" % (name, spec["name"])
     flags = ", ".join("%s=%s" % (key, spec[key]) for key in ("type", "multiValued", "indexed", "stored") if key in spec)
     return "%s %s (%s)" % (name, spec["name"], flags)
 
@@ -374,21 +410,77 @@ def describe(command: Command) -> str:
 
 def _load_dataset_fields(path) -> List[dict]:
     with open(str(path), encoding="utf-8") as handle:
-        return yaml.safe_load(handle)["dataset_fields"]
+        return (yaml.safe_load(handle) or {}).get("dataset_fields") or []
+
+
+def merge_fields(field_lists: Iterable[List[dict]]) -> List[dict]:
+    """The fields of every dataset type in one list; the first definition of a name wins (the dataset type comes first)."""
+    merged: Dict[str, dict] = {}
+    for fields in field_lists:
+        for field in fields:
+            if isinstance(field, dict) and field.get("field_name"):
+                merged.setdefault(field["field_name"], field)
+    return list(merged.values())
+
+
+def _schema_path(reference: str) -> Path:
+    """The file a ``scheming.dataset_schemas`` entry names: a ``file://`` URI or ``module:path/inside/it.yaml``."""
+    if reference.startswith("file://"):
+        return Path(urllib.request.url2pathname(urllib.parse.urlparse(reference).path))
+    module, _, relative = reference.partition(":")
+    spec = importlib.util.find_spec(module) if module and relative else None
+    if spec is None or not spec.submodule_search_locations:
+        raise SolrSchemaError("cannot find the dataset schema '%s'" % reference)
+    return Path(next(iter(spec.submodule_search_locations))) / relative
+
+
+def schema_files_from_ini(ini_path) -> List[Path]:
+    """The schema files of ``scheming.dataset_schemas`` in the CKAN ini; an error when one cannot be found."""
+    parser = configparser.RawConfigParser(strict=False)
+    parser.read(str(ini_path), encoding="utf-8")
+    value = parser.get("app:main", "scheming.dataset_schemas", fallback="")
+    references = value.split()
+    if not references:
+        raise SolrSchemaError("%s has no scheming.dataset_schemas" % ini_path)
+    paths = [_schema_path(reference) for reference in references]
+    missing = [str(path) for path in paths if not path.is_file()]
+    if missing:
+        raise SolrSchemaError("dataset schema file not found: %s" % ", ".join(missing))
+    return paths
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("action", choices=["sync", "check"])
-    parser.add_argument("--dataset-schema", required=True, help="the generated dataset.yaml")
+    parser.add_argument(
+        "--dataset-schema", action="append", default=[], help="a dataset schema file (repeatable), e.g. the generated dataset.yaml"
+    )
+    parser.add_argument(
+        "--ckan-ini",
+        help="the CKAN ini: every schema of scheming.dataset_schemas is read, and with them all known, leftover fields are removed",
+    )
+    parser.add_argument(
+        "--keep-leftovers", action="store_true", help="sync: do not remove the fields that nothing describes any more"
+    )
     parser.add_argument("--schema-xml", default=str(DEFAULT_SCHEMA_XML))
     parser.add_argument("--solr-url", default=os.environ.get(ENV_SOLR_URL))
     parser.add_argument("--dry-run", action="store_true", help="sync: print the changes, apply nothing")
     parser.add_argument("--wait", type=int, default=60, help="sync: seconds to wait for Solr to answer")
     args = parser.parse_args(argv)
 
+    try:
+        files = [Path(path) for path in args.dataset_schema]
+        if args.ckan_ini:
+            files += [path for path in schema_files_from_ini(args.ckan_ini) if path not in files]
+        if not files:
+            raise SolrSchemaError("no dataset schema: pass --ckan-ini or --dataset-schema")
+        dataset_fields = merge_fields(_load_dataset_fields(path) for path in files)
+    except (SolrSchemaError, OSError, yaml.YAMLError) as error:
+        print("solr-schema: %s" % error, file=sys.stderr)
+        return 1
     base = parse_schema_xml(args.schema_xml)
-    dataset_fields = _load_dataset_fields(args.dataset_schema)
+    # Only with every schema of the stack is a field that none describes really a leftover
+    remove_leftovers = bool(args.ckan_ini) and not args.keep_leftovers
 
     if args.action == "check":
         problems = check(base, dataset_fields)
@@ -403,7 +495,11 @@ def main(argv=None) -> int:
         print("solr-schema: Solr does not answer at %s" % args.solr_url, file=sys.stderr)
         return 1
 
-    commands, problems = plan(wanted_schema(base, dataset_fields), read_live_schema(args.solr_url))
+    if not args.keep_leftovers and not args.ckan_ini:
+        print("solr-schema: leftover fields are kept: pass --ckan-ini so that every dataset schema is known")
+    commands, problems = plan(
+        wanted_schema(base, dataset_fields), read_live_schema(args.solr_url), remove_leftovers=remove_leftovers
+    )
     for problem in problems:
         print("solr-schema: " + problem, file=sys.stderr)
     for command in commands:

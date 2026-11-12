@@ -321,13 +321,24 @@ them again; the pack listed first wins as for any other key. The series schemas 
 without a mark is indexed as before: under its own name when it has a value, and as `extras_*` text.
 - `sync` runs from the start scripts after the generator: it compares `schema.xml` plus the derived
   fields with the running core and applies the difference through the Solr Schema API (`add-field`,
-  `replace-field`, dynamic and copy fields). It never deletes a field and never stops CKAN when Solr
-  does not answer. A core is created once from the Solr image and lives in a volume, so a changed
+  `replace-field`, dynamic and copy fields) and removes the fields nothing describes any more. It never stops
+  CKAN when Solr does not answer. A core is created once from the Solr image and lives in a volume, so a changed
   `schema.xml` or a new profile would never reach an existing core without it.
 
 ```
-python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --dataset-schema /srv/app/generated/dataset.yaml [--dry-run]
+python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --ckan-ini /srv/app/ckan.ini [--dry-run] [--keep-leftovers]
 ```
+
+The fields come from every schema in `scheming.dataset_schemas` of the ini (the generated `dataset.yaml` and the
+series schema, which has fields the dataset schema lacks, such as `series_order_field`), merged by field name with
+the first definition winning. **A leftover** is an explicit field of the core that is not in `schema.xml` and not
+made from any of those schemas: the fields of a retired profile, the fields of repeating fields an older version
+made explicit, a field that is now covered by a dynamic field of `schema.xml`. The sync deletes the copy fields that
+name it first, then the field, then adds again a copy field that `schema.xml` still declares (its source is the
+dynamic field then). Fields Solr keeps for itself (`_version_`, ...) and dynamic fields are never touched. Removal
+needs every schema, so it only happens with `--ckan-ini`; with `--dataset-schema FILE` alone (repeatable) the
+leftovers are kept and the sync says so, because the fields of the other dataset types would look like leftovers.
+A field removed from the schema leaves its values in the old documents until `ckan search-index rebuild`.
 
 Documents indexed before a change keep their old index: reindex (`ckan search-index rebuild`) after the
 sync reports changes. A field type that the core lacks is reported, not added: recreate the core.
