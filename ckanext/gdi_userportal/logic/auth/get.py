@@ -56,6 +56,11 @@ def gdi_metadata_profile_conformance(context, data_dict=None):
     return {"success": True}
 
 
+def gdi_terms_to_translate(context, data_dict=None):
+    # Sysadmins pass before this runs; the harvester calls the action without authorisation checks.
+    return {"success": False, "msg": toolkit._("Only sysadmins can list the terms of a dataset to translate")}
+
+
 def gdi_metadata_profile_conformance_report(context, data_dict=None):
     # Sysadmins pass before this runs; the report lists every dataset, private ones included.
     return {"success": False, "msg": toolkit._("Only sysadmins can read the metadata profile conformance report")}

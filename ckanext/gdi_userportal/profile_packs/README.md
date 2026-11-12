@@ -363,6 +363,11 @@ new marked field needs no other change. A marked field the dataset has no value 
 (`[]` for a repeating field of a distribution, `access_services`); a name that is not a field of the schema
 is not made up.
 
+The same list is available to a harvester as the action `gdi_terms_to_translate` (sysadmins, or a call
+without authorisation checks): given a dataset as `{"package": {...}}` it answers `{"terms": [...]}`, the
+values the schema marks. ckanext-fairdatapoint asks it, before a harvested dataset is saved, which
+terms to fetch the labels of, so the labels it stores are the ones this API sends out.
+
 ## Running it
 
 ```

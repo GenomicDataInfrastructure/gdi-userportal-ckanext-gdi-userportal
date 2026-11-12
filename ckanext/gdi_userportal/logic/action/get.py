@@ -7,6 +7,7 @@
 
 # -*- coding: utf-8 -*-
 
+import copy
 import json
 
 from ckan import model
@@ -246,6 +247,28 @@ def gdi_metadata_profile_conformance_report(context, data_dict=None) -> dict:
     return conformance_service.conformance_report(
         package_search, toolkit.config, [profile] if profile else None, _source_profiles
     )
+
+
+@toolkit.side_effect_free
+def gdi_terms_to_translate(context, data_dict) -> dict:
+    """
+    The values of a dataset that are terms with a label, as the schema says (``translate`` fields and the
+    translated subfields of agents, in the dataset and in its distributions).
+
+    Used by a harvester to look up and store the labels of the vocabulary terms a harvested dataset links to,
+    before the dataset is saved: it is the same list the API translates, so every label it sends out is stored.
+    Sysadmins only (a harvester calls it without authorisation checks).
+
+    :param package: the dataset as a dict; it is not changed
+    """
+    toolkit.check_access("gdi_terms_to_translate", context, data_dict)
+    package = (data_dict or {}).get("package")
+    if not isinstance(package, dict):
+        raise toolkit.ValidationError({"package": ["Missing value"]})
+
+    record = copy.deepcopy(package)
+    record["resources"] = [resource for resource in record.get("resources") or [] if isinstance(resource, dict)]
+    return {"terms": sorted(str(term) for term in collect_values_to_translate(record) if isinstance(term, str))}
 
 
 @toolkit.side_effect_free
