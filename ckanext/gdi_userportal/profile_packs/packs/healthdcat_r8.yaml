@@ -126,8 +126,6 @@ overrides:
   dataset_fields.retention_period:
     repeating_once: true
     repeating_label: Retention period
-  # The landing page and the type of a dataset are 0..*. Their Solr fields hold one value (the first), and the type
-  # also keeps all of them in vocab_dcat_type, the field the type filter reads.
   dataset_fields.url:
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
