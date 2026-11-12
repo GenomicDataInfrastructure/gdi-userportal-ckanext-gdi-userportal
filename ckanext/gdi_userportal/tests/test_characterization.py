@@ -87,6 +87,12 @@ def expected_api(record, language):
     distribution): those are not made up any more.
     """
     expected = deepcopy(record["api_output"][language])
+    # custodian and hdab_coordinator are marked ``agent: true`` now (r8_additions.yaml, like publisher and hdab):
+    # their agents get the identifier list that every agent has, empty when the record has none
+    for key in ("custodian", "hdab_coordinator"):
+        for agent in expected.get(key) or []:
+            if isinstance(agent, dict):
+                agent.setdefault("identifier", [])
     names = {field["field_name"] for field in SCHEMAS[record["type"]]} | set(CORE_TRANSLATED_FIELDS)
     resource_names = {field["field_name"] for field in RESOURCE_FIELDS}
     for key in RECORDED_PACKAGE_LIST:

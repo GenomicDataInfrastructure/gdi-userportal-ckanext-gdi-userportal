@@ -30,6 +30,7 @@ dataset_fields:
 
   - field_name: theme
     translate: true
+    solr: {canonical_prefix: "http://publications.europa.eu/resource/authority/data-theme/"}
     label: Theme
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text

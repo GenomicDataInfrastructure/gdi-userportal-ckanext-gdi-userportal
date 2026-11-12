@@ -78,13 +78,6 @@ else:
     from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
-PUBLICATIONS_DATA_THEME_HTTP_PREFIX = (
-    "http://publications.europa.eu/resource/authority/data-theme/"  # NOSONAR - canonical authority URI
-)
-PUBLICATIONS_DATA_THEME_HTTPS_PREFIX = (
-    "https://publications.europa.eu/resource/authority/data-theme/"
-)
-
 SOLR_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
@@ -392,41 +385,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         except json.JSONDecodeError:
             return value
 
-    def _canonicalize_publications_data_theme_uri(self, value):
-        if not isinstance(value, str):
-            return value
-
-        if value.startswith(PUBLICATIONS_DATA_THEME_HTTPS_PREFIX):
-            suffix = value[len(PUBLICATIONS_DATA_THEME_HTTPS_PREFIX) :]
-            return f"{PUBLICATIONS_DATA_THEME_HTTP_PREFIX}{suffix}"
-
-        return value
-
-    def _normalize_theme_values(self, theme_value):
-        if isinstance(theme_value, str):
-            return self._canonicalize_publications_data_theme_uri(theme_value)
-
-        if not isinstance(theme_value, list):
-            return theme_value
-
-        normalized = [
-            self._canonicalize_publications_data_theme_uri(item)
-            if isinstance(item, str)
-            else item
-            for item in theme_value
-        ]
-
-        deduplicated = []
-        seen = set()
-        for item in normalized:
-            if isinstance(item, str):
-                if item in seen:
-                    continue
-                seen.add(item)
-            deduplicated.append(item)
-
-        return deduplicated
-
     def _labels_of(self, terms):
         """The labels the term translations have for each of the terms; none when they cannot be read."""
         try:
@@ -475,15 +433,14 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         fields = self._dataset_fields(data_dict)
         data_dict = indexing.normalise_all(data_dict, fields)
 
-        if data_dict.get("theme") is not None:
-            data_dict["theme"] = self._normalize_theme_values(data_dict["theme"])
+        data_dict = indexing.canonicalise_uris_all(data_dict, fields)
 
         if data_dict.get("res_format"):
             data_dict["res_format"] = list(dict.fromkeys(data_dict.get("res_format")))
 
         data_dict = indexing.flatten_all(data_dict, fields)
 
-        data_dict = self._merge_tags_translated_for_indexing(data_dict)
+        data_dict = indexing.merge_translated_keywords_all(data_dict, fields)
         # the free text: what the fields say and the labels of their terms (the "text" key of the fields)
         data_dict = indexing.free_text_all(
             data_dict,
@@ -493,40 +450,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         )
         data_dict = indexing.keep_one_value_all(data_dict, fields)
 
-        return data_dict
-
-    def _merge_tags_translated_for_indexing(self, data_dict):
-        """
-        Merges tags from extras_tags_translated into the tags field for Solr indexing.
-        This ensures manually added multilingual tags are searchable via tag filters.
-        """
-        tags_translated_raw = data_dict.get('extras_tags_translated')
-        if not tags_translated_raw:
-            return data_dict
-
-        try:
-            tags_translated = json.loads(tags_translated_raw) if isinstance(tags_translated_raw, str) else tags_translated_raw
-        except json.JSONDecodeError:
-            return data_dict
-
-        if not isinstance(tags_translated, dict):
-            return data_dict
-
-        existing_tags = data_dict.get('tags', [])
-        if isinstance(existing_tags, str):
-            existing_tags = [existing_tags]
-
-        seen = set(existing_tags)
-        merged_tags = list(existing_tags)
-
-        for lang_tags in tags_translated.values():
-            if isinstance(lang_tags, list):
-                for tag in lang_tags:
-                    if isinstance(tag, str) and tag.strip() and tag.strip() not in seen:
-                        seen.add(tag.strip())
-                        merged_tags.append(tag.strip())
-
-        data_dict['tags'] = merged_tags
         return data_dict
 
     def before_dataset_view(self, pkg_dict):

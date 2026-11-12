@@ -284,6 +284,8 @@ plugin (`indexing.py`; the schema is read through `schema_fields.py`):
   solr: {text: false}                     # not searched as free text (ids); every other field is
 - field_name: dcat_type
   solr: {multiple: false, all_values: vocab_dcat_type}   # the first value, and all of them
+- field_name: theme
+  solr: {canonical_prefix: "http://publications.europa.eu/resource/authority/data-theme/"}
 ```
 
 - `flatten` lists the subfields of a repeating field that get a Solr field each, `<prefix>_<subfield>`
@@ -302,6 +304,14 @@ plugin (`indexing.py`; the schema is read through `schema_fields.py`):
 - `multiple: false` (with the `type`, `index` and `store` keys of the section above) says the Solr field
   holds one value although the scheming field is a list, as for the landing page and the type of
   `healthdcat_r8`; the first value is kept and `all_values` names a second Solr field that gets all of them.
+- `canonical_prefix` is the URI prefix a field is indexed with: a value that starts with the same prefix in the other
+  scheme (`https://publications.europa.eu/...` for the `http` one above) is indexed with the prefix given, and
+  doubles go, so one theme is one filter value whichever form a source used. Other values are not touched.
+- A multilingual keyword field (preset `fluent_tags`, named `<x>_translated`, as `tags_translated`) adds its keywords
+  of every language to `<x>` (`tags`), so a keyword typed in one language is found by the filter on `tags`. No
+  mark is needed. The API follows the same naming: every `<x>_translated` that holds keywords per language gives
+  `<x>` the keywords in the language of the request, at any depth (`tags_translated` of the dataset,
+  `keyword_translated` of an access service).
 - A field that holds a list and has no repeating subfields has its JSON text decoded to a list. `decode:
   false` leaves it as it is, for a field that another plugin reads as text while indexing: this plugin runs
   before ckanext-dataset-series, which does `json.loads` on `in_series`.

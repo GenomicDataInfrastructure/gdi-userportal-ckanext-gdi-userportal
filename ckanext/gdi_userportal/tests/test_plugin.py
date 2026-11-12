@@ -91,6 +91,7 @@ def test_before_dataset_index_does_not_set_series_vocab_fields_for_empty_in_seri
     assert "vocab_in_series_title" not in result
 
 import ckanext.gdi_userportal.plugin as plugin
+from ckanext.gdi_userportal import indexing
 
 # before_dataset_index reads the dataset schema (the solr key of its fields): the one the packs generate
 pytestmark = pytest.mark.usefixtures("indexing_schema")
@@ -684,22 +685,27 @@ def test_get_commands_returns_cli_commands():
     assert commands[0].name == "gdi-userportal"
 
 
+TAGS_FIELDS = [{"field_name": "tags_translated", "preset": "fluent_tags"}]
+
+
+def _merge(document):
+    return indexing.merge_translated_keywords_all(document, TAGS_FIELDS)
+
+
 class TestMergeTagsTranslatedForIndexing:
-    """Tests for _merge_tags_translated_for_indexing method."""
+    """The keywords of a multilingual keyword field (``fluent_tags``) are added to the field it translates."""
 
     def test_no_tags_translated_returns_unchanged(self):
         """When no tags_translated field exists, data is unchanged."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {"tags": ["existing-tag"], "title": "Test"}
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"] == ["existing-tag"]
         assert result["title"] == "Test"
 
     def test_merges_tags_translated_into_tags(self):
         """Tags from tags_translated are merged into tags field."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": ["harvested-tag"],
             "extras_tags_translated": json.dumps({
@@ -708,7 +714,7 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert "harvested-tag" in result["tags"]
         assert "manual-tag-en" in result["tags"]
@@ -716,7 +722,6 @@ class TestMergeTagsTranslatedForIndexing:
 
     def test_removes_duplicates(self):
         """Duplicate tags are not added twice."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": ["same-tag", "unique-tag"],
             "extras_tags_translated": json.dumps({
@@ -724,7 +729,7 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"].count("same-tag") == 1
         assert "unique-tag" in result["tags"]
@@ -732,7 +737,6 @@ class TestMergeTagsTranslatedForIndexing:
 
     def test_handles_empty_tags_list(self):
         """Works when existing tags is empty list."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": [],
             "extras_tags_translated": json.dumps({
@@ -740,50 +744,46 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"] == ["translated-only"]
 
     def test_handles_no_existing_tags(self):
         """Works when tags field doesn't exist."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "extras_tags_translated": json.dumps({
                 "en": ["new-tag"]
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"] == ["new-tag"]
 
     def test_handles_invalid_json(self):
         """Invalid JSON in tags_translated returns unchanged."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": ["existing"],
             "extras_tags_translated": "not valid json"
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"] == ["existing"]
 
     def test_handles_non_dict_tags_translated(self):
         """Non-dict tags_translated returns unchanged."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": ["existing"],
             "extras_tags_translated": json.dumps(["not", "a", "dict"])
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"] == ["existing"]
 
     def test_filters_blank_tags(self):
         """Blank and whitespace-only tags are filtered out."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": ["valid"],
             "extras_tags_translated": json.dumps({
@@ -791,7 +791,7 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert "" not in result["tags"]
         assert "  " not in result["tags"]
@@ -800,7 +800,6 @@ class TestMergeTagsTranslatedForIndexing:
 
     def test_trims_whitespace(self):
         """Whitespace around tags is trimmed."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": [],
             "extras_tags_translated": json.dumps({
@@ -808,14 +807,13 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert "spaced tag" in result["tags"]
         assert "  spaced tag  " not in result["tags"]
 
     def test_handles_tags_as_string(self):
         """Works when existing tags is a string instead of list."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": "single-tag",
             "extras_tags_translated": json.dumps({
@@ -823,9 +821,38 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert "single-tag" in result["tags"]
+
+    def test_every_multilingual_keyword_field_of_the_schema_is_merged(self):
+        """The fields come from the schema: a keyword field of another name merges into its own base field."""
+        fields = [{"field_name": "keyword_translated", "preset": "fluent_tags"}]
+        document = {"keyword": ["a"], "extras_keyword_translated": json.dumps({"en": ["b"]})}
+
+        result = indexing.merge_translated_keywords_all(document, fields)
+
+        assert result["keyword"] == ["a", "b"]
+
+    def test_a_field_that_is_not_a_multilingual_keyword_field_is_left_alone(self):
+        """No preset, or a name that is not ``<x>_translated``: nothing to merge into."""
+        fields = [
+            {"field_name": "tags_translated"},
+            {"field_name": "tags", "preset": "fluent_tags"},
+            {"field_name": "title_translated", "preset": "fluent_text"},
+        ]
+        document = {
+            "tags": ["a"],
+            "extras_tags_translated": json.dumps({"en": ["b"]}),
+            "extras_title_translated": json.dumps({"en": ["c"]}),
+        }
+
+        assert indexing.merge_translated_keywords_all(dict(document), fields) == document
+
+    def test_a_schema_that_cannot_be_read_leaves_the_document_alone(self):
+        document = {"tags": ["a"], "extras_tags_translated": json.dumps({"en": ["b"]})}
+
+        assert indexing.merge_translated_keywords_all(dict(document), []) == document
 
 
 class TestBeforeDatasetSearchTemporalCoverage:

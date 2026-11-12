@@ -22,9 +22,15 @@ the fields in the schema (``README.md``, section "Solr schema"):
     (CKAN's ``term_translation``) its labels in every language too, so that "Utrecht" finds a dataset that has
     ``.../place/NLD_UTC`` in a property. The JSON text CKAN made of the field (``extras_<field>``) and the objects
     of a repeating field are not indexed: Solr would search their braces and keys (``free_text_all``);
+``canonical_prefix``
+    the URI prefix the values of the field are indexed with: a value that starts with the same prefix in the other
+    scheme (``https`` for ``http``) gets this one, and doubles go (``canonicalise_uris``);
 ``multiple: false``
     the Solr field holds one value although the scheming field is a list: the first value is kept, and
     ``all_values`` names a second Solr field that gets all of them.
+
+A multilingual keyword field (preset ``fluent_tags``, named ``<x>_translated``) adds its keywords to ``<x>``
+(``merge_translated_keywords``): no mark is needed, as for the free text.
 
 A field that holds a list and has no repeating subfields has its JSON text decoded to a real list, unless it says
 ``decode: false``: a plugin that runs after this one reads the text (ckanext-dataset-series reads ``in_series``).
@@ -194,9 +200,92 @@ def _named(fields: Iterable[Mapping]) -> List[Mapping]:
     return [field for field in fields or [] if isinstance(field, Mapping) and field.get("field_name")]
 
 
+def _other_scheme(prefix: str) -> str:
+    """The prefix with the other URI scheme (``http`` for ``https`` and the other way round); empty for neither."""
+    for scheme, other in (("http://", "https://"), ("https://", "http://")):
+        if prefix.startswith(scheme):
+            return other + prefix[len(scheme) :]
+    return ""
+
+
+def canonicalise_uris(document: dict, field: Mapping) -> dict:
+    """Index the URIs of a field with the prefix its ``solr: {canonical_prefix}`` names, without doubles.
+
+    ``https://publications.europa.eu/.../data-theme/HEAL`` and the ``http`` form are one term for the filters; the
+    prefix says which form is the canonical one. Only a text that starts with the other form of the prefix changes.
+    """
+    prefix = schema_fields.canonical_prefix(field)
+    other = _other_scheme(prefix)
+    name = field["field_name"]
+    value = document.get(name)
+    if not prefix or not other or value is None:
+        return document
+
+    def canonical(item):
+        return prefix + item[len(other) :] if isinstance(item, str) and item.startswith(other) else item
+
+    if not isinstance(value, list):
+        document[name] = canonical(value)
+        return document
+    items, seen = [], set()
+    for item in map(canonical, value):
+        if isinstance(item, str):
+            if item in seen:
+                continue
+            seen.add(item)
+        items.append(item)
+    document[name] = items
+    return document
+
+
+def merge_translated_keywords(document: dict, field: Mapping) -> dict:
+    """Add the keywords of a multilingual keyword field (``tags_translated``) to the field it translates (``tags``).
+
+    Keywords somebody typed in one language are then found by the filter on the plain field too. A keyword is
+    trimmed, a blank one is left out, and one the field already has is not added twice.
+    """
+    base = schema_fields.translated_keywords_of(field)
+    if not base:
+        return document
+    raw = document.get(EXTRAS_PREFIX + field["field_name"])
+    if not raw:
+        return document
+    try:
+        translated = json.loads(raw) if isinstance(raw, str) else raw
+    except ValueError:
+        return document
+    if not isinstance(translated, dict):
+        return document
+
+    existing = document.get(base) or []
+    if isinstance(existing, str):
+        existing = [existing]
+    merged = list(existing)
+    seen = set(merged)
+    for keywords in translated.values():
+        for keyword in keywords if isinstance(keywords, list) else []:
+            if isinstance(keyword, str) and keyword.strip() and keyword.strip() not in seen:
+                seen.add(keyword.strip())
+                merged.append(keyword.strip())
+    document[base] = merged
+    return document
+
+
 def normalise_all(document: dict, fields: Iterable[Mapping]) -> dict:
     for field in _named(fields):
         normalise(document, field)
+    return document
+
+
+def canonicalise_uris_all(document: dict, fields: Iterable[Mapping]) -> dict:
+    for field in _named(fields):
+        canonicalise_uris(document, field)
+    return document
+
+
+def merge_translated_keywords_all(document: dict, fields: Iterable[Mapping]) -> dict:
+    for field in _named(fields):
+        merge_translated_keywords(document, field)
     return document
 
 

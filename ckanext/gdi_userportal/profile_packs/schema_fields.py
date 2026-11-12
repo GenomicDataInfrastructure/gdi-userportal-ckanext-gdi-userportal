@@ -23,6 +23,9 @@ MULTIPLE_PRESETS = {"multiple_text", "multiple_select", "multiple_checkbox", "da
 MULTIPLE_VALIDATORS = {"scheming_multiple_choice", "scheming_multiple_text", "series_validator"}
 # ckanext-fluent presets that store one text per language: {"en": "...", "nl": "..."}
 FLUENT_TEXT_PRESETS = {"fluent_markdown", "fluent_text"}
+# the ckanext-fluent preset that stores a list of keywords per language: {"en": ["a"], "nl": ["b"]}
+FLUENT_TAGS_PRESETS = {"fluent_tags"}
+TRANSLATED_SUFFIX = "_translated"
 
 
 def subfields(field: Mapping) -> List[dict]:
@@ -44,6 +47,29 @@ def solr_options(field: Mapping) -> dict:
     """The ``solr`` key of a field (what its Solr fields look like), an empty mapping when it has none."""
     options = field.get("solr") if isinstance(field, Mapping) else None
     return options if isinstance(options, Mapping) else {}
+
+
+def canonical_prefix(field: Mapping) -> str:
+    """``solr: {canonical_prefix: <uri prefix>}``: the URI prefix the indexing writes the values of the field with.
+
+    A value that starts with the prefix in the other scheme (``https`` for an ``http`` prefix and the other way
+    round) is indexed with the prefix given, so one term is one filter value. An empty text when there is none.
+    """
+    prefix = solr_options(field).get("canonical_prefix")
+    return prefix if isinstance(prefix, str) else ""
+
+
+def translated_keywords_of(field: Mapping) -> str:
+    """The field a multilingual keyword field (``fluent_tags``, named ``<x>_translated``) is the translation of.
+
+    ``tags_translated`` gives ``tags``; an empty text for any other field.
+    """
+    if not isinstance(field, Mapping):
+        return ""
+    name = str(field.get("field_name") or "")
+    if str(field.get("preset", "")) in FLUENT_TAGS_PRESETS and name.endswith(TRANSLATED_SUFFIX):
+        return name[: -len(TRANSLATED_SUFFIX)]
+    return ""
 
 
 def flatten_paths(field: Mapping) -> List[Tuple[str, ...]]:
