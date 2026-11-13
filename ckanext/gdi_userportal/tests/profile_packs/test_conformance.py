@@ -5,7 +5,7 @@
 """
 Computed conformance: which enabled profiles a dataset satisfies at its access layer.
 
-The central promise is that old data never raises: whatever is missing or malformed gives
+The central promise is that data never raises: whatever is missing or malformed gives
 "not conformant", with the missing properties named.
 """
 
@@ -102,7 +102,7 @@ def test_a_value_nested_beyond_the_json_decoder_is_still_an_answer(conformance):
         ([NON_PUBLIC], "NON_PUBLIC"),
         (["", PUBLIC], "PUBLIC"),
         ({"en": PUBLIC}, "PUBLIC"),
-        ('["' + RESTRICTED + '"]', "RESTRICTED"),  # old extras were stored JSON-encoded
+        ('["' + RESTRICTED + '"]', "RESTRICTED"),  # extras can hold JSON text
         ('{"en": "' + NON_PUBLIC + '"}', "NON_PUBLIC"),
     ],
 )
@@ -207,7 +207,7 @@ def test_a_blank_repeating_row_does_not_fill_a_property(conformance, r8_rules):
     assert missing(r8_result(conformance, r8_rules, dataset)) == {"health data access body"}
 
 
-# --- old data never raises -----------------------------------------------------------
+# --- missing or malformed data never raises -----------------------------------------------------------
 
 
 def test_an_empty_dataset_is_not_conformant_and_does_not_raise(conformance, r8_rules):

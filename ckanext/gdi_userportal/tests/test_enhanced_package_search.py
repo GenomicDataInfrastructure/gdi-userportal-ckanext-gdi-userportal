@@ -231,7 +231,7 @@ def test_collect_search_values_to_translate_covers_results_and_facet_items():
     assert THEME_URI in values
     assert "http://www.wikidata.org/entity/Q58624061" in values
     assert len(values) == len(set(values))
-    # collecting from the whole response (the old behaviour) found nothing
+    # collecting from the whole response finds nothing
     assert collect_values_to_translate(result) == []
 
 

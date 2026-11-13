@@ -125,7 +125,7 @@ def test_a_field_that_ckan_indexes_itself_may_be_declared_in_schema_xml_and_in_t
 
 
 AGENT = ["name", "uri", "email", "url", "type", "identifier", "country"]
-# What the plugin used to flatten by name, and what it fills from the solr key of the fields now.
+# The subfields each profile indexes under the field name, as the solr keys of the fields say.
 FLATTENED = {
     "gdi_current": {
         *("publisher_" + sub for sub in AGENT),

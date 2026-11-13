@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Which enabled metadata profiles a dataset satisfies (ADR 0001, section 6).
+Which enabled metadata profiles a dataset satisfies.
 
 Computed on demand from the dataset itself, never stored. A dataset conforms to a profile when
 every property the profile makes mandatory at the dataset's access layer (PUBLIC, RESTRICTED or
@@ -11,8 +11,8 @@ NON_PUBLIC, from ``access_rights``) has a value. Nothing blocks on the outcome.
 
 Only the presence of a value is checked: not the maximum cardinality, the vocabulary a value
 comes from, the shape of a nested node, or R8's conditional rule that structured data needs
-variables. Data from before a profile existed lacks values; that is a "not conformant"
-answer, never an error, so every value shape is accepted here.
+variables. A dataset without a value for a property is "not conformant", never an error, so every value shape
+is accepted here.
 
 The rules come from the pack manifests (``Registry.conformance`` in ``generator.py``). A pack
 without rules has no mandatory properties and is satisfied by every dataset.
@@ -34,7 +34,7 @@ def is_filled(value):
 
     A container is filled when anything inside it is, so a repeating field saved with one blank
     row is empty. ``False`` and ``0`` are values. A string that holds a JSON list or object is
-    judged by what it decodes to, because old extras were stored that way.
+    judged by what it decodes to, because extras can hold JSON text.
     """
     if value is None:
         return False
@@ -72,7 +72,7 @@ def access_layer(dataset):
 def _first_text(value):
     if isinstance(value, str):
         text = value.strip()
-        if text[:1] in ("[", "{"):  # old extras were stored JSON-encoded, as is_filled also accepts
+        if text[:1] in ("[", "{"):  # extras can hold JSON text, as is_filled also accepts
             try:
                 return _first_text(json.loads(text))
             except (ValueError, RecursionError):
