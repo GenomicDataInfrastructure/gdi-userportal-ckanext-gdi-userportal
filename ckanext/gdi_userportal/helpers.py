@@ -101,8 +101,8 @@ def scheming_missing_required_fields(
     """Return a list of missing required fields grouped per form page.
 
     This helper acts as the base implementation expected by
-    ``ckanext-fluent``.  It mirrors the behaviour from the forked
-    ckanext-scheming version previously used in this project and makes sure
+    ``ckanext-fluent``.  It mirrors the behaviour of the forked
+    ckanext-scheming version and makes sure
     chained helpers can extend the result again.
     """
     data_dict = _ensure_data_dict(data, package_id)

@@ -6,8 +6,8 @@
 Values that hold nothing, and the dataset without them.
 
 The edit form posts an input for every language and every subfield, and the RDF profiles fill every form
-language with an empty text, so a dataset used to be saved with ``{"en": "", "nl": ""}``, ``[]`` and ``""``
-as extras. Those rows say nothing and take space in the database and in every API answer; the code that
+language with an empty text, so a dataset is stored with ``{"en": "", "nl": ""}``, ``[]`` and ``""``
+as extras unless they are removed. Those rows say nothing and take space in the database and in every API answer; the code that
 reads a dataset has to cope with a field that is not there anyway (a dataset that never had it).
 
 Standard library only. ``0`` and ``False`` are values, not blanks.

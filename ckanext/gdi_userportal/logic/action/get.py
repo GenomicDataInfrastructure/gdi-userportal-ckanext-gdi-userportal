@@ -40,7 +40,7 @@ STATS_FIELD_PARAM = "stats.field"
 TEMPORAL_COVERAGE_LABEL_TERM = "temporal_coverage"
 
 # Solr params that only make sense for the *main* search and would otherwise
-# leak into (and skew the cost of) the rows=1 sorted queries used to resolve
+# leak into (and skew the cost of) the rows=1 sorted queries that resolve the
 # stats below.
 _STATS_SUBQUERY_EXCLUDED_PARAMS = (
     "fl",
