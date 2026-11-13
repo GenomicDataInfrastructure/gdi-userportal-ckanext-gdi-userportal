@@ -325,8 +325,8 @@ schema, which has fields the dataset schema lacks, such as `series_order_field`)
 definition winning.
 
 **A leftover** is an explicit field of the core that is not in `schema.xml` and not made from any of those schemas: the
-fields of a retired profile, the fields of repeating fields an older version made explicit, a field that is now covered by
-a dynamic field of `schema.xml`. The sync deletes the copy fields that name it first, then the field, then adds again a
+fields of a retired profile, the fields of repeating fields an older version made explicit, a field that a dynamic field
+of `schema.xml` covers. The sync deletes the copy fields that name it first, then the field, then adds again a
 copy field that `schema.xml` still declares (its source is the dynamic field then). Fields Solr keeps for itself
 (`_version_`, ...) and dynamic fields are never touched. Removal needs every schema, so it only happens with `--ckan-ini`.
 With `--dataset-schema FILE` alone (repeatable), the leftovers are kept and the sync says so, because the fields of the
