@@ -6,12 +6,13 @@ SPDX-License-Identifier: Apache-2.0
 
 # Metadata profile packs
 
-One CKAN deployment can load several metadata profiles ("packs"), chosen at container start
-(ADR 0001) with `GDI_METADATA_PROFILES`, `GDI_METADATA_MAIN_PROFILE` and `GDI_METADATA_FORM_LANGUAGES`;
-the variables and examples are in `docs/metadata-profiles.md` of `gdi-userportal-ckan-docker`. The
-generator merges the schema fragments of the enabled packs into one scheming `dataset` schema, because
-ckanext-scheming cannot compose schemas at runtime. Unknown packs, duplicate names, a main profile that is not enabled, and undeclared conflicts stop
-the container from starting.
+One CKAN deployment can load several metadata profiles ("packs"). They are chosen at container start with
+`GDI_METADATA_PROFILES`, `GDI_METADATA_MAIN_PROFILE` and `GDI_METADATA_FORM_LANGUAGES`; the variables and examples are
+in `docs/metadata-profiles.md` of `gdi-userportal-ckan-docker`.
+
+ckanext-scheming cannot compose schemas at runtime, so the generator merges the schema fragments of the enabled packs
+into one scheming `dataset` schema before CKAN starts. An unknown pack, a duplicate name, a main profile that is not
+enabled, and an undeclared conflict stop the container from starting.
 
 ## Packs
 
@@ -20,61 +21,69 @@ the container from starting.
 | `gdi_current` | The portal's original model | `fairdatapoint_dcat_ap euro_dcat_ap_nl` |
 | `healthdcat_r8` | HealthDCAT-AP Release 8 | `euro_health_dcat_ap_r8` |
 
-`healthdcat_r8` shares the neutral fields of `gdi_current` and adds `alternative_title`,
-`related_resource`, `source`, `has_structured_data`, `variables`, `custodian` and
-`hdab_coordinator`. `dataset_status` and `trusted_data_holder` stay `gdi_current` only: R8 has
-no such property. `related_resource` and `source` reuse the key of the free extras that exist
-today, so saved values become field values in place.
+`healthdcat_r8` shares the neutral fields of `gdi_current` and adds `alternative_title`, `related_resource`, `source`,
+`has_structured_data`, `variables`, `custodian` and `hdab_coordinator`. `dataset_status` and `trusted_data_holder` stay
+`gdi_current` only, because R8 has no such property. `related_resource` and `source` reuse the key of the free extras
+that exist today, so saved values become field values in place.
 
-The R8 pack holds the properties of the R8 model and nothing else; what only `gdi_current` has
-stays in `gdi_current`. That is the HealthDCAT-AP publisher note and type (on the dataset and on the
-agents), the license of the dataset, the retention period of a distribution, the identifier and
-country of an agent, and the extra subfields of the activity and of a data service. R8 types an
-agent with `dct:type` (the `type` subfield) and writes the description of a publisher as
-`dct:description`; that subfield keeps the key `publisher_note`, because field names are the same in
-every profile, and is labelled "Description" in R8. In R8 the email and the contact page of a health
-agent belong to its contact point, so the subfield `url` is labelled "Contact page".
+Enabling both packs is supported. The fields that the two packs define differently are declared with `redefines`, and
+the pack listed first decides which definition is used (see "Merging").
 
-**The order matters for the fields R8 defines differently.** R8 defines `contact`, `spatial_coverage`, `publisher`,
-`creator`, `qualified_attribution`, `was_generated_by`, `hdab`, `qualified_relation` and the resource field
-`access_services` differently: a `vcard:Kind` contact point with an email and one contact page
-(`vcard:hasURL` is at most one) and nothing else, a location that is an IRI with a geometry, a
-bounding box and a centroid (no label), plain agents with a name and a type (the health agents of a
-dataset add the `cv:ContactPoint`, whose email, contact page and telephone are lists because R8 allows
-`0..n` of each, with the opening hours; the publisher a description), an activity with a label and a
-type, a relationship with one or more relations and roles, and the properties of `dcat:DataService` only. It also calls `spatial_coverage` "Geographical coverage" and
-`spatial_resolution_in_meters` "Spatial resolution" (the IRI keeps the unit), and has at most one
-retention period. A distribution carries the names R8 gives its properties: title, compression format,
-packaging format, byte size, licence and linked schemas (the labels differ from `gdi_current`, so
-these resource fields are redefined too). Its checksum is an entity, as in R8 (`checksum` with an
-`algorithm`, one of the SPDX members, and a lower case hexadecimal `checksum_value`, checked by the
-validator `gdi_hex_binary`), where `gdi_current` has the two plain fields `hash` and `hash_algorithm`;
-each pack has its own fragment for it (`r8_checksum`, `gdi_resource_checksum`). The availability is one
-concept of the EU planned-availability vocabulary (a choice), where `gdi_current` takes free text. The pack declares them with `redefines`, so
-with both packs enabled the pack listed first decides. With `gdi_current` first they keep their
-`gdi_current` subfields, and a parsed value for a subfield that is missing is dropped (a value for a
-subfield that holds one value keeps the first, with a warning), so the dataset stays valid. List
-`healthdcat_r8` first to get the R8 versions. The main profile is set apart from the order, so this
-does not change which mapping an export uses by default.
+## What R8 changes
 
-R8 fields that allow several values where `gdi_current` holds one and that are lists in the R8 pack:
-the relations and roles of `qualified_relation`, the roles of `qualified_attribution`, the landing
-page (`url`) and the type (`dcat_type`) of a dataset, and the access URL (`access_url`) and download
-URL (`download_url`) of a distribution. The rights of a distribution are a list of statements, each
-with an optional IRI and a label per language (`rights` with the subfields `uri` and
-`label_translated`; the pack removes the `fluent_markdown` preset of `gdi_current` with a `null` in
-its `overrides`). The title, description and endpoint description of a data service
-(`access_services`) hold a text per language in the R8 pack (`fluent_text`; the subfield values are
-language maps). Consumers that read one value of each (the Discovery Service) have to handle lists
-before an R8-first deployment serves them; see "Known limits" in `docs/metadata-profiles.md` of
-`gdi-userportal-ckan-docker`. Solr keeps one value in `url` and `dcat_type` (changing
-`multiValued` needs a reindex): `before_dataset_index` puts the first value there, and every type in
-`vocab_dcat_type`. The identifier stays single-valued: the R8 profile keeps the first value and logs a
-warning when it drops others (ADR 0001, Q3).
+The R8 pack holds the properties of the R8 model and nothing else. What only `gdi_current` has stays in `gdi_current`:
+the HealthDCAT-AP publisher note and type (on the dataset and on the agents), the license of the dataset, the retention
+period of a distribution, the identifier and country of an agent, and the extra subfields of the activity and of a data
+service. R8 types an agent with `dct:type` (the `type` subfield) and writes the description of a publisher as
+`dct:description`. That subfield keeps the key `publisher_note`, because field names are the same in every profile, and
+it is labelled "Description" in R8. In R8 the email and the contact page of a health agent belong to its contact point,
+so the subfield `url` is labelled "Contact page".
 
-The R8 variants of the agent snippets and of `access_services` are copies. The tests in
-`test_healthdcat_r8_pack.py` check that each equals the `gdi_current` one plus what R8 adds and
-minus what it leaves out.
+**Fields R8 defines differently.** R8 defines `contact`, `spatial_coverage`, `publisher`, `creator`,
+`qualified_attribution`, `was_generated_by`, `hdab`, `qualified_relation` and the resource field `access_services`
+differently:
+
+- `contact`: a `vcard:Kind` contact point with an email and one contact page (`vcard:hasURL` is at most one), and
+  nothing else.
+- `spatial_coverage`: a location that is an IRI with a geometry, a bounding box and a centroid (no label). It is
+  called "Geographical coverage", and `spatial_resolution_in_meters` is called "Spatial resolution" (the IRI keeps the
+  unit).
+- `publisher`, `creator`, `hdab`, `was_generated_by`: plain agents with a name and a type. The health agents of a
+  dataset add the `cv:ContactPoint`, whose email, contact page and telephone are lists because R8 allows `0..n` of each,
+  with the opening hours. The publisher has a description.
+- `qualified_attribution`: an activity with a label and a type.
+- `qualified_relation`: a relationship with one or more relations and roles.
+- `access_services`: the properties of `dcat:DataService` only.
+- The retention period: at most one.
+- A distribution carries the names R8 gives its properties: title, compression format, packaging format, byte size,
+  licence and linked schemas. The labels differ from `gdi_current`, so these resource fields are redefined too.
+- The checksum is an entity, as in R8 (`checksum` with an `algorithm`, one of the SPDX members, and a lower case
+  hexadecimal `checksum_value`, checked by the validator `gdi_hex_binary`). `gdi_current` has the two plain fields
+  `hash` and `hash_algorithm`. Each pack has its own fragment: `r8_checksum` and `gdi_resource_checksum`.
+- The availability is one concept of the EU planned-availability vocabulary (a choice). `gdi_current` takes free text.
+
+The pack declares these with `redefines`. With `gdi_current` listed first, the fields keep their `gdi_current`
+subfields, and a parsed value for a subfield that is missing is dropped. A value for a subfield that holds one value
+keeps the first, with a warning, so the dataset stays valid. List `healthdcat_r8` first to get the R8 versions. The main
+profile is set apart from the order, so this does not change which mapping an export uses by default.
+
+**Multiple values.** R8 allows several values where `gdi_current` holds one. In the R8 pack these are lists: the
+relations and roles of `qualified_relation`, the roles of `qualified_attribution`, the landing page (`url`) and the type
+(`dcat_type`) of a dataset, and the access URL (`access_url`) and download URL (`download_url`) of a distribution. The
+rights of a distribution are a list of statements, each with an optional IRI and a label per language (`rights` with
+the subfields `uri` and `label_translated`; the pack removes the `fluent_markdown` preset of `gdi_current` with a `null`
+in its `overrides`). The title, description and endpoint description of a data service (`access_services`) hold a text
+per language in the R8 pack (`fluent_text`; the subfield values are language maps).
+
+Consumers that read one value of each (the Discovery Service) have to handle lists before an R8-first deployment
+serves them; see "Known limits" in `docs/metadata-profiles.md` of `gdi-userportal-ckan-docker`.
+
+The identifier stays single-valued. The RDF profile of `healthdcat_r8` (in ckanext-dcat) keeps the first value and logs
+a warning when it drops others. The Solr fields of `url` and `dcat_type` hold one value each: `multiple: false` in the
+`solr` key, see "Solr schema".
+
+The R8 variants of the agent snippets and of `access_services` are copies. The tests in `test_healthdcat_r8_pack.py`
+check that each equals the `gdi_current` one plus what R8 adds and minus what it leaves out.
 
 ## Layout
 
@@ -84,111 +93,90 @@ profile_packs/
   packs/<name>.yaml        manifest
   fragments/<name>.yaml    partial schema
   snippets/<name>.yaml     YAML reused by several fragments
+  conformance/             mandatory properties per pack (see "Conformance")
+  conformance.py           conformance of records, computed on demand
+  conformance_build.py     generates conformance/healthdcat_r8.json
+  prune.py                 the extras of retired profiles (see "Pruning")
+  schema_fields.py         reads the dataset schema for the indexing and the API
+  solr_schema.py           derives and syncs the Solr fields
 ```
 
-**Pack manifest**
+### Pack manifest
 
 ```yaml
 name: gdi_current          # must equal the file name
-fragments: [core, ...]     # the schema; order matters (see below)
+fragments: [core, ...]     # the schema; order matters (see "Merging")
 rdf_profiles: [a, b]       # ckan.rdf.profiles entry points, in order
 redefines: []              # "<section>.<field_name>" this pack defines differently from another pack
 conformance: conformance/<name>.json   # optional: mandatory properties per access layer (generated)
-keep_extras: []            # optional: dataset fields that stay when this pack is retired (see Pruning)
-series_schema: pkg:path/to/series.yaml   # optional: the static scheming schema of the dataset series
+keep_extras: []            # optional: dataset fields that stay when this pack is retired (see "Pruning")
+series_schema: pkg:path/to/series.yaml # optional: the static scheming schema of the dataset series
 overrides:                 # optional: keys that replace those of a field this pack defines, for this pack only
   dataset_fields.retention_period: {repeating_once: true}
 field_order: fragments     # optional: fragments (the default) or alphabetical, see below
 ```
 
-`overrides` is for a label or a cardinality that differs, so that a shared fragment does not need a
-copy; a key set to `null` is removed from the field (a preset that the pack replaces by subfields of its
-own). The overridden field still needs a `redefines` entry when another pack defines it too.
+`overrides` is for a label or a cardinality that differs, so that a shared fragment does not need a copy. A key set to
+`null` is removed from the field, which is how a pack replaces a preset with subfields of its own. The overridden field
+still needs a `redefines` entry when another pack defines it too.
 
-`field_order: alphabetical` orders the `dataset_fields` and the `resource_fields` of the generated
-schema by label (a label per language is read in English, ignoring case), with the title and the
-description first (`title_translated`, `notes_translated` and `name_translated`,
-`description_translated`). It is the order of the edit form and of the display of a dataset and of a
-distribution. Without it the order is that of the fragments. With several packs enabled the pack listed
-first decides. Both `healthdcat_r8` and `gdi_current` are alphabetical; the static series schemas,
-`dataset_series_r8.yaml` and `dataset_series_multilingual.yaml`, are kept in the same order by hand (a
-test checks them). The subfields of a field keep their own order, which follows the model, except those of
-a data service (`access_services`): they are in the same alphabetical order, title and description first,
-kept by hand in `r8_access_services.yaml` and `health_access_services.yaml` and checked by a test.
-`scheming/schemas/dataset_multilingual.yaml` keeps the original field order; the acceptance test compares
-it with `gdi_current` field by field, by name.
+**Field order.** `field_order: alphabetical` orders the `dataset_fields` and the `resource_fields` of the generated schema
+by label (a label per language is read in English, ignoring case), with the title and the description first
+(`title_translated`, `notes_translated`, `name_translated`, `description_translated`). This is the order of the edit form
+and of the display of a dataset and of a distribution. Without it the order is that of the fragments. With several packs
+enabled the pack listed first decides. Both `healthdcat_r8` and `gdi_current` are alphabetical. The static series schemas,
+`dataset_series_r8.yaml` and `dataset_series_multilingual.yaml`, are kept in the same order by hand, and a test checks
+them. The subfields of a field keep their own order, which follows the model, except those of a data service
+(`access_services`): they are in alphabetical order with title and description first, kept by hand in
+`r8_access_services.yaml` and `health_access_services.yaml`, and checked by a test.
+`scheming/schemas/dataset_multilingual.yaml` keeps the original field order. The acceptance test compares it with
+`gdi_current` field by field, by name.
 
-**Dataset series.** A series is not generated from fragments: each pack that has a model for it
-ships a static schema and names it with `series_schema`. With several packs enabled the one listed
-first decides, as for the redefined fields (a pack without one is skipped). `gdi_current` keeps
-`dataset_series_multilingual.yaml`, `healthdcat_r8` has `dataset_series_r8.yaml` with the
-properties of `dcat:DatasetSeries` only: no ordering of the members (`series_order_*`, which only
-drive the previous and next links of the series extension), no legacy publisher fields and one
+**Dataset series.** A series is not generated from fragments. Each pack that has a model for it ships a static schema
+and names it with `series_schema`. With several packs enabled the one listed first decides, as for the redefined fields;
+a pack without one is skipped. `gdi_current` keeps `dataset_series_multilingual.yaml`. `healthdcat_r8` has
+`dataset_series_r8.yaml`, with the properties of `dcat:DatasetSeries` only: no ordering of the members (`series_order_*`,
+which only drive the previous and next links of the series extension), no publisher fields of `gdi_current`, and one
 contact page. The prune command does not look at series fields.
 
-**Display keys.** Scheming passes keys it does not know through, and the display templates of this
-extension use some on a subfield: `display_group` shows the subfields with the same value together
-under that heading (the contact point of an agent: the email and URL in `gdi_current`, more in R8); `display_replaces: <subfield>` makes the
-subfield take the row of that other one when it has a value, under its `display_label` (one or more
-names per language replace the single name). A field with `repeating_once` is shown without a number,
-and nested lists (variables, tables, columns) are indented.
-
-**Hiding.** Datasets of a harvest source whose `metadata_profile` is not enabled are hidden
-(`profile_visibility.py`); see "Datasets of a profile that is not enabled" in `docs/metadata-profiles.md`
-of `gdi-userportal-ckan-docker`.
-
-**Empty properties.** A dataset page and a distribution page list what has a value. With the option
-`ckanext.gdi_userportal.show_empty_properties = true` (the environment variable
-`CKANEXT__GDI_USERPORTAL__SHOW_EMPTY_PROPERTIES=true`) they list every property the schema defines, with
-a dash for those without a value, to see what the schema, the edit form and a harvest can hold. It is
-off by default. The generated schema holds the fields of every enabled profile, so a dataset gets a dash
-only for the fields of the profile of its harvest source (`conformance_service.empty_property_scope`, from
-the fields each pack defines); a dataset no source says anything about gets all of them, and a field with a
-value is always shown.
-
-**Language fallback.** The edit form stores an empty value for a form language left blank
-(`{"en": "Title", "nl": ""}`), and scheming and CKAN only fall back to another language when the key
-is missing. `after_dataset_show` (`languages.py`) therefore drops the empty languages of the fluent
-fields of a dataset, its resources and their nested subfields from what `package_show` returns, so a
-page in Dutch shows the English title, description, keywords, population coverage and version notes
-when there is no Dutch one. The stored value is unchanged, the edit form still offers every language,
-and an empty core field (`title`, `notes`) takes the first language that has a value.
-
-**Fragment**: header keys (`scheming_version`, `form_languages`, ...), `dataset_fields` and
-`resource_fields`. Reuse a block with `!snippet <name>`; YAML anchors cannot span files.
+**Fragment**: header keys (`scheming_version`, `form_languages`, ...), `dataset_fields` and `resource_fields`. Reuse a
+block with `!snippet <name>`; YAML anchors cannot span files.
 
 ## Merging
 
-- Field order is the first occurrence along the enabled packs and their fragments, because it is the
-  form order. A fragment is therefore a *contiguous* slice of the form, not a topic: a field that
-  belongs to another profile and sits between two shared fields lives in a fragment of its own.
+- Field order is the first occurrence along the enabled packs and their fragments, because it is the form order. A
+  fragment is therefore a *contiguous* slice of the form, not a topic: a field that belongs to another profile and sits
+  between two shared fields lives in a fragment of its own.
 - A field defined identically by several packs is merged.
-- A field defined differently needs a `redefines` entry in one of the packs defining it. The earlier
-  pack in `GDI_METADATA_PROFILES` wins, and the resolution is logged and written to `provenance.json`.
-- A field defined differently and not declared fails the build, naming the field, the packs and the
-  keys that differ.
+- A field defined differently needs a `redefines` entry in one of the packs defining it. The earlier pack in
+  `GDI_METADATA_PROFILES` wins, and the resolution is logged and written to `provenance.json`.
+- A field defined differently and not declared fails the build, naming the field, the packs and the keys that differ.
 - `provenance.json` records which enabled packs define each field.
 
 ## Conformance
 
-`conformance.py` (standard library only) says which enabled packs a dataset satisfies at its
-access layer (`evaluate`), and which a distribution or a dataset series satisfies (`evaluate_class`, no
-layer). `conformance_service.py` (one level up) wraps both for the API action
-`gdi_metadata_profile_conformance`, the sysadmin report action `gdi_metadata_profile_conformance_report`
-and the `profiles conformance` command, and for the page helpers `h.gdi_profile_conformance` (dataset and
-series pages, `package/read.html`, and the lists, `snippets/package_item.html`) and
-`h.gdi_resource_conformance` (the distribution list, `package/snippets/resource_item.html`, and the
-distribution page). The harvest-log warning of ckanext-fairdatapoint calls the action. Everything is computed
-on demand; nothing is stored and the Solr schema and the index are not involved. A pack with no
+`conformance.py` (standard library only) says which enabled packs a dataset satisfies at its access layer (`evaluate`),
+and which a distribution or a dataset series satisfies (`evaluate_class`, no layer). `conformance_service.py` wraps both
+for:
+
+- the API action `gdi_metadata_profile_conformance`, the sysadmin report action
+  `gdi_metadata_profile_conformance_report`, and the `profiles conformance` command;
+- the page helpers `h.gdi_profile_conformance` (dataset and series pages, `package/read.html`, and the lists,
+  `snippets/package_item.html`) and `h.gdi_resource_conformance` (the distribution list,
+  `package/snippets/resource_item.html`, and the distribution page);
+- the harvest-log warning of ckanext-fairdatapoint, which calls the action.
+
+Conformance is computed from the mandatory properties of each enabled profile, on every call. It is reported and never
+enforced: nothing is stored, nothing is blocked, and the Solr schema and the index are not involved. A pack with no
 `conformance` file has no mandatory properties.
 
-A record is checked against the profile it comes from: the `metadata_profile` of its harvest source, the
-main profile when the source names none, every enabled profile when no source created it
-(`applicable_profiles`; the source lookup is `profile_visibility.source_profiles`). A sample
-(`adms:sample`) and an analytics distribution (`healthdcatap:analytics`) are stored as resources and are
-distributions: they are checked like any other and labelled by `resource_kind`.
+A record is checked against the profile it comes from: the `metadata_profile` of its harvest source, the main profile
+when the source names none, or every enabled profile when no source created it (`applicable_profiles`; the source lookup
+is `profile_visibility.source_profiles`). A sample (`adms:sample`) and an analytics distribution
+(`healthdcatap:analytics`) are stored as resources and are distributions: they are checked like any other and labelled by
+`resource_kind`.
 
-The file of `healthdcat_r8` is **generated** from R8's cardinality rules, never edited by hand:
+The file of `healthdcat_r8` is **generated** from R8's cardinality rules and is never edited by hand:
 
 ```
 conformance/healthdcat_r8_fields.yaml     R8 property label -> the CKAN fields that carry it (hand-written),
@@ -197,41 +185,43 @@ conformance/healthdcat_r8_fields.yaml     R8 property label -> the CKAN fields t
 conformance/healthdcat_r8.json            generated: the properties that are Mandatory per layer, and `classes`
 ```
 
-R8's cardinality rules cover the dataset only. The distribution and series rules come from
-`:Distribution_Shape` and `:DatasetSeries_Shape` of the R8 SHACL files, which are identical in the public,
-restricted and non-public shapes, so they have no layer. The build copies them as they are.
+R8's cardinality rules cover the dataset only. The distribution and series rules come from `:Distribution_Shape` and
+`:DatasetSeries_Shape` of the R8 SHACL files, which are identical in the public, restricted and non-public shapes, so
+they have no layer. The build copies them as they are.
 
 ```
 python3 profile_packs/conformance_build.py --rules path/to/healthdcat-cardinality-rules.json [--check]
 ```
 
-The build fails when a mandatory property has no fields in the mapping, a mapped property is not
-mandatory in any layer, or a rule contradicts itself. `--check` exits 1 when the committed file is
-out of date; the host test `test_the_committed_file_is_what_the_real_rules_produce` does the same
-when `HEALTHDCAT_RULES_JSON` points at the rules file. The generated file records the SHA-256 of
-the rules it came from.
+The build fails when a mandatory property has no fields in the mapping, a mapped property is not mandatory in any
+layer, or a rule contradicts itself. `--check` exits 1 when the committed file is out of date. The host test
+`test_the_committed_file_is_what_the_real_rules_produce` does the same when `HEALTHDCAT_RULES_JSON` points at the rules
+file. The generated file records the SHA-256 of the rules it came from.
 
 ## Pruning
 
-`generator.retired_fields(enabled)` lists the fields that only packs outside `enabled` define. The
-command `ckan gdi-userportal profiles prune` (a dry run unless `--delete`) uses it to find the
-extras to remove; see `prune.py`. A field a pack lists under `keep_extras` is never retired: use it
-for a field whose key the shared RDF code also keeps as a free extra in every profile
-(`related_resource` and `source` in `healthdcat_r8`).
+`generator.retired_fields(enabled)` lists the fields that only packs outside `enabled` define. The command
+`ckan gdi-userportal profiles prune` uses it to find the extras to remove; see `prune.py`. It is a dry run unless
+`--delete` is given, and it never removes a value that an enabled profile defines or shares: a field a pack lists under
+`keep_extras` is never retired either. Use `keep_extras` for a field whose key the shared RDF code also keeps as a free
+extra in every profile (`related_resource` and `source` in `healthdcat_r8`).
+
+Resource fields of retired profiles are not pruned by this command.
 
 ## Solr schema
 
-`solr/schema.xml` is written by hand and holds what the dataset schema cannot say: the field types and their
-analyzers, CKAN's own fields (`id`, `name`, `title`, `res_*`, ...), the fields the plugin computes while indexing
-(temporal ranges, `permission_labels`) and the `copyField` rules. **The dataset fields are not in it**: `solr_schema.py`
-makes a Solr field of every dataset field, so a new field in a pack needs nothing in Solr. Solr gives a field it
-does not know the catch-all `*` (not stored, **single valued**), so a profile field with several values would fail the
-import ("multiple values encountered for non multiValued field"); `sync` closes that:
+`solr/schema.xml` is written by hand. It holds what the dataset schema cannot say: the field types and their analyzers,
+CKAN's own fields (`id`, `name`, `title`, `res_*`, ...), the fields the plugin computes while indexing (temporal ranges,
+`permission_labels`) and the `copyField` rules. **The dataset fields are not in it.** `solr_schema.py` makes a Solr field
+of every dataset field, so a new field in a pack needs nothing in Solr.
+
+Solr gives a field it does not know the catch-all `*` (not stored, **single valued**), so a profile field with several
+values would fail the import ("multiple values encountered for non multiValued field"). `sync` closes that gap.
 
 - `derive_fields` makes a Solr field of every dataset field, and of every field flattened from a repeating field
-  (`solr: {flatten}`, below). The defaults, so that most fields say nothing:
+  (`solr: {flatten}`, below). The defaults mean that most fields say nothing:
 
-  | | default | when to say it with a `solr` key |
+  | key | default | when to say it with a `solr` key |
   |---|---|---|
   | `type` | `string`; `long` for `int_validator`, `boolean` for `boolean_validator` | a date: `type: date` (a partial date such as `2020` is not a Solr date, so a date is never guessed) |
   | `store` | **true** | `store: false` for a field that is never shown (it costs disk) |
@@ -246,32 +236,32 @@ import ("multiple values encountered for non multiValued field"); `sync` closes 
     validators: ignore_missing int_validator # a long with docValues, stored: nothing else to say
   ```
 
-  *Indexed* means Solr can search, filter, facet and sort on the field. *Stored* means Solr can return the original
-  value in a query (the Solr UI shows it); CKAN does not need that, it serves a dataset from the JSON in
+  *Indexed* means Solr can search, filter, facet and sort on the field. *Stored* means Solr can return the original value
+  in a query (the Solr UI shows it). CKAN does not need that: it serves a dataset from the JSON in
   `validated_data_dict`. `type` must be a field type of `schema.xml`; `check` reports one that is not.
 - A field of objects has no Solr field of its own: a repeating field (a list of rows) and a text per language
   (`fluent_*`). The indexing writes their values (`flatten`, the free text), never the objects.
-- A field that `schema.xml` declares as well wins over the dataset schema, so its `solr` key would silently do
-  nothing. `check` fails for that (CKAN's own `name`, `url`, `version`, `license_id`, ... excepted): delete the line
-  from `schema.xml` and describe the field with the `solr` key.
+- A field that `schema.xml` declares as well wins over the dataset schema, so its `solr` key would silently do nothing.
+  `check` fails for that (CKAN's own `name`, `url`, `version`, `license_id`, ... excepted): delete the line from
+  `schema.xml` and describe the field with the `solr` key.
 - `check` (the drift test, `tests/profile_packs/test_solr_schema.py`, for every pack and pack pair) also fails when a
-  list field would land in a single valued Solr field, when a `flatten` key (below) names a subfield the field does
-  not have, and when a Solr field the indexing fills is declared single valued in `schema.xml`. A field with
+  list field would land in a single valued Solr field, when a `flatten` key (below) names a subfield the field does not
+  have, and when a Solr field the indexing fills is declared single valued in `schema.xml`. A field with
   `solr: {multiple: false}` is exempt.
 
-**After a change of the type, the index or the docValues of an existing field** (a new default such as this one
-included) Lucene refuses to mix old and new documents in one core, and `sync` only changes the schema:
-`ckan search-index clear`, reload the core (`curl 'http://solr:8983/solr/admin/cores?action=RELOAD&core=ckan'`),
-then `ckan search-index rebuild`. Without the reload the rebuild stops at the first dataset with "cannot change field
-... from index options=NONE to inconsistent index options=DOCS". A change of `store` alone needs a rebuild only.
+**After a change of the type, the index or the docValues of an existing field**, Lucene refuses to mix old and new
+documents in one core, and `sync` only changes the schema. Run `ckan search-index clear`, reload the core
+(`curl 'http://solr:8983/solr/admin/cores?action=RELOAD&core=ckan'`), then `ckan search-index rebuild`. Without the reload
+the rebuild stops at the first dataset with "cannot change field ... from index options=NONE to inconsistent index
+options=DOCS". A change of `store` alone needs a rebuild only.
 
 ### What the indexing writes: the `solr` key
 
-CKAN hands the indexer a dataset whose list fields are JSON text and whose repeating fields are lists of
-objects; scheming turns those into one `extras_<field>__<subfield>` text field each, which Solr can search
-but neither filter nor facet on. `before_dataset_index` therefore writes plain multi valued Solr fields of its
-own, and which ones is decided by the `solr` key of the fields in the schema, not by a list of names in the
-plugin (`indexing.py`; the schema is read through `schema_fields.py`):
+CKAN hands the indexer a dataset whose list fields are JSON text and whose repeating fields are lists of objects. Scheming
+turns those into one `extras_<field>__<subfield>` text field each, which Solr can search but neither filter nor facet on.
+`before_dataset_index` therefore writes plain multi valued Solr fields of its own. Which ones is decided by the `solr`
+key of the fields in the schema, not by a list of names in the plugin (`indexing.py`; the schema is read through
+`schema_fields.py`):
 
 ```yaml
 - field_name: spatial_coverage
@@ -288,68 +278,86 @@ plugin (`indexing.py`; the schema is read through `schema_fields.py`):
   solr: {canonical_prefix: "http://publications.europa.eu/resource/authority/data-theme/"}
 ```
 
-- `flatten` lists the subfields of a repeating field that get a Solr field each, `<prefix>_<subfield>`
-  (`prefix` is the name of the field unless it says otherwise; a path with a dot is joined with `_`). Only
-  what is listed is indexed: a geometry or a language map is not a useful filter. `derive_fields` makes the
-  Solr field (a multi valued, stored string).
-- `text` says whether the field is searched as free text. It is, unless the field says `text: false` (for
-  identifiers, links, dates and ids that mean nothing as a search word). Every text in the field goes into
-  Solr's free-text field `text`, in every language and subfield, and so does every label that CKAN's
-  `term_translation` table has for a URI or code in it (in every language): a dataset that has
-  `.../authority/place/NLD_UTC` in `spatial_coverage` is found by "Utrecht". The labels of the terms in the
-  distributions (`res_extras_*`) are added the same way, so there is no list of fields in the plugin. The JSON
-  text CKAN makes of a field (`extras_<field>`, which the free text used to be made of: braces, quotes and
-  language codes were searched) and the objects of a repeating field are not indexed at all. A list of plain
-  values (`theme`) stays under its own name, for the filters.
-- `multiple: false` (with the `type`, `index` and `store` keys of the section above) says the Solr field
-  holds one value although the scheming field is a list, as for the landing page and the type of
-  `healthdcat_r8`; the first value is kept and `all_values` names a second Solr field that gets all of them.
+- `flatten` lists the subfields of a repeating field that get a Solr field each, `<prefix>_<subfield>`. `prefix` is the
+  name of the field unless it says otherwise; a path with a dot is joined with `_`. Only what is listed is indexed: a
+  geometry or a language map is not a useful filter. `derive_fields` makes the Solr field (a multi valued, stored string).
+- `text` says whether the field is searched as free text. It is, unless the field says `text: false` (for identifiers,
+  links, dates and ids that mean nothing as a search word). Every text in the field goes into Solr's free-text field
+  `text`, in every language and subfield. So does every label that CKAN's `term_translation` table has for a URI or code
+  in it, in every language: a dataset that has `.../authority/place/NLD_UTC` in `spatial_coverage` is found by
+  "Utrecht". The labels of the terms in the distributions (`res_extras_*`) are added the same way. There is no list of
+  fields in the plugin for this. The JSON text CKAN makes of a field (`extras_<field>`) and the objects of a repeating
+  field are dropped from the document, so they are not indexed. A list of plain values (`theme`) stays under its own
+  name, for the filters.
+- `decode` is set on a list field to keep its JSON text as it is. Without it, a field that holds a list and has no
+  repeating subfields gets its JSON text decoded to a list. Use `decode: false` for a field that another plugin reads
+  as text while indexing: this plugin runs before ckanext-dataset-series, which does `json.loads` on `in_series`.
+- `multiple: false` (with the `type`, `index` and `store` keys of the section above) says the Solr field holds one value
+  although the scheming field is a list, as for the landing page and the type of `healthdcat_r8`. The first value is
+  kept, and `all_values` names a second Solr field that gets all of them.
 - `canonical_prefix` is the URI prefix a field is indexed with: a value that starts with the same prefix in the other
-  scheme (`https://publications.europa.eu/...` for the `http` one above) is indexed with the prefix given, and
-  doubles go, so one theme is one filter value whichever form a source used. Other values are not touched.
-- A multilingual keyword field (preset `fluent_tags`, named `<x>_translated`, as `tags_translated`) adds its keywords
-  of every language to `<x>` (`tags`), so a keyword typed in one language is found by the filter on `tags`. No
-  mark is needed. The API follows the same naming: every `<x>_translated` that holds keywords per language gives
-  `<x>` the keywords in the language of the request, at any depth (`tags_translated` of the dataset,
-  `keyword_translated` of an access service).
-- A field that holds a list and has no repeating subfields has its JSON text decoded to a list. `decode:
-  false` leaves it as it is, for a field that another plugin reads as text while indexing: this plugin runs
-  before ckanext-dataset-series, which does `json.loads` on `in_series`.
+  scheme (`https://publications.europa.eu/...` for the `http` one above) is indexed with the prefix given, and doubles
+  go. So one theme is one filter value, whichever form a source used. Other values are not touched.
+- A multilingual keyword field (preset `fluent_tags`, named `<x>_translated`, as `tags_translated`) adds its keywords of
+  every language to `<x>` (`tags`), so a keyword typed in one language is found by the filter on `tags`. No mark is
+  needed. The API follows the same naming: every `<x>_translated` that holds keywords per language gives `<x>` the
+  keywords in the language of the request, at any depth (`tags_translated` of the dataset, `keyword_translated` of an
+  access service).
 
-A pack states these next to the field it defines, so a pack that redefines a field (see `redefines`) states
-them again; the pack listed first wins as for any other key. The series schemas carry them too. A field
-without a mark is indexed as before: under its own name when it has a value, and as `extras_*` text.
-- `sync` runs from the start scripts after the generator: it compares `schema.xml` plus the derived
-  fields with the running core and applies the difference through the Solr Schema API (`add-field`,
-  `replace-field`, dynamic and copy fields) and removes the fields nothing describes any more. It never stops
-  CKAN when Solr does not answer. A core is created once from the Solr image and lives in a volume, so a changed
-  `schema.xml` or a new profile would never reach an existing core without it.
+A pack states these keys next to the field it defines, so a pack that redefines a field (see `redefines`) states them
+again, and the pack listed first wins, as for any other key. The series schemas carry them too. A field without a mark
+is indexed under its own name when it has a value, and its text goes to the free text.
+
+### Sync
+
+`sync` runs from the start scripts after the generator. It compares `schema.xml` plus the derived fields with the running
+core, and applies the difference through the Solr Schema API (`add-field`, `replace-field`, dynamic and copy fields). It
+removes the fields that nothing describes any more. It never stops CKAN when Solr does not answer. A core is created once
+from the Solr image and lives in a volume, so a changed `schema.xml` or a new profile would never reach an existing core
+without it.
 
 ```
 python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --ckan-ini /srv/app/ckan.ini [--dry-run] [--keep-leftovers]
 ```
 
-The fields come from every schema in `scheming.dataset_schemas` of the ini (the generated `dataset.yaml` and the
-series schema, which has fields the dataset schema lacks, such as `series_order_field`), merged by field name with
-the first definition winning. **A leftover** is an explicit field of the core that is not in `schema.xml` and not
-made from any of those schemas: the fields of a retired profile, the fields of repeating fields an older version
-made explicit, a field that is now covered by a dynamic field of `schema.xml`. The sync deletes the copy fields that
-name it first, then the field, then adds again a copy field that `schema.xml` still declares (its source is the
-dynamic field then). Fields Solr keeps for itself (`_version_`, ...) and dynamic fields are never touched. Removal
-needs every schema, so it only happens with `--ckan-ini`; with `--dataset-schema FILE` alone (repeatable) the
-leftovers are kept and the sync says so, because the fields of the other dataset types would look like leftovers.
-A field removed from the schema leaves its values in the old documents until `ckan search-index rebuild`.
+The fields come from every schema in `scheming.dataset_schemas` of the ini (the generated `dataset.yaml` and the series
+schema, which has fields the dataset schema lacks, such as `series_order_field`), merged by field name with the first
+definition winning.
 
-Documents indexed before a change keep their old index: reindex (`ckan search-index rebuild`) after the
-sync reports changes. A field type that the core lacks is reported, not added: recreate the core.
-The fields that `schema.xml` declares by hand (`publisher_name`, `contact_point_*`, ...) keep their own settings; a new `flatten` key needs no line in `schema.xml`.
+**A leftover** is an explicit field of the core that is not in `schema.xml` and not made from any of those schemas: the
+fields of a retired profile, the fields of repeating fields an older version made explicit, a field that is now covered by
+a dynamic field of `schema.xml`. The sync deletes the copy fields that name it first, then the field, then adds again a
+copy field that `schema.xml` still declares (its source is the dynamic field then). Fields Solr keeps for itself
+(`_version_`, ...) and dynamic fields are never touched. Removal needs every schema, so it only happens with `--ckan-ini`.
+With `--dataset-schema FILE` alone (repeatable), the leftovers are kept and the sync says so, because the fields of the
+other dataset types would look like leftovers. `--keep-leftovers` keeps them with `--ckan-ini` too. A field removed from
+the schema leaves its values in the old documents until `ckan search-index rebuild`.
+
+Documents indexed before a change keep their old index: reindex (`ckan search-index rebuild`) after the sync reports
+changes. A field type that the core lacks is reported, not added: recreate the core. The fields that `schema.xml` declares
+by hand (`publisher_name`, `contact_point_*`, ...) keep their own settings. A new `flatten` key needs no line in
+`schema.xml`.
+
+### Searching
+
+CKAN searches one field, `text`: the default `qf` of `package_search` is `name^4 title^4 tags^2 groups^2 text` (CKAN's
+default). Everything a user can search for has to end up there, which is what the `text` key above decides per field.
+`schema.xml` has the field and its analyzer and does not change for it. The other fields are for filtering and facets: a
+field marked with `flatten` or kept under its own name is an exact-match string, and a list is multi valued.
+
+Solr's schema is kept as it is on purpose: no schemaless mode, no managed guessing of field types. A Solr field that is
+guessed from the first value it sees is typed by accident, and the next dataset with another shape fails the import. What
+is dynamic is the part that follows the dataset schema: `solr_schema.py sync` derives the fields from the dataset schema
+at every start, and the free text from the `text` key. A new field therefore needs a field in a pack and nothing in Solr.
+
+A new translation (`ckan gdi-userportal translations migrate`) reaches the free text of a dataset when that dataset is
+reindexed, not before.
 
 ## What the API shows: the `translate` and `agent` keys
 
-`package_show`, `package_search` and the other actions of the plugin show the codes of a controlled
-vocabulary with their label, and give every agent one shape. Which fields that concerns is decided by the
-schema, not by a list of names in the plugin (`logic/action/translation_utils.py`; the schema is read through
-`schema_access.py` and `schema_fields.py`):
+`package_show`, `package_search` and the other actions of the plugin show the codes of a controlled vocabulary with their
+label, and give every agent one shape. Which fields that concerns is decided by the schema, not by a list of names in the
+plugin (`logic/action/translation_utils.py`; the schema is read through `schema_access.py` and `schema_fields.py`):
 
 ```yaml
 - field_name: theme
@@ -364,35 +372,86 @@ schema, not by a list of names in the plugin (`logic/action/translation_utils.py
       agent: true                          # an agent: its identifier is always a list
 ```
 
-- `translate: true` shows the value of a field (a list: each value) as `{name, display_name, count}`, with the
-  label in the language of the request, English when there is none. A repeating field needs no mark of its
-  own: it is walked when one of its subfields has one. `translate: {label_in: <subfield>}` leaves the value
-  and writes its label to that sibling subfield, as the discovery API wants for `dct_type`.
-- `agent: true` says the field holds organisations or persons; each of them gets an `identifier` list, an empty
-  one when it has none, whatever the way it was created. It nests: an agent can hold agents.
-- The subfields every agent has (`type`, `publisher_type`, `country`) are marked in the agent snippets, so a
-  pack that uses a snippet has them translated; `hdab_*` snippets are not marked.
-- The multilingual text fields (`fluent_markdown`, `fluent_text`: `provenance`, `version_notes`, the note of
-  a publisher, ...) and every `<field>_translated` show the text of the requested language, then English,
-  then any language. No mark is needed: they are found by their preset.
-- The API answers in English and Dutch, and in every other language of `form_languages` (what the form offers,
-  `GDI_METADATA_FORM_LANGUAGES`, which defaults to the `CKAN__LOCALES_OFFERED` languages); a form limited to English does not take Dutch away.
+- `translate: true` shows the value of a field (a list: each value) as `{name, display_name, count}`, with the label in
+  the language of the request, English when there is none. A repeating field needs no mark of its own: it is walked when
+  one of its subfields has one. `translate: {label_in: <subfield>}` leaves the value and writes its label to that sibling
+  subfield, as the discovery API wants for `dct_type`.
+- `agent: true` says the field holds organisations or persons. Each of them gets an `identifier` list, an empty one when
+  it has none, whatever the way it was created. It nests: an agent can hold agents.
+- The subfields every agent has (`type`, `publisher_type`, `country`) are marked in the agent snippets, so a pack that uses
+  a snippet has them translated. `hdab_*` snippets are not marked.
+- The multilingual text fields (`fluent_markdown`, `fluent_text`: `provenance`, `version_notes`, the note of a publisher,
+  ...) and every `<field>_translated` show the text of the requested language, then English, then any language. No mark is
+  needed: they are found by their preset.
+- The API answers in English and Dutch, and in every other language of `form_languages`: what the form offers, which is
+  `GDI_METADATA_FORM_LANGUAGES`, defaulting to the `CKAN__LOCALES_OFFERED` languages. A form limited to English does not
+  take Dutch away.
 - Only `type`, the CKAN core field that is not in the schema, is named in the plugin.
 
-The terms that `package_show` looks up in `term_translation_show` are collected from the same marks, so a
-new marked field needs no other change.
+The terms that `package_show` looks up in `term_translation_show` are collected from the same marks, so a new marked
+field needs no other change.
 
-Every field of the dataset schema and of the resource schema is in the answer, also one without a value
-(blank values are not stored, but the API shows the model the schema describes, so a client can count on every
-key): `[]` for a field that holds a list (multiple text or choice, and every field with repeating subfields,
-also `repeating_once`), `null` for any other, and the same inside the rows of a repeating field. A name that is
-not a field of the schema is not made up (`status` of a dataset, `access_rights` of a distribution). The plain
-`package_show` is not changed.
+Every field of the dataset schema and of the resource schema is in the answer, also one without a value. Blank values are
+not stored, but the API shows the model the schema describes, so a client can count on every key: `[]` for a field that
+holds a list (multiple text or choice, and every field with repeating subfields, also `repeating_once`), `null` for any
+other, and the same inside the rows of a repeating field. A name that is not a field of the schema is not made up
+(`status` of a dataset, `access_rights` of a distribution). The plain `package_show` is not changed.
 
-The same list is available to a harvester as the action `gdi_terms_to_translate` (sysadmins, or a call
-without authorisation checks): given a dataset as `{"package": {...}}` it answers `{"terms": [...]}`, the
-values the schema marks. ckanext-fairdatapoint asks it, before a harvested dataset is saved, which
-terms to fetch the labels of, so the labels it stores are the ones this API sends out.
+The same list is available to a harvester as the action `gdi_terms_to_translate` (sysadmins, or a call without
+authorisation checks). Given a dataset as `{"package": {...}}`, it answers `{"terms": [...]}`: the values the schema
+marks. ckanext-fairdatapoint asks it, before a harvested dataset is saved, which terms to fetch the labels of, so the
+labels it stores are the ones this API sends out.
+
+## Runtime behaviour
+
+**Display keys.** Scheming passes keys it does not know through, and the display templates of this extension use some of
+them on a subfield. `display_group` shows the subfields with the same value together under that heading (the contact point
+of an agent: the email and URL in `gdi_current`, more in R8). `display_replaces: <subfield>` makes the subfield take the row
+of that other one when it has a value, under its `display_label` (one or more names per language replace the single name).
+A field with `repeating_once` is shown without a number, and nested lists (variables, tables, columns) are indented.
+
+**Hiding.** Datasets of a harvest source whose `metadata_profile` is not enabled are hidden (`profile_visibility.py`). See
+"Datasets of a profile that is not enabled" in `docs/metadata-profiles.md` of `gdi-userportal-ckan-docker`.
+
+**Empty properties.** A dataset page and a distribution page list what has a value. With the option
+`ckanext.gdi_userportal.show_empty_properties = true` (the environment variable
+`CKANEXT__GDI_USERPORTAL__SHOW_EMPTY_PROPERTIES=true`) they list every property the schema defines, with a dash for those
+without a value, to see what the schema, the edit form and a harvest can hold. It is off by default. The generated schema
+holds the fields of every enabled profile, so a dataset gets a dash only for the fields of the profile of its harvest
+source (`conformance_service.empty_property_scope`, from the fields each pack defines). A dataset no source says anything
+about gets all of them, and a field with a value is always shown.
+
+**Language fallback.** The edit form stores an empty value for a form language left blank (`{"en": "Title", "nl": ""}`),
+and scheming and CKAN only fall back to another language when the key is missing. `after_dataset_show` (`languages.py`)
+therefore drops the empty languages of the fluent fields of a dataset, its resources and their nested subfields from what
+`package_show` returns. A page in Dutch then shows the English title, description, keywords, population coverage and
+version notes when there is no Dutch one. The stored value is unchanged, the edit form still offers every language, and an
+empty core field (`title`, `notes`) takes the first language that has a value.
+
+## Empty values are not saved
+
+The edit form posts an input for every language and subfield, and the RDF profiles fill every form language with an empty
+text. Without a rule, a dataset would be stored with `{"en": "", "nl": ""}`, `[]` and `""` as extras. The save path
+(`blank_values.py`, `logic/action/blank_values.py`) removes them:
+
+- `package_create` and `package_update` are chained, so the form, the API, `package_patch` (it hands the merged dataset to
+  `package_update`: a field set to `""` is dropped and so cleared) and every harvester go through it. The fields of the
+  dataset schema (and of its resource fields) that end up as extras are looked at. The columns CKAN has itself (`title`,
+  `notes`, `url`, ...) are not.
+- A value is empty when it holds no text, item or language at any depth, as a list of rows that are all empty is. A flat
+  map loses its empty languages (`{"en": "Title", "nl": ""}` is saved as `{"en": "Title"}`), and a list of texts loses its
+  empty items. `0` and `false` are values.
+- **A row of a repeating field is never changed from the inside.** The validation of nested subfields (a qualified
+  attribution with an agent) fails for a row that lacks a key it had, and the dataset can then not be indexed. Such a field
+  is saved as it came, or not at all when every row is empty.
+- A required field that is empty is still reported by the validation, as missing. The code that reads a dataset has to cope
+  with a field that is not there. The harvesters pad every form language on purpose, and that stays.
+- If dropping fails for any reason, the dataset is saved as it came. A save is never stopped by this.
+
+`ckan gdi-userportal clean-blank-values` does the same for what is already stored. It is a dry run that lists what would be
+removed or rewritten. With `--apply` (asks for confirmation unless `--yes`) it removes the values and reindexes the
+datasets. It looks at `package_extra` and the extras of the resources, never at deleted datasets. Take a database backup
+first.
 
 ## Running it
 
@@ -400,57 +459,11 @@ terms to fetch the labels of, so the labels it stores are the ones this API send
 python3 -m ckanext.gdi_userportal.profile_packs.generator --output-dir /srv/app/generated
 ```
 
-It writes `dataset.yaml` and `provenance.json` there and prints the CKAN config options to apply.
-The start scripts feed those to `ckan config-tool`.
+It writes `dataset.yaml` and `provenance.json` there and prints the CKAN config options to apply. The start scripts feed
+those to `ckan config-tool`.
 
 Tests need only PyYAML, SQLAlchemy and pytest, and run on the host:
 
 ```
 uv run --no-project --with pyyaml --with sqlalchemy --with pytest python -I -m pytest ckanext/gdi_userportal/tests/profile_packs
 ```
-
-### Searching: what Solr does and what to run after a change
-
-CKAN searches one field, `text` (the default `qf` of `package_search` is `name^4 title^4 tags^2 groups^2 text`).
-Everything a user can search for has to end up there, which is what the `text` key above decides per field;
-`schema.xml` has the field and its analyzer and does not change for it. The other fields are for filtering and
-facets: a field marked with `flatten` or kept under its own name is an exact-match string, a list is multi valued.
-
-Solr's schema is kept as it is on purpose (no schemaless mode, no managed guessing of field types): a Solr
-field that is guessed from the first value it sees is typed by accident, and the next dataset with another shape
-fails the import. What is dynamic is the part that follows the dataset schema: `solr_schema.py sync` derives the
-fields from the dataset schema at every start, and the free text from the `text` key, so a new field needs a
-field in a pack and nothing in Solr.
-
-After upgrading to a version that changes what is indexed (this one: free text built from values and labels
-instead of JSON text; the `vocab_<field>_search` fields are gone, nothing read them), restart CKAN (the
-generator and `sync` run at start) and run `ckan search-index rebuild`. Without the rebuild the old documents
-keep their JSON text until they are saved again. When the release also changes the type, `index` or `docValues` of a
-field (the one that moved the dataset fields out of `schema.xml` did: counts and ages are `long` now, more fields
-are indexed), clear the index and reload the core first, as the section above says. A new translation (`ckan gdi-userportal translations migrate`)
-reaches the free text of a dataset when that dataset is reindexed, not before.
-
-## Empty values are not saved
-
-The edit form posts an input for every language and subfield, and the RDF profiles fill every form language with
-an empty text, so datasets used to be stored with `{"en": "", "nl": ""}`, `[]` and `""` as extras. A dataset is
-saved without them now (`blank_values.py`, `logic/action/blank_values.py`):
-
-- `package_create` and `package_update` are chained, so the form, the API, `package_patch` (it hands the merged
-  dataset to `package_update`: a field set to `""` is dropped and so cleared) and every harvester go through it.
-  The fields of the dataset schema (and of its resource fields) that end up as extras are looked at; the
-  columns CKAN has itself (`title`, `notes`, `url`, ...) are not.
-- A value is empty when it holds no text, item or language at any depth, as a list of rows that are all empty
-  is. A flat map loses its empty languages (`{"en": "Title", "nl": ""}` is saved as `{"en": "Title"}`) and a list
-  of texts its empty items. `0` and `false` are values.
-- **A row of a repeating field is never changed from the inside**: the validation of nested subfields (a
-  qualified attribution with an agent) fails for a row that lacks a key it had, and the dataset can then not be
-  indexed. Such a field is saved as it came, or not at all when every row is empty.
-- A required field that is empty is still reported by the validation, as missing. The code that reads a dataset
-  has to cope with a field that is not there; the harvesters pad every form language on purpose, that stays.
-- If dropping fails for any reason the dataset is saved as it came: a save is never stopped by this.
-
-`ckan gdi-userportal clean-blank-values` does the same for what is stored already: a dry run that lists what
-would be removed or rewritten, and with `--apply` (asks for confirmation unless `--yes`) removes it and reindexes
-the datasets. It looks at `package_extra` and the extras of the resources, never at deleted datasets. Take a
-database backup first.
