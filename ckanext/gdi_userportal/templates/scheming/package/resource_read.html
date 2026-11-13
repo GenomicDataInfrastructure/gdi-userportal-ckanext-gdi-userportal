@@ -14,6 +14,11 @@
   ] -%}
 {%- set schema = h.scheming_get_dataset_schema(dataset_type) -%}
 
+{% block resource_read_title %}
+  {{ super() }}
+  {% snippet 'snippets/resource_conformance.html', pkg=package, res=res %}
+{% endblock %}
+
 {% block resource_additional_information_inner %}
   {% if res.datastore_active %}
     {% block resource_data_dictionary %}
@@ -37,11 +42,13 @@
         {%- block resource_format -%}{%- endblock -%}
         {%- block resource_fields -%}
           {%- set show_empty = h.gdi_show_empty_properties() -%}
+          {#- the fields of the profile the dataset comes from; none: all of them -#}
+          {%- set scope = h.gdi_empty_property_scope(package, 'resource_fields') if show_empty else none -%}
           {%- for field in schema.resource_fields -%}
             {%- set blank = h.gdi_is_blank_value(res.get(field.field_name)) -%}
             {%- if field.field_name not in exclude_fields
                 and field.display_snippet is not none
-                and (show_empty or not blank) -%}
+                and (not blank or (show_empty and (scope is none or field.field_name in scope))) -%}
               <tr>
                 <th scope="row">
                   {{- h.scheming_language_text(field.label) -}}

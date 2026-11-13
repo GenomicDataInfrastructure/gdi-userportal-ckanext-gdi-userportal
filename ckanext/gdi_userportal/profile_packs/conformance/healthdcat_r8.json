@@ -262,5 +262,31 @@
         }
       ]
     }
+  },
+  "classes": {
+    "distribution": {
+      "source": "SHACL :Distribution_Shape",
+      "mandatory": [
+        {
+          "property": "applicable legislation",
+          "cardinality": "1..*",
+          "fields": [
+            "applicable_legislation"
+          ]
+        }
+      ]
+    },
+    "series": {
+      "source": "SHACL :DatasetSeries_Shape",
+      "mandatory": [
+        {
+          "property": "applicable legislation",
+          "cardinality": "1..*",
+          "fields": [
+            "applicable_legislation"
+          ]
+        }
+      ]
+    }
   }
 }

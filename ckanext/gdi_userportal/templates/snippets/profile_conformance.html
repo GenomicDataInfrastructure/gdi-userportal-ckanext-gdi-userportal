@@ -1,0 +1,45 @@
+{#-
+The metadata profiles a dataset or dataset series conforms to. Computed on every page view, stored nowhere
+(h.gdi_profile_conformance). The record is checked against the profile it comes from: the profile of its harvest
+source, the main profile when the source names none, every enabled profile when no source created it.
+
+pkg - the dataset or dataset series.
+-#}
+{%- set indicator = h.gdi_profile_conformance(pkg) -%}
+{%- if indicator %}
+  <section class="profile-conformance mb-3" aria-label="{{ _('Metadata profile conformance') }}">
+    <h2 class="h6 text-muted mb-1">
+      {{ _('Metadata profiles') }}
+      {%- if indicator.access_layer %}
+        <span class="fw-normal">({{ _('access layer') }}: {{ indicator.access_layer }})</span>
+      {%- endif %}
+    </h2>
+    <p class="small text-muted mb-2">
+      {%- if indicator.basis == 'source' -%}
+        {{ _('Checked against the metadata profile of its harvest source.') }}
+      {%- elif indicator.basis == 'main' -%}
+        {{ _('Checked against the main metadata profile: its harvest source names none.') }}
+      {%- else -%}
+        {{ _('Checked against every enabled metadata profile.') }}
+      {%- endif -%}
+    </p>
+    <ul class="list-unstyled mb-0">
+      {%- for profile in indicator.profiles %}
+        <li class="mb-1">
+          {%- if profile.conformant %}
+            <span class="badge bg-success"><i class="fa fa-check" aria-hidden="true"></i> {{ profile.name }}</span>
+            <span class="small text-muted">{{ _('conforms') }}</span>
+          {%- else %}
+            <span class="badge bg-warning text-dark"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ profile.name }}</span>
+            <span class="small text-muted">
+              {{- _('does not conform') -}}
+              {%- if profile.missing %}: {{ _('missing') }} {{ profile.missing | join(', ') }}
+              {%- elif profile.reason %}: {{ profile.reason }}
+              {%- endif -%}
+            </span>
+          {%- endif %}
+        </li>
+      {%- endfor %}
+    </ul>
+  </section>
+{%- endif %}

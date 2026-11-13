@@ -86,7 +86,6 @@ REDEFINED = {
     "resource_fields.access_url",
     "resource_fields.download_url",
     "resource_fields.rights",
-    "dataset_fields.in_series",
 }
 # R8 agents (HealthDCAT-AP R8, Agent_Shape and the health agent shapes): a name and a type, the
 # health agents of a dataset add the contact point and the publisher a description.
@@ -172,11 +171,12 @@ def test_both_packs_give_the_union_of_their_fields(generator, profiles):
     assert both == set(dataset_fields(generator, ["gdi_current"])) | set(dataset_fields(generator, ["healthdcat_r8"]))
 
 
-def test_with_gdi_current_first_its_form_order_is_kept(generator):
-    both = list(dataset_fields(generator, ["gdi_current", "healthdcat_r8"]))
-    gdi = list(dataset_fields(generator, ["gdi_current"]))
+def test_with_gdi_current_first_the_superset_is_alphabetical_too(generator):
+    fields = generator.build_schema(["gdi_current", "healthdcat_r8"]).schema["dataset_fields"]
+    labels = [generator._label_text(f).lower() for f in fields[2:]]
 
-    assert both[: len(gdi)] == gdi
+    assert [f["field_name"] for f in fields[:2]] == ["title_translated", "notes_translated"]
+    assert labels == sorted(labels)
 
 
 def test_the_r8_fields_are_defined_by_the_r8_pack_only(generator):
@@ -616,23 +616,38 @@ def test_r8_access_url_download_url_and_rights_of_a_distribution_are_lists(gener
     assert gdi["rights"]["preset"] == "fluent_markdown" and "repeating_subfields" not in gdi["rights"]
 
 
-# R8 orders the fields of the schemas by label, the title and the description first
+# Both packs order the fields of the schemas by label, the title and the description first
+@pytest.mark.parametrize("pack", ["healthdcat_r8", "gdi_current"])
 @pytest.mark.parametrize("section, leading", [
     ("dataset_fields", ["title_translated", "notes_translated"]),
     ("resource_fields", ["name_translated", "description_translated"]),
 ])
-def test_the_r8_schema_is_alphabetical_with_the_title_and_the_description_first(generator, section, leading):
-    fields = generator.build_schema(["healthdcat_r8"]).schema[section]
+def test_the_schema_is_alphabetical_with_the_title_and_the_description_first(generator, pack, section, leading):
+    fields = generator.build_schema([pack]).schema[section]
     labels = [generator._label_text(f).lower() for f in fields[2:]]
 
     assert [f["field_name"] for f in fields[:2]] == leading
     assert labels == sorted(labels)
 
 
-def test_gdi_current_keeps_the_order_of_its_fragments(generator):
-    fields = generator.build_schema(["gdi_current"]).schema["dataset_fields"]
+def test_the_gdi_current_data_service_is_alphabetical_with_the_title_and_the_description_first(generator):
+    fields = {f["field_name"]: f for f in generator.build_schema(["gdi_current"]).schema["resource_fields"]}
+    service = fields["access_services"]["repeating_subfields"]
 
-    assert [f["field_name"] for f in fields[:4]] == ["title_translated", "name", "notes_translated", "tags_translated"]
+    assert [f["field_name"] for f in service] == [
+        f["field_name"] for f in generator.sort_alphabetically(service, "data_service_fields")
+    ]
+    assert [f["field_name"] for f in service[:2]] == ["title", "description"]
+
+
+def test_the_gdi_current_series_schema_is_alphabetical_with_the_title_and_the_description_first(generator):
+    path = Path(generator.__file__).parents[1] / "scheming/schemas/dataset_series_multilingual.yaml"
+    fields = yaml.safe_load(path.read_text())["dataset_fields"]
+
+    assert [f["field_name"] for f in fields] == [
+        f["field_name"] for f in generator.sort_alphabetically(fields, "dataset_fields")
+    ]
+    assert [f["field_name"] for f in fields[:2]] == ["title_translated", "notes_translated"]
 
 
 def test_the_r8_series_schema_is_alphabetical_with_the_title_and_the_description_first(generator):
@@ -645,13 +660,13 @@ def test_the_r8_series_schema_is_alphabetical_with_the_title_and_the_description
     assert [f["field_name"] for f in fields[:2]] == ["title_translated", "notes_translated"]
 
 
-def test_r8_stores_nothing_for_a_dataset_that_is_in_no_series(generator):
-    r8 = dataset_fields(generator, ["healthdcat_r8"])["in_series"]
-    gdi = dataset_fields(generator, ["gdi_current"])["in_series"]
+@pytest.mark.parametrize("pack", ["healthdcat_r8", "gdi_current"])
+def test_a_dataset_that_is_in_no_series_stores_nothing(generator, pack):
+    in_series = dataset_fields(generator, [pack])["in_series"]
 
     # an empty value stops the chain, so scheming_multiple_choice does not store "[]"
-    assert r8["validators"].split() == ["ignore_empty", "scheming_multiple_choice", "series_validator"]
-    assert "validators" not in gdi and r8["preset"] == gdi["preset"] == "dataset_series_in_series"
+    assert in_series["validators"].split() == ["ignore_empty", "scheming_multiple_choice", "series_validator"]
+    assert in_series["preset"] == "dataset_series_in_series"
 
 
 def test_r8_agents_with_a_cardinality_of_one_are_not_lists_and_the_retention_period_neither(generator):
@@ -682,8 +697,16 @@ def test_the_properties_of_the_contact_point_are_grouped_for_display(generator):
         in_group = {f["field_name"] for f in fields[name]["repeating_subfields"] if f.get("display_group") == "Contact point"}
         assert in_group == grouped, name
     assert not any(f.get("display_group") for f in fields["creator"]["repeating_subfields"])
+
+
+def test_gdi_current_groups_the_email_and_url_of_an_agent_under_the_contact_point_as_r8_does(generator):
     gdi = dataset_fields(generator, ["gdi_current"])
-    assert not any(f.get("display_group") for f in gdi["publisher"]["repeating_subfields"])
+
+    for name in ("publisher", "creator", "hdab"):
+        in_group = {f["field_name"] for f in gdi[name]["repeating_subfields"] if f.get("display_group") == "Contact point"}
+        assert in_group == {"email", "url"}, name
+    attribution = subfields_of(gdi["qualified_attribution"], "agent")
+    assert {f["field_name"] for f in attribution["repeating_subfields"] if f.get("display_group")} == {"email", "url"}
 
 
 def test_r8_attribution_holds_several_roles_and_gdi_current_one(generator):

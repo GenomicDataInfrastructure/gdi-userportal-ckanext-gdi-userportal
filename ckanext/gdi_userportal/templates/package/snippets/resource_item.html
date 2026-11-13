@@ -1,0 +1,18 @@
+{#- Core's distribution list item, plus a label on every distribution (distribution, sample or analytics) and an
+    amber badge for each metadata profile of the dataset the distribution does not conform to. -#}
+{% ckan_extends %}
+
+{% block resource_item_title %}
+  {{ super() }}
+  {%- set indicator = h.gdi_resource_conformance(pkg, res) -%}
+  {%- if indicator %}
+    {%- set kind_labels = {'distribution': _('Distribution'), 'sample': _('Sample'), 'analytics': _('Analytics')} %}
+    <span class="badge bg-secondary ms-1">{{ kind_labels[indicator.kind] }}</span>
+    {%- for profile in indicator.failing %}
+      <span class="badge bg-warning text-dark ms-1" title="{{ _('Does not conform to') }} {{ profile.name }}: {{ _('missing') }} {{ profile.missing | join(', ') }}">
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        {{ _('Not conformant') }}: {{ profile.name }} ({{ profile.missing | length }} {{ _('missing') }})
+      </span>
+    {%- endfor %}
+  {%- endif %}
+{% endblock %}

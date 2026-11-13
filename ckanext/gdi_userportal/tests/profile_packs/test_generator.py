@@ -658,9 +658,12 @@ def test_an_unknown_enabled_pack_is_reported(generator, make_root):
 ALL_LAYERS = ("PUBLIC", "RESTRICTED", "NON_PUBLIC")
 
 
-def conformance_document(layers=None):
+def conformance_document(layers=None, classes=None):
     body = {"mandatory": [{"property": "title", "fields": ["title_translated"]}]}
-    return {"profile": "a", "layers": layers or {layer: body for layer in ALL_LAYERS}}
+    document = {"profile": "a", "layers": layers or {layer: body for layer in ALL_LAYERS}}
+    if classes is not None:
+        document["classes"] = classes
+    return document
 
 
 def root_with_conformance(make_root, document, manifest_path="conformance/a.json"):
@@ -675,6 +678,13 @@ def test_a_pack_loads_its_conformance_file(generator, make_root):
     registry = generator.Registry(root_with_conformance(make_root, conformance_document()))
     rules = registry.conformance(registry.pack("a"))
     assert [r["property"] for r in rules["layers"]["PUBLIC"]["mandatory"]] == ["title"]
+
+
+def test_a_pack_loads_the_class_rules_of_its_conformance_file(generator, make_root):
+    classes = {"distribution": {"mandatory": [{"property": "law", "fields": ["applicable_legislation"]}]}}
+    registry = generator.Registry(root_with_conformance(make_root, conformance_document(classes=classes)))
+
+    assert registry.conformance(registry.pack("a"))["classes"] == classes
 
 
 def test_a_pack_without_a_conformance_file_has_no_rules(generator, make_root):
@@ -695,6 +705,10 @@ def test_a_pack_without_a_conformance_file_has_no_rules(generator, make_root):
             conformance_document({layer: {"mandatory": [{"property": "t", "fields": []}]} for layer in ALL_LAYERS}),
             "needs a 'mandatory' list",
         ),
+        (conformance_document(classes={"data service": {"mandatory": []}}), "'classes' may only name"),
+        (conformance_document(classes=["distribution"]), "'classes' may only name"),
+        (conformance_document(classes={"distribution": {"mandatory": "x"}}), "class distribution needs a 'mandatory' list"),
+        (conformance_document(classes={"series": {"mandatory": [{"property": "t", "fields": []}]}}), "class series needs a 'mandatory' list"),
     ],
 )
 def test_a_broken_conformance_file_is_reported_when_loaded(generator, make_root, document, message):

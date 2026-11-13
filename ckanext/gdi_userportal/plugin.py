@@ -13,6 +13,12 @@ import ckan.plugins.toolkit as toolkit
 from ckan import model
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
 from ckanext.gdi_userportal.languages import fall_back_to_available_languages
+from ckanext.gdi_userportal.profile_packs.solr_schema import (
+    AGENT_SUBFIELDS,
+    CONTACT_SUBFIELDS,
+    REPEATING_FLATTENED,
+    SINGLE_VALUED_SOLR_FIELDS,
+)
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     SEARCH_INDEX_TRANSLATED_FIELDS,
     get_all_translations,
@@ -32,12 +38,14 @@ from ckanext.gdi_userportal.logic.action.get import (
     enhanced_package_show,
     gdi_filter_help_texts_show,
     gdi_metadata_profile_conformance,
+    gdi_metadata_profile_conformance_report,
 )
 from ckanext.gdi_userportal.logic.auth.get import (
     config_option_show,
     gdi_dataset_help_texts_show as gdi_dataset_help_texts_show_auth,
     gdi_filter_help_texts_show as gdi_filter_help_texts_show_auth,
     gdi_metadata_profile_conformance as gdi_metadata_profile_conformance_auth,
+    gdi_metadata_profile_conformance_report as gdi_metadata_profile_conformance_report_auth,
     package_show as package_show_auth,
 )
 from ckanext.gdi_userportal import profile_visibility
@@ -186,6 +194,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show_auth,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show_auth,
             "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance_auth,
+            "gdi_metadata_profile_conformance_report": gdi_metadata_profile_conformance_report_auth,
             "package_show": package_show_auth,
         }
 
@@ -196,6 +205,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show,
             "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance,
+            "gdi_metadata_profile_conformance_report": gdi_metadata_profile_conformance_report,
         }
 
     def get_helpers(self):
@@ -393,7 +403,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             del data_dict[extras_field]
         return data_dict
 
-    _agent_subfields = ("uri", "email", "url", "type", "identifier", "country")
+    _agent_subfields = AGENT_SUBFIELDS
 
     def _parse_agent_name(self, data_dict, field):
         if data_dict.get(field):
@@ -430,7 +440,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             values = [value] if subfield == "name" else self._flatten_contact_subfield_value(value)
             data_dict[f"{field}_{subfield}"] = values
 
-    _contact_subfields = ("uri", "name", "email", "identifier", "url")
+    _contact_subfields = CONTACT_SUBFIELDS
 
     def _parse_contact_point(self, data_dict):
         values = data_dict.get("contact")
@@ -511,10 +521,9 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         data_dict.pop(field, None)
         return data_dict
 
-    # R8 gives the landing page and the type of a dataset any number of values, so with the healthdcat_r8
-    # profile they are lists, while their Solr fields hold one value (a change of multiValued needs a
-    # reindex). The first value goes in the field and all the types are kept in vocab_dcat_type.
-    _SINGLE_VALUED_SOLR_FIELDS = ("url", "dcat_type")
+    # With healthdcat_r8 the landing page and the type are lists, while their Solr fields hold one value:
+    # see SINGLE_VALUED_SOLR_FIELDS in profile_packs/solr_schema.py.
+    _SINGLE_VALUED_SOLR_FIELDS = SINGLE_VALUED_SOLR_FIELDS
 
     def _flatten_single_valued_solr_fields(self, data_dict):
         for key in self._SINGLE_VALUED_SOLR_FIELDS:
@@ -863,13 +872,13 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         data_dict = self._parse_agent_name(data_dict, "creator")
         data_dict = self._parse_contact_point(data_dict)
         data_dict = self._parse_repeating_field(
-            data_dict, "qualified_relation", ("uri", "relation", "role")
+            data_dict, "qualified_relation", REPEATING_FLATTENED["qualified_relation"]
         )
         data_dict = self._parse_repeating_field(
-            data_dict, "quality_annotation", ("body", "target", "motivated_by")
+            data_dict, "quality_annotation", REPEATING_FLATTENED["quality_annotation"]
         )
         data_dict = self._parse_repeating_field(
-            data_dict, "retention_period", ("start", "end")
+            data_dict, "retention_period", REPEATING_FLATTENED["retention_period"]
         )
 
         data_dict = self._merge_tags_translated_for_indexing(data_dict)
