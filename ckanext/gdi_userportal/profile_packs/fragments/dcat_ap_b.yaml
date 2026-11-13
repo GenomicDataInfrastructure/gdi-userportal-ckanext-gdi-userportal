@@ -26,7 +26,6 @@ dataset_fields:
     translate: true
     label: Type
     help_text: The type of the dataset.
-    # TODO: controlled vocabulary?
 
   - field_name: temporal_coverage
     label: Temporal coverage

@@ -50,7 +50,6 @@ dataset_fields:
       en: Use this filter to search datasets by language.
       nl: Gebruik deze filter om datasets op taal te zoeken.
     facet_key: language
-    # TODO: language form snippet / validator / graph
 
   - field_name: documentation
     solr: {text: false}

@@ -4,7 +4,7 @@
 
 # The dataset series of the healthdcat_r8 pack (declared there with series_schema). It holds the
 # properties of dcat:DatasetSeries in R8 and nothing else; what only gdi_current has (the ordering
-# of the members, the legacy publisher fields, a list of contact URLs) stays in the static schema of
+# of the members, the publisher fields of gdi_current, a list of contact URLs) stays in the static schema of
 # that pack, dataset_series_multilingual.yaml. A series is not generated from fragments, so this
 # file repeats the shared field definitions. The fields are in alphabetical order by label, the title and
 # the description first, as in the generated schema of the pack (field_order: alphabetical).
