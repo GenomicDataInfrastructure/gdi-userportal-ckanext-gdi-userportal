@@ -6,7 +6,7 @@
 
 from dataclasses import dataclass
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 from ckan.common import config
 
@@ -167,6 +167,8 @@ class SchemaPlans:
     package_agents: Dict[str, dict]
     resource_agents: Dict[str, dict]
     language_fields: frozenset
+    dataset_fields: tuple = ()
+    resource_fields: tuple = ()
 
 
 def plans_for(dataset_type: Optional[str]) -> SchemaPlans:
@@ -182,6 +184,8 @@ def plans_for(dataset_type: Optional[str]) -> SchemaPlans:
         package_agents=schema_fields.agent_plan(dataset_fields),
         resource_agents=schema_fields.agent_plan(resource_fields),
         language_fields=frozenset(schema_fields.fluent_text_fields(dataset_fields, resource_fields)),
+        dataset_fields=tuple(dataset_fields),
+        resource_fields=tuple(resource_fields),
     )
 
 
@@ -260,10 +264,29 @@ def replace_package(data, translation_dict, lang: Optional[str] = None):
     for resource in resources:
         # a translated repeating field of a distribution (its access services) is a list, empty when it is absent
         resource = _translate_record(resource, plans.resource, translation_dict, absent_list=[])
+        _fill_absent_fields(resource, plans.resource_fields)
     data["resources"] = resources
+    _fill_absent_fields(data, plans.dataset_fields)
     _normalize_agent_identifiers(data, plans)
 
     return data
+
+
+def _fill_absent_fields(record: Any, fields: Iterable[Mapping]) -> None:
+    """Give every field of the schema a key, also when it has no value (blank values are not stored).
+
+    The model the API shows is the one the schema describes, so clients can rely on every key being there: ``[]``
+    for a field that holds a list, None for any other. This goes into the rows of a repeating field as well.
+    """
+    if not isinstance(record, dict):
+        return
+    for name, field in schema_fields.by_name(fields).items():
+        if record.get(name) is None:
+            record[name] = schema_fields.empty_value(field)
+        subfields = schema_fields.subfields(field)
+        if subfields:
+            for row in _dicts(record[name]):
+                _fill_absent_fields(row, subfields)
 
 
 def _normalize_agent_identifiers(package: dict, plans: SchemaPlans) -> None:

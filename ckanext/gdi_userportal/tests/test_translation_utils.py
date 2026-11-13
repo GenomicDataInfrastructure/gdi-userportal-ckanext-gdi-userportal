@@ -161,7 +161,7 @@ def test_replace_package_prefers_requested_language():
         "count": None,
     }
     assert empty_was_generated_by["dct_type"] == ""
-    assert "label" not in empty_was_generated_by
+    assert empty_was_generated_by["label"] is None
     empty_associated_agent = empty_was_generated_by["wasAssociatedWith"][0]
     assert empty_associated_agent["type"] == {
         "name": "",
@@ -704,3 +704,48 @@ class TestTheSchemaDecidesWhatIsTranslated:
             result = replace_package({"type": "dataset"}, {"dataset": "Dataset"}, lang="en")
 
         assert result["type"] == {"name": "dataset", "display_name": "Dataset", "count": None}
+
+
+class TestEveryFieldOfTheSchemaIsShown:
+    """Blank values are not stored, but the API shows the model of the schema: every field has a key."""
+
+    FIELDS = [
+        {"field_name": "title"},
+        {"field_name": "keyword", "preset": "multiple_text"},
+        {
+            "field_name": "publisher",
+            "repeating_subfields": [
+                {"field_name": "name"},
+                {"field_name": "country", "preset": "multiple_select"},
+            ],
+        },
+        {"field_name": "contact", "repeating_once": True, "repeating_subfields": [{"field_name": "email"}]},
+    ]
+
+    def fill(self, record):
+        from ckanext.gdi_userportal.logic.action.translation_utils import _fill_absent_fields
+
+        _fill_absent_fields(record, self.FIELDS)
+        return record
+
+    def test_a_missing_field_is_empty_of_its_kind(self):
+        assert self.fill({}) == {"title": None, "keyword": [], "publisher": [], "contact": []}
+
+    def test_a_none_value_is_filled_too(self):
+        assert self.fill({"keyword": None})["keyword"] == []
+
+    def test_values_stay_as_they_are(self):
+        record = {"title": "", "keyword": ["a"], "publisher": [{"name": "Org", "country": ["NLD"]}], "contact": [{"email": "x"}]}
+
+        assert self.fill(deepcopy(record)) == record
+
+    def test_the_rows_of_a_repeating_field_get_their_missing_subfields(self):
+        record = self.fill({"publisher": [{"name": "Org"}, {}], "contact": [{}]})
+
+        assert record["publisher"] == [{"name": "Org", "country": []}, {"name": None, "country": []}]
+        assert record["contact"] == [{"email": None}]
+
+    def test_a_record_that_is_not_a_dict_is_left_alone(self):
+        from ckanext.gdi_userportal.logic.action.translation_utils import _fill_absent_fields
+
+        assert _fill_absent_fields(None, self.FIELDS) is None

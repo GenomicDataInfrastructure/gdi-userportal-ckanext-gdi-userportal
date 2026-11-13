@@ -105,7 +105,8 @@ class TestReadTimeTranslation:
 
         agents = replace_package(package, TRANSLATIONS, "en")["creator"]
 
-        assert "country" not in agents[0]
+        # a field of the schema without a value is there, empty (the schema is the model the API shows)
+        assert agents[0]["country"] is None
         assert agents[1]["country"] == [] and agents[1]["identifier"] == []
 
     def test_every_country_of_a_list_is_collected_for_translation(self):
