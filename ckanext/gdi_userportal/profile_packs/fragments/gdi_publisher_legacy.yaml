@@ -12,6 +12,7 @@ dataset_fields:
     help_text: A description of the publisher activities.
 
   - field_name: publisher_type
+    translate: true
     label: Publisher type
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text

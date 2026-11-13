@@ -14,6 +14,7 @@ resource_fields:
     help_text: Indicates how long it is planned to keep the resource available.
 
   - field_name: status
+    translate: true
     label: Status
     preset: select
     choices:
@@ -28,6 +29,7 @@ resource_fields:
     help_text: The status of the resource in the context of maturity lifecycle.
 
   - field_name: license
+    translate: true
     label: License
     help_text: License in which the resource is made available. If not provided will be inherited from the dataset.
 

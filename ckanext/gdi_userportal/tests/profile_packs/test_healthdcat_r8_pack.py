@@ -737,3 +737,14 @@ def test_the_opening_hours_have_a_description_per_language_and_several_frequenci
             assert description["preset"] == "fluent_text", f"{agent}.{hours}"
             assert description["display_snippet"] == "all_languages.html", f"{agent}.{hours}"
             assert is_list(subfields_of(field, "frequency")), f"{agent}.{hours}"
+
+
+@pytest.mark.parametrize("profiles", [["healthdcat_r8"], ["gdi_current", "healthdcat_r8"]], ids=" + ".join)
+def test_the_agents_the_rdf_profile_writes_are_marked_agent_in_the_schema(generator, profiles):
+    """AGENT_FIELDS of the R8 RDF profile is RDF knowledge, but every field in it holds an agent: say so in the schema."""
+    r8 = pytest.importorskip("ckanext.dcat.profiles.euro_health_dcat_ap_r8")
+    fields = dataset_fields(generator, profiles)
+
+    unmarked = [name for name in r8.AGENT_FIELDS if not fields[name].get("agent")]
+
+    assert unmarked == []

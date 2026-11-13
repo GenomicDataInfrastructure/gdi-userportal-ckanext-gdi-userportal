@@ -13,17 +13,8 @@ import ckan.plugins.toolkit as toolkit
 from ckan import model
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
 from ckanext.gdi_userportal.languages import fall_back_to_available_languages
-from ckanext.gdi_userportal.profile_packs.solr_schema import (
-    AGENT_SUBFIELDS,
-    CONTACT_SUBFIELDS,
-    REPEATING_FLATTENED,
-    SINGLE_VALUED_SOLR_FIELDS,
-)
-from ckanext.gdi_userportal.logic.action.translation_utils import (
-    SEARCH_INDEX_TRANSLATED_FIELDS,
-    get_all_translations,
-    _deduplicate_non_empty_strings,
-)
+from ckanext.gdi_userportal import indexing, schema_access
+from ckanext.gdi_userportal.logic.action.translation_utils import get_all_translations
 from ckanext.gdi_userportal.validation import enforce_utc_time
 from ckanext.gdi_userportal.temporal_coverage import (
     TEMPORAL_COVERAGE_RANGE_FIELD as TEMPORAL_COVERAGE_SOLR_FIELD,
@@ -32,6 +23,7 @@ from ckanext.gdi_userportal.temporal_coverage import (
     TEMPORAL_MIN_PARAM,
     TEMPORAL_MAX_PARAM,
 )
+from ckanext.gdi_userportal.logic.action import blank_values as blank_values_action
 from ckanext.gdi_userportal.logic.action.get import (
     gdi_dataset_help_texts_show,
     enhanced_package_search,
@@ -39,6 +31,7 @@ from ckanext.gdi_userportal.logic.action.get import (
     gdi_filter_help_texts_show,
     gdi_metadata_profile_conformance,
     gdi_metadata_profile_conformance_report,
+    gdi_terms_to_translate,
 )
 from ckanext.gdi_userportal.logic.auth.get import (
     config_option_show,
@@ -46,6 +39,7 @@ from ckanext.gdi_userportal.logic.auth.get import (
     gdi_filter_help_texts_show as gdi_filter_help_texts_show_auth,
     gdi_metadata_profile_conformance as gdi_metadata_profile_conformance_auth,
     gdi_metadata_profile_conformance_report as gdi_metadata_profile_conformance_report_auth,
+    gdi_terms_to_translate as gdi_terms_to_translate_auth,
     package_show as package_show_auth,
 )
 from ckanext.gdi_userportal import profile_visibility
@@ -84,20 +78,6 @@ else:
     from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
-TRANSLATED_SEARCH_SOLR_FIELDS = {
-    field_name: f"vocab_{field_name}_search"
-    for field_name in SEARCH_INDEX_TRANSLATED_FIELDS
-}
-RESOURCE_TRANSLATED_SEARCH_FIELDS = ("conforms_to",)
-RESOURCE_TRANSLATED_SEARCH_EXTRA_FIELDS = ("res_extras_conforms_to", "resource_conforms_to")
-ACCESS_SERVICE_TRANSLATED_SEARCH_SOURCE = "res_extras_access_services"
-PUBLICATIONS_DATA_THEME_HTTP_PREFIX = (
-    "http://publications.europa.eu/resource/authority/data-theme/"  # NOSONAR - canonical authority URI
-)
-PUBLICATIONS_DATA_THEME_HTTPS_PREFIX = (
-    "https://publications.europa.eu/resource/authority/data-theme/"
-)
-
 SOLR_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
@@ -126,29 +106,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IMiddleware, inherit=True)
     plugins.implements(plugins.IConfigurable, inherit=True)
     plugins.implements(plugins.IClick)
-
-    _dcatap_fields_to_normalize = [
-        "access_rights",
-        "conforms_to",
-        "qualified_attribution",
-        "has_version",
-        "language",
-        "theme",
-        "dcat_type",
-        "code_values",
-        "alternate_identifier",
-        "documentation",
-        "is_referenced_by",
-        "applicable_legislation",
-        "coding_system",
-        "purpose",
-        "health_category",
-        "health_theme",
-        "legal_basis",
-        "personal_data",
-        "publisher_type",
-        "contact",
-    ]
 
     # IConfigurer
 
@@ -195,6 +152,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show_auth,
             "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance_auth,
             "gdi_metadata_profile_conformance_report": gdi_metadata_profile_conformance_report_auth,
+            "gdi_terms_to_translate": gdi_terms_to_translate_auth,
             "package_show": package_show_auth,
         }
 
@@ -206,6 +164,10 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show,
             "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance,
             "gdi_metadata_profile_conformance_report": gdi_metadata_profile_conformance_report,
+            "gdi_terms_to_translate": gdi_terms_to_translate,
+            # a dataset is saved without the fields that hold nothing (logic/action/blank_values.py)
+            "package_create": blank_values_action.package_create,
+            "package_update": blank_values_action.package_update,
         }
 
     def get_helpers(self):
@@ -393,157 +355,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
                 bounded_ends.append(end)
         return ranges, bounded_starts, bounded_ends
 
-    def _parse_to_array(self, data_dict, field):
-        extras_field = f"extras_{field}"
-        if data_dict.get(extras_field):
-            try:
-                data_dict[field] = json.loads(data_dict[extras_field])
-            except json.JSONDecodeError:
-                data_dict[field] = data_dict[extras_field]
-            del data_dict[extras_field]
-        return data_dict
-
-    _agent_subfields = AGENT_SUBFIELDS
-
-    def _parse_agent_name(self, data_dict, field):
-        if data_dict.get(field):
-            values = data_dict[field]
-            if isinstance(values, str):
-                try:
-                    values = json.loads(values)
-                except json.JSONDecodeError:
-                    values = [{"name": values}]
-            if isinstance(values, dict):
-                values = [values]
-
-            names = list({value.get("name") for value in values if value.get("name")})
-            data_dict[f"{field}_name"] = names
-
-            for subfield in self._agent_subfields:
-                subfield_values = set()
-                for value in values:
-                    raw = value.get(subfield)
-                    if raw:
-                        subfield_values.update(self._flatten_contact_subfield_value(raw))
-                if subfield_values:
-                    data_dict[f"{field}_{subfield}"] = list(subfield_values)
-        else:
-            self._parse_flat_agent_extras(data_dict, field)
-        return data_dict
-
-    def _parse_flat_agent_extras(self, data_dict, field):
-        for subfield in ("name",) + self._agent_subfields:
-            value = data_dict.get(f"extras_{field}__{subfield}")
-            if not value:
-                continue
-            # a country or identifier can hold several values
-            values = [value] if subfield == "name" else self._flatten_contact_subfield_value(value)
-            data_dict[f"{field}_{subfield}"] = values
-
-    _contact_subfields = CONTACT_SUBFIELDS
-
-    def _parse_contact_point(self, data_dict):
-        values = data_dict.get("contact")
-        if not values:
-            for subfield in self._contact_subfields:
-                value = data_dict.get(f"extras_contact__{subfield}")
-                if value:
-                    data_dict[f"contact_point_{subfield}"] = [value]
-            return data_dict
-
-        if isinstance(values, str):
-            try:
-                values = json.loads(values)
-            except json.JSONDecodeError:
-                values = [{"name": values}]
-        if isinstance(values, dict):
-            values = [values]
-
-        for subfield in self._contact_subfields:
-            subfield_values = set()
-            for value in values:
-                raw = value.get(subfield)
-                if raw:
-                    subfield_values.update(self._flatten_contact_subfield_value(raw))
-            if subfield_values:
-                data_dict[f"contact_point_{subfield}"] = list(subfield_values)
-
-        return data_dict
-
-    @staticmethod
-    def _flatten_contact_subfield_value(raw):
-        """`contact.url` is itself a scheming `multiple_text` preset, so a single
-        contact entry's url can be a JSON-encoded list of URLs rather than a plain
-        string, unlike the other contact subfields (uri/name/email/identifier)."""
-        if isinstance(raw, list):
-            return raw
-        if isinstance(raw, str) and raw.startswith("["):
-            try:
-                decoded = json.loads(raw)
-            except json.JSONDecodeError:
-                return [raw]
-            if isinstance(decoded, list):
-                return decoded
-        return [raw]
-
-    def _parse_repeating_field(self, data_dict, field, subfields):
-        values = data_dict.get(field)
-        if not values:
-            for subfield in subfields:
-                value = data_dict.get(f"extras_{field}__{subfield}")
-                if value:
-                    data_dict[f"{field}_{subfield}"] = [value]
-            return data_dict
-
-        if isinstance(values, str):
-            try:
-                values = json.loads(values)
-            except json.JSONDecodeError:
-                return data_dict
-        if isinstance(values, dict):
-            values = [values]
-        if not isinstance(values, list):
-            return data_dict
-
-        for subfield in subfields:
-            # a subfield holds one value, or a list of them (the relations and roles of an R8 relationship)
-            subfield_values = list(
-                dict.fromkeys(
-                    item
-                    for value in values
-                    if isinstance(value, dict)
-                    for item in self._values_of(value.get(subfield))
-                )
-            )
-            if subfield_values:
-                data_dict[f"{field}_{subfield}"] = subfield_values
-
-        data_dict.pop(field, None)
-        return data_dict
-
-    # With healthdcat_r8 the landing page and the type are lists, while their Solr fields hold one value:
-    # see SINGLE_VALUED_SOLR_FIELDS in profile_packs/solr_schema.py.
-    _SINGLE_VALUED_SOLR_FIELDS = SINGLE_VALUED_SOLR_FIELDS
-
-    def _flatten_single_valued_solr_fields(self, data_dict):
-        for key in self._SINGLE_VALUED_SOLR_FIELDS:
-            value = data_dict.get(key)
-            if isinstance(value, str) and value.lstrip().startswith("["):
-                try:
-                    value = json.loads(value)
-                except ValueError:
-                    continue
-            if not isinstance(value, (list, tuple)):
-                continue
-            values = [str(item) for item in value if item]
-            if key == "dcat_type" and values:
-                data_dict["vocab_dcat_type"] = list(dict.fromkeys(values))
-            if values:
-                data_dict[key] = values[0]
-            else:
-                data_dict.pop(key, None)
-        return data_dict
-
     def _parse_series_ids(self, in_series):
         if not in_series:
             return []
@@ -565,118 +376,6 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         return []
 
-    @staticmethod
-    def _values_of(value):
-        """The values of a subfield: one, a list, or a JSON-encoded list (how a list is stored inside a subfield)."""
-        if isinstance(value, str) and value.lstrip().startswith("["):
-            try:
-                value = json.loads(value)
-            except ValueError:
-                return [value]
-        if isinstance(value, (list, tuple)):
-            return [item for item in value if item]
-        return [value] if value else []
-
-    def _extract_string_values(self, value):
-        if value is None:
-            return []
-
-        if isinstance(value, str):
-            return [item for item in self._values_of(value) if isinstance(item, str)]
-
-        if isinstance(value, list):
-            extracted = []
-            for item in value:
-                extracted.extend(self._extract_string_values(item))
-            return extracted
-
-        if isinstance(value, dict):
-            extracted = []
-            name = value.get("name")
-            if isinstance(name, str):
-                extracted.append(name)
-            return extracted
-
-        return []
-
-    def _extract_nested_string_values(self, value):
-        if value is None:
-            return []
-
-        if isinstance(value, str):
-            return [value]
-
-        if isinstance(value, list):
-            extracted = []
-            for item in value:
-                extracted.extend(self._extract_nested_string_values(item))
-            return extracted
-
-        if isinstance(value, dict):
-            extracted = []
-            for item in value.values():
-                extracted.extend(self._extract_nested_string_values(item))
-            return extracted
-
-        return []
-
-    def _parse_qualified_attribution(self, data_dict):
-        qualified_attribution = self._parse_json_if_possible(
-            data_dict.get("qualified_attribution")
-        )
-
-        if isinstance(qualified_attribution, dict):
-            qualified_attribution = [qualified_attribution]
-
-        roles = []
-        agent_names = []
-
-        if not isinstance(qualified_attribution, list):
-            return roles, agent_names
-
-        for attribution in qualified_attribution:
-            if not isinstance(attribution, dict):
-                continue
-
-            attribution_roles = self._extract_string_values(attribution.get("role"))
-            attribution_agent_names = self._parse_qualified_attribution_agent_names(
-                attribution.get("agent")
-            )
-
-            roles.extend(attribution_roles)
-            agent_names.extend(attribution_agent_names)
-
-        return (
-            _deduplicate_non_empty_strings(roles),
-            _deduplicate_non_empty_strings(agent_names),
-        )
-
-    def _parse_qualified_attribution_agent_names(self, agents):
-        if isinstance(agents, str):
-            try:
-                agents = json.loads(agents)
-            except json.JSONDecodeError:
-                agents = [{"name": agents}]
-
-        if isinstance(agents, dict):
-            agents = [agents]
-
-        if not isinstance(agents, list):
-            return []
-
-        names = []
-        for agent in agents:
-            if isinstance(agent, str):
-                names.append(agent)
-                continue
-
-            if not isinstance(agent, dict):
-                continue
-
-            names.extend(self._extract_nested_string_values(agent.get("name")))
-
-        return names
-
     def _parse_json_if_possible(self, value):
         if not isinstance(value, str):
             return value
@@ -686,137 +385,20 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         except json.JSONDecodeError:
             return value
 
-    def _canonicalize_publications_data_theme_uri(self, value):
-        if not isinstance(value, str):
-            return value
-
-        if value.startswith(PUBLICATIONS_DATA_THEME_HTTPS_PREFIX):
-            suffix = value[len(PUBLICATIONS_DATA_THEME_HTTPS_PREFIX) :]
-            return f"{PUBLICATIONS_DATA_THEME_HTTP_PREFIX}{suffix}"
-
-        return value
-
-    def _normalize_theme_values(self, theme_value):
-        if isinstance(theme_value, str):
-            return self._canonicalize_publications_data_theme_uri(theme_value)
-
-        if not isinstance(theme_value, list):
-            return theme_value
-
-        normalized = [
-            self._canonicalize_publications_data_theme_uri(item)
-            if isinstance(item, str)
-            else item
-            for item in theme_value
-        ]
-
-        deduplicated = []
-        seen = set()
-        for item in normalized:
-            if isinstance(item, str):
-                if item in seen:
-                    continue
-                seen.add(item)
-            deduplicated.append(item)
-
-        return deduplicated
-
-    def _collect_resource_conforms_to_terms(self, data_dict):
-        values = []
-
-        for field_name in RESOURCE_TRANSLATED_SEARCH_EXTRA_FIELDS:
-            values.extend(
-                self._extract_string_values(
-                    self._parse_json_if_possible(data_dict.get(field_name))
-                )
-            )
-
-        resources = data_dict.get("resources")
-        if isinstance(resources, list):
-            for resource in resources:
-                if not isinstance(resource, dict):
-                    continue
-
-                for field_name in RESOURCE_TRANSLATED_SEARCH_FIELDS:
-                    values.extend(self._extract_string_values(resource.get(field_name)))
-
-                access_services = resource.get("access_services")
-                if isinstance(access_services, list):
-                    for access_service in access_services:
-                        if not isinstance(access_service, dict):
-                            continue
-                        values.extend(
-                            self._extract_string_values(
-                                access_service.get("conforms_to")
-                            )
-                        )
-
-        access_services = self._parse_json_if_possible(
-            data_dict.get(ACCESS_SERVICE_TRANSLATED_SEARCH_SOURCE)
-        )
-        if isinstance(access_services, list):
-            for access_service in access_services:
-                if not isinstance(access_service, dict):
-                    continue
-                values.extend(
-                    self._extract_string_values(access_service.get("conforms_to"))
-                )
-
-        return _deduplicate_non_empty_strings(values)
-
-    def _add_translated_search_fields(self, data_dict):
-        field_terms = {}
-        for field_name in SEARCH_INDEX_TRANSLATED_FIELDS:
-            values = self._extract_string_values(data_dict.get(field_name))
-            if field_name == "conforms_to":
-                values.extend(self._collect_resource_conforms_to_terms(data_dict))
-            field_terms[field_name] = values
-
-        all_terms = []
-        for values in field_terms.values():
-            all_terms.extend(values)
-
+    def _labels_of(self, terms):
+        """The labels the term translations have for each of the terms; none when they cannot be read."""
         try:
-            translations_by_term = get_all_translations(all_terms)
-        except Exception:
+            return get_all_translations(terms)
+        except Exception:  # noqa: BLE001 - a dataset is indexed without the labels
             log.exception("Failed to load term translations for Solr indexing")
-            translations_by_term = {}
+            return {}
 
-        for field_name, solr_field in TRANSLATED_SEARCH_SOLR_FIELDS.items():
-            search_terms = []
-            for term in _deduplicate_non_empty_strings(field_terms[field_name]):
-                search_terms.append(term)
-                search_terms.extend(translations_by_term.get(term, []))
-
-            search_terms = _deduplicate_non_empty_strings(search_terms)
-            if search_terms:
-                data_dict[solr_field] = search_terms
-
-        return data_dict
+    def _dataset_fields(self, data_dict):
+        """The fields of the schema of this dataset type; none when the schema cannot be read."""
+        return schema_access.dataset_fields(data_dict.get("type"))
 
     def before_dataset_index(self, data_dict):
         data_dict = self._build_temporal_coverage_ranges(data_dict)
-
-        publisher_name = data_dict.get('extras_publisher__name')
-        creator_name = data_dict.get('extras_creator__name')
-        
-        if publisher_name:
-            try:
-                publisher_names = json.loads(publisher_name)
-                if isinstance(publisher_names, str):
-                    publisher_names = [publisher_names]
-            except json.JSONDecodeError:
-                publisher_names = [publisher_name]
-            data_dict['publisher_name'] = publisher_names
-        
-        if creator_name:
-            try:
-                creator_names = json.loads(creator_name)
-                if isinstance(creator_names, str):
-                    creator_names = [creator_names]
-            except json.JSONDecodeError:
-                creator_names = [creator_name]
-            data_dict['creator_name'] = creator_names
 
         series_ids = self._parse_series_ids(data_dict.get("in_series"))
         if series_ids:
@@ -847,78 +429,27 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
                     dict.fromkeys(series_titles)
                 )
 
-        for field in self._dcatap_fields_to_normalize:
-            data_dict = self._parse_to_array(data_dict, field)
+        # what is indexed under which Solr field follows the "solr" key of the fields in the schema (indexing.py)
+        fields = self._dataset_fields(data_dict)
+        data_dict = indexing.normalise_all(data_dict, fields)
 
-        if data_dict.get("theme") is not None:
-            data_dict["theme"] = self._normalize_theme_values(data_dict["theme"])
+        data_dict = indexing.canonicalise_uris_all(data_dict, fields)
 
         if data_dict.get("res_format"):
             data_dict["res_format"] = list(dict.fromkeys(data_dict.get("res_format")))
 
-        (
-            qualified_attribution_roles,
-            qualified_attribution_agent_names,
-        ) = self._parse_qualified_attribution(data_dict)
+        data_dict = indexing.flatten_all(data_dict, fields)
 
-        if qualified_attribution_roles:
-            data_dict["vocab_qualified_attribution_role"] = qualified_attribution_roles
-        if qualified_attribution_agent_names:
-            data_dict["vocab_qualified_attribution_agent_name"] = (
-                qualified_attribution_agent_names
-            )
-
-        data_dict = self._parse_agent_name(data_dict, "publisher")
-        data_dict = self._parse_agent_name(data_dict, "creator")
-        data_dict = self._parse_contact_point(data_dict)
-        data_dict = self._parse_repeating_field(
-            data_dict, "qualified_relation", REPEATING_FLATTENED["qualified_relation"]
+        data_dict = indexing.merge_translated_keywords_all(data_dict, fields)
+        # the free text: what the fields say and the labels of their terms (the "text" key of the fields)
+        data_dict = indexing.free_text_all(
+            data_dict,
+            fields,
+            translate=self._labels_of,
+            resource_fields=schema_access.resource_fields(data_dict.get("type")),
         )
-        data_dict = self._parse_repeating_field(
-            data_dict, "quality_annotation", REPEATING_FLATTENED["quality_annotation"]
-        )
-        data_dict = self._parse_repeating_field(
-            data_dict, "retention_period", REPEATING_FLATTENED["retention_period"]
-        )
+        data_dict = indexing.keep_one_value_all(data_dict, fields)
 
-        data_dict = self._merge_tags_translated_for_indexing(data_dict)
-        data_dict = self._add_translated_search_fields(data_dict)
-        data_dict = self._flatten_single_valued_solr_fields(data_dict)
-
-        return data_dict
-
-    def _merge_tags_translated_for_indexing(self, data_dict):
-        """
-        Merges tags from extras_tags_translated into the tags field for Solr indexing.
-        This ensures manually added multilingual tags are searchable via tag filters.
-        """
-        tags_translated_raw = data_dict.get('extras_tags_translated')
-        if not tags_translated_raw:
-            return data_dict
-
-        try:
-            tags_translated = json.loads(tags_translated_raw) if isinstance(tags_translated_raw, str) else tags_translated_raw
-        except json.JSONDecodeError:
-            return data_dict
-
-        if not isinstance(tags_translated, dict):
-            return data_dict
-
-        existing_tags = data_dict.get('tags', [])
-        if isinstance(existing_tags, str):
-            existing_tags = [existing_tags]
-
-        seen = set(existing_tags)
-        merged_tags = list(existing_tags)
-
-        for lang_tags in tags_translated.values():
-            if isinstance(lang_tags, list):
-                for tag in lang_tags:
-                    if isinstance(tag, str) and tag.strip() and tag.strip() not in seen:
-                        seen.add(tag.strip())
-                        merged_tags.append(tag.strip())
-
-        data_dict['tags'] = merged_tags
         return data_dict
 
     def before_dataset_view(self, pkg_dict):

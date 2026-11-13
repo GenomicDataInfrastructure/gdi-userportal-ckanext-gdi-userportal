@@ -7,6 +7,7 @@
 
 dataset_fields:
   - field_name: qualified_relation
+    solr: {flatten: [uri, relation, role], text: false}
     label: Qualified relation
     repeating_label: Relationship
     repeating_subfields:
@@ -20,6 +21,7 @@ dataset_fields:
         help_text: The resources related to the source resource (dct:relation), one or more.
 
       - field_name: role
+        translate: true
         label: Role
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text

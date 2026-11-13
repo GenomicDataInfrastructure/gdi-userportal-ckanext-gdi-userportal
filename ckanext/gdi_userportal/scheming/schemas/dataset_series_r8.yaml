@@ -38,11 +38,13 @@ dataset_fields:
   display_snippet: fluent_markdown.html
   help_text: A free-text account of the dataset series.
 - field_name: applicable_legislation
+  translate: true
   label: Applicable legislation
   preset: multiple_text
   validators: ignore_missing scheming_multiple_text
   help_text: The legislation that mandates the creation or management of the dataset series.
 - field_name: contact
+  solr: {prefix: contact_point, flatten: [uri, email, url]}
   label: Contact points
   repeating_label: Contact point
   repeating_subfields:
@@ -58,6 +60,7 @@ dataset_fields:
     help_text: Contact page of the contact point (vcard:hasURL), one at most.
   help_text: Contact information for enquiries about the dataset series.
 - field_name: frequency
+  translate: true
   label:
     en: Frequency
     nl: Frequentie
@@ -67,9 +70,11 @@ dataset_fields:
     nl: Gebruik deze filter om datasetreeksen op frequentie te zoeken.
   facet_key: frequency
 - field_name: spatial_coverage
+  solr: {flatten: [uri]}
   label: Geographical coverage
   repeating_subfields:
   - field_name: uri
+    translate: true
     label: URI
     help_text: IRI of the location. The EU Vocabularies Name Authority Lists may be used for continents, countries
       and places in those lists; otherwise a Geonames IRI.
@@ -85,6 +90,7 @@ dataset_fields:
     en: Modification date
     nl: Wijzigingsdatum
   preset: datetime_flex
+  solr: {type: date}
   help_text: Date on which the dataset series was changed.
   filter_help_text:
     en: Use this filter to search dataset series by modification date.
@@ -95,6 +101,8 @@ dataset_fields:
   preset: dataset_organization
   help_text: The CKAN organization the dataset series belongs to.
 - field_name: publisher
+  agent: true
+  solr: {flatten: [name, uri, type]}
   label: Publisher
   repeating_label: Publisher
   repeating_once: true
@@ -107,6 +115,7 @@ dataset_fields:
     label: Name (translations)
     help_text: Name of the entity or person in each language.
   - field_name: type
+    translate: true
     label: Type
   help_text: Entity responsible for ensuring the coherency of the dataset series.
 - field_name: issued
@@ -114,6 +123,7 @@ dataset_fields:
     en: Release date
     nl: Releasedatum
   preset: datetime_flex
+  solr: {type: date}
   help_text: Date of formal issuance of the dataset series. This is the moment when the dataset series was established
     as a managed resource.
   filter_help_text:

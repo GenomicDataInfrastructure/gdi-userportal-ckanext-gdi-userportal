@@ -20,6 +20,7 @@ import pytest
 
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     collect_values_to_translate,
+    get_preferred_language,
     replace_package,
     replace_search_facets,
 )
@@ -160,7 +161,7 @@ def test_replace_package_prefers_requested_language():
         "count": None,
     }
     assert empty_was_generated_by["dct_type"] == ""
-    assert "label" not in empty_was_generated_by
+    assert empty_was_generated_by["label"] is None
     empty_associated_agent = empty_was_generated_by["wasAssociatedWith"][0]
     assert empty_associated_agent["type"] == {
         "name": "",
@@ -519,7 +520,7 @@ def test_replace_package_keeps_the_identifiers_of_an_agent_as_a_list():
 
 def test_replace_package_gives_nested_agents_an_identifier_list():
     package = {
-        "publisher": [{"name": "Publisher", "actedOnBehalfOf": [{"name": "Parent"}]}],
+        "publisher": [{"name": "Publisher"}],
         "qualified_attribution": [{"role": "http://example.com/role", "agent": [{"name": "A"}]}],
         "was_generated_by": [
             {
@@ -542,7 +543,7 @@ def test_replace_package_gives_nested_agents_an_identifier_list():
 
     access_service = result["resources"][0]["access_services"][0]
     activity_agent = result["was_generated_by"][0]["wasAssociatedWith"][0]
-    assert result["publisher"][0]["actedOnBehalfOf"][0]["identifier"] == []
+    assert result["publisher"][0]["identifier"] == []
     assert result["qualified_attribution"][0]["agent"][0]["identifier"] == []
     assert activity_agent["identifier"] == []
     assert activity_agent["actedOnBehalfOf"][0]["identifier"] == []
@@ -552,14 +553,20 @@ def test_replace_package_gives_nested_agents_an_identifier_list():
 
 def test_replace_package_gives_an_agent_returned_as_a_dict_an_identifier_list():
     package = {
-        "publisher": {"name": "Publisher", "actedOnBehalfOf": {"name": "Parent"}},
-        "was_generated_by": {"wasAssociatedWith": {"name": "Associated", "identifier": "x"}},
+        "publisher": {"name": "Publisher"},
+        "was_generated_by": {
+            "wasAssociatedWith": {
+                "name": "Associated",
+                "identifier": "x",
+                "actedOnBehalfOf": {"name": "Parent"},
+            }
+        },
     }
 
     result = replace_package(package, {}, lang="en")
 
     assert result["publisher"]["identifier"] == []
-    assert result["publisher"]["actedOnBehalfOf"]["identifier"] == []
+    assert result["was_generated_by"]["wasAssociatedWith"]["actedOnBehalfOf"]["identifier"] == []
     assert result["was_generated_by"]["wasAssociatedWith"]["identifier"] == ["x"]
 
 
@@ -613,3 +620,132 @@ def test_collect_values_to_translate_includes_nested_fields():
     assert "http://example.com/dct-activity-type" in values
     assert "http://example.com/agent-type" in values
     assert "http://example.com/org-type" in values
+
+
+class TestTheSchemaDecidesWhatIsTranslated:
+    """Which fields are shown as {name, display_name}, which hold agents and which hold a text per language comes
+    from the marks of the dataset schema, so a schema that marks other fields changes the API without a code change."""
+
+    @staticmethod
+    def schema(dataset_fields, resource_fields=(), form_languages=("en", "nl")):
+        return {
+            "dataset_fields": list(dataset_fields),
+            "resource_fields": list(resource_fields),
+            "form_languages": list(form_languages),
+        }
+
+    @staticmethod
+    def use(schema):
+        return patch("ckanext.gdi_userportal.schema_access.dataset_schema", return_value=schema)
+
+    def test_a_field_marked_translate_is_shown_with_its_label_and_an_unmarked_one_is_not(self):
+        schema = self.schema([{"field_name": "colour", "translate": True}, {"field_name": "shape"}])
+        package = {"colour": "red", "shape": "round"}
+
+        with self.use(schema):
+            terms = collect_values_to_translate(deepcopy(package))
+            result = replace_package(package, {"red": "Rood", "round": "Rond"}, lang="en")
+
+        assert terms == ["red"]
+        assert result["colour"] == {"name": "red", "display_name": "Rood", "count": None}
+        assert result["shape"] == "round"
+
+    def test_the_label_is_written_to_the_sibling_a_mark_names(self):
+        schema = self.schema(
+            [
+                {
+                    "field_name": "activity",
+                    "repeating_subfields": [{"field_name": "kind", "translate": {"label_in": "label"}}],
+                }
+            ]
+        )
+        package = {"activity": [{"kind": "http://x/kind", "label": "Raw"}]}
+
+        with self.use(schema):
+            result = replace_package(package, {"http://x/kind": "Kind"}, lang="en")
+
+        assert result["activity"] == [{"kind": "http://x/kind", "label": "Kind"}]
+
+    def test_only_the_fields_marked_agent_get_an_identifier_list(self):
+        schema = self.schema(
+            [
+                {"field_name": "owner", "agent": True, "repeating_subfields": [{"field_name": "name"}]},
+                {"field_name": "contact", "repeating_subfields": [{"field_name": "name"}]},
+            ]
+        )
+        package = {"owner": [{"name": "O"}], "contact": [{"name": "C"}]}
+
+        with self.use(schema):
+            result = replace_package(package, {}, lang="en")
+
+        assert result["owner"][0]["identifier"] == []
+        assert "identifier" not in result["contact"][0]
+
+    def test_a_multilingual_text_field_of_the_schema_shows_one_language(self):
+        schema = self.schema([{"field_name": "story", "preset": "fluent_markdown"}])
+
+        with self.use(schema):
+            result = replace_package({"story": {"en": "English", "nl": "Nederlands"}}, {}, lang="nl")
+
+        assert result["story"] == "Nederlands"
+
+    def test_a_form_language_of_the_schema_is_a_language_of_the_api_too(self):
+        with self.use(self.schema([], form_languages=("en", "nl", "de"))):
+            assert get_preferred_language("de-DE") == "de"
+            assert get_preferred_language("fr") == "en"
+
+    def test_a_portal_with_an_english_form_still_answers_in_dutch(self):
+        for schema in (self.schema([], form_languages=("en",)), {}):
+            with self.use(schema):
+                assert get_preferred_language("nl") == "nl"
+
+    def test_the_core_type_of_a_dataset_is_translated_without_being_in_the_schema(self):
+        with self.use(self.schema([])):
+            result = replace_package({"type": "dataset"}, {"dataset": "Dataset"}, lang="en")
+
+        assert result["type"] == {"name": "dataset", "display_name": "Dataset", "count": None}
+
+
+class TestEveryFieldOfTheSchemaIsShown:
+    """Blank values are not stored, but the API shows the model of the schema: every field has a key."""
+
+    FIELDS = [
+        {"field_name": "title"},
+        {"field_name": "keyword", "preset": "multiple_text"},
+        {
+            "field_name": "publisher",
+            "repeating_subfields": [
+                {"field_name": "name"},
+                {"field_name": "country", "preset": "multiple_select"},
+            ],
+        },
+        {"field_name": "contact", "repeating_once": True, "repeating_subfields": [{"field_name": "email"}]},
+    ]
+
+    def fill(self, record):
+        from ckanext.gdi_userportal.logic.action.translation_utils import _fill_absent_fields
+
+        _fill_absent_fields(record, self.FIELDS)
+        return record
+
+    def test_a_missing_field_is_empty_of_its_kind(self):
+        assert self.fill({}) == {"title": None, "keyword": [], "publisher": [], "contact": []}
+
+    def test_a_none_value_is_filled_too(self):
+        assert self.fill({"keyword": None})["keyword"] == []
+
+    def test_values_stay_as_they_are(self):
+        record = {"title": "", "keyword": ["a"], "publisher": [{"name": "Org", "country": ["NLD"]}], "contact": [{"email": "x"}]}
+
+        assert self.fill(deepcopy(record)) == record
+
+    def test_the_rows_of_a_repeating_field_get_their_missing_subfields(self):
+        record = self.fill({"publisher": [{"name": "Org"}, {}], "contact": [{}]})
+
+        assert record["publisher"] == [{"name": "Org", "country": []}, {"name": None, "country": []}]
+        assert record["contact"] == [{"email": None}]
+
+    def test_a_record_that_is_not_a_dict_is_left_alone(self):
+        from ckanext.gdi_userportal.logic.action.translation_utils import _fill_absent_fields
+
+        assert _fill_absent_fields(None, self.FIELDS) is None

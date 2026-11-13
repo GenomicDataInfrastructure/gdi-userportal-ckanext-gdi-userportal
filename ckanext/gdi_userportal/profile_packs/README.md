@@ -221,48 +221,178 @@ for a field whose key the shared RDF code also keeps as a free extra in every pr
 
 ## Solr schema
 
-`solr/schema.xml` is written by hand: field types, CKAN's own fields and the fields the plugin builds
-while indexing (agents, contact point, `vocab_*`). The dataset fields of the enabled profiles are not
-in it. Solr gives a field it does not know the catch-all `*` (not stored, **single valued**), so a
-profile field with several values fails the import ("multiple values encountered for non
-multiValued field"). `solr_schema.py` closes that:
+`solr/schema.xml` is written by hand and holds what the dataset schema cannot say: the field types and their
+analyzers, CKAN's own fields (`id`, `name`, `title`, `res_*`, ...), the fields the plugin computes while indexing
+(temporal ranges, `permission_labels`) and the `copyField` rules. **The dataset fields are not in it**: `solr_schema.py`
+makes a Solr field of every dataset field, so a new field in a pack needs nothing in Solr. Solr gives a field it
+does not know the catch-all `*` (not stored, **single valued**), so a profile field with several values would fail the
+import ("multiple values encountered for non multiValued field"); `sync` closes that:
 
-- `derive_fields` makes a Solr field of every dataset field that `schema.xml` does not declare (and no
-  dynamic field other than `*` covers). Its type follows from the validators of the scheming field
-  (`int_validator` is a `long`, `boolean_validator` a `boolean`, anything else a `string`: a partial
-  date such as `2020` is not a Solr date, and a language map is stored as JSON text). It is multi valued
-  when the scheming field is a list (repeating subfields, `multiple_text`/`multiple_select`/
-  `multiple_checkbox`, `scheming_multiple_choice`/`scheming_multiple_text`, `dataset_series_in_series`,
-  `series_validator`), indexed and not stored. A `solr` key on the field overrides each of these:
+- `derive_fields` makes a Solr field of every dataset field, and of every field flattened from a repeating field
+  (`solr: {flatten}`, below). The defaults, so that most fields say nothing:
+
+  | | default | when to say it with a `solr` key |
+  |---|---|---|
+  | `type` | `string`; `long` for `int_validator`, `boolean` for `boolean_validator` | a date: `type: date` (a partial date such as `2020` is not a Solr date, so a date is never guessed) |
+  | `store` | **true** | `store: false` for a field that is never shown (it costs disk) |
+  | `index` | true | `index: false` for a field that is only shown, never searched, filtered or sorted |
+  | `multiple` | true when the scheming field is a list | `multiple: false` when the indexing keeps one value of the list |
+  | `docValues` | true for a number, a date and a boolean (sorting, range filters and range facets need it) | follows from `type` |
 
   ```yaml
   - field_name: issued
-    solr: {type: date, index: true, store: false, multiple: false}   # every key is optional
+    solr: {type: date}                       # every key is optional
+  - field_name: number_of_records
+    validators: ignore_missing int_validator # a long with docValues, stored: nothing else to say
   ```
 
-  *Indexed* means Solr can search, filter, facet and sort on the field. *Stored* means Solr can return
-  the original value in a query; CKAN does not need that, it serves a dataset from the JSON in
+  *Indexed* means Solr can search, filter, facet and sort on the field. *Stored* means Solr can return the original
+  value in a query (the Solr UI shows it); CKAN does not need that, it serves a dataset from the JSON in
   `validated_data_dict`. `type` must be a field type of `schema.xml`; `check` reports one that is not.
-- `check` (the drift test, `tests/profile_packs/test_solr_schema.py`, for every pack and pack pair)
-  fails when a list field would land in a single valued Solr field, and when a Solr field the plugin
-  fills while indexing (`flattened_field_names`: the agents, the contact point, `qualified_relation`,
-  `quality_annotation`, `retention_period`; the plugin reads the same constants) is not declared
-  `multiValued` in `schema.xml`. `url` and `dcat_type` are exempt:
-  the plugin flattens them to one value before indexing (`SINGLE_VALUED_SOLR_FIELDS`). Fix a failure by
-  making the field `multiValued` in `schema.xml`, or by flattening it in `before_dataset_index`.
+- A field of objects has no Solr field of its own: a repeating field (a list of rows) and a text per language
+  (`fluent_*`). The indexing writes their values (`flatten`, the free text), never the objects.
+- A field that `schema.xml` declares as well wins over the dataset schema, so its `solr` key would silently do
+  nothing. `check` fails for that (CKAN's own `name`, `url`, `version`, `license_id`, ... excepted): delete the line
+  from `schema.xml` and describe the field with the `solr` key.
+- `check` (the drift test, `tests/profile_packs/test_solr_schema.py`, for every pack and pack pair) also fails when a
+  list field would land in a single valued Solr field, when a `flatten` key (below) names a subfield the field does
+  not have, and when a Solr field the indexing fills is declared single valued in `schema.xml`. A field with
+  `solr: {multiple: false}` is exempt.
+
+**After a change of the type, the index or the docValues of an existing field** (a new default such as this one
+included) Lucene refuses to mix old and new documents in one core, and `sync` only changes the schema:
+`ckan search-index clear`, reload the core (`curl 'http://solr:8983/solr/admin/cores?action=RELOAD&core=ckan'`),
+then `ckan search-index rebuild`. Without the reload the rebuild stops at the first dataset with "cannot change field
+... from index options=NONE to inconsistent index options=DOCS". A change of `store` alone needs a rebuild only.
+
+### What the indexing writes: the `solr` key
+
+CKAN hands the indexer a dataset whose list fields are JSON text and whose repeating fields are lists of
+objects; scheming turns those into one `extras_<field>__<subfield>` text field each, which Solr can search
+but neither filter nor facet on. `before_dataset_index` therefore writes plain multi valued Solr fields of its
+own, and which ones is decided by the `solr` key of the fields in the schema, not by a list of names in the
+plugin (`indexing.py`; the schema is read through `schema_fields.py`):
+
+```yaml
+- field_name: spatial_coverage
+  solr: {flatten: [uri]}                  # -> spatial_coverage_uri: one value per location
+- field_name: contact
+  solr: {prefix: contact_point, flatten: [uri, name, email]}   # -> contact_point_uri, contact_point_name, ...
+- field_name: qualified_attribution
+  solr: {prefix: vocab_qualified_attribution, flatten: [role, agent.name]}   # a dot reaches into a subfield
+- field_name: in_series
+  solr: {text: false}                     # not searched as free text (ids); every other field is
+- field_name: dcat_type
+  solr: {multiple: false, all_values: vocab_dcat_type}   # the first value, and all of them
+- field_name: theme
+  solr: {canonical_prefix: "http://publications.europa.eu/resource/authority/data-theme/"}
+```
+
+- `flatten` lists the subfields of a repeating field that get a Solr field each, `<prefix>_<subfield>`
+  (`prefix` is the name of the field unless it says otherwise; a path with a dot is joined with `_`). Only
+  what is listed is indexed: a geometry or a language map is not a useful filter. `derive_fields` makes the
+  Solr field (a multi valued, stored string).
+- `text` says whether the field is searched as free text. It is, unless the field says `text: false` (for
+  identifiers, links, dates and ids that mean nothing as a search word). Every text in the field goes into
+  Solr's free-text field `text`, in every language and subfield, and so does every label that CKAN's
+  `term_translation` table has for a URI or code in it (in every language): a dataset that has
+  `.../authority/place/NLD_UTC` in `spatial_coverage` is found by "Utrecht". The labels of the terms in the
+  distributions (`res_extras_*`) are added the same way, so there is no list of fields in the plugin. The JSON
+  text CKAN makes of a field (`extras_<field>`, which the free text used to be made of: braces, quotes and
+  language codes were searched) and the objects of a repeating field are not indexed at all. A list of plain
+  values (`theme`) stays under its own name, for the filters.
+- `multiple: false` (with the `type`, `index` and `store` keys of the section above) says the Solr field
+  holds one value although the scheming field is a list, as for the landing page and the type of
+  `healthdcat_r8`; the first value is kept and `all_values` names a second Solr field that gets all of them.
+- `canonical_prefix` is the URI prefix a field is indexed with: a value that starts with the same prefix in the other
+  scheme (`https://publications.europa.eu/...` for the `http` one above) is indexed with the prefix given, and
+  doubles go, so one theme is one filter value whichever form a source used. Other values are not touched.
+- A multilingual keyword field (preset `fluent_tags`, named `<x>_translated`, as `tags_translated`) adds its keywords
+  of every language to `<x>` (`tags`), so a keyword typed in one language is found by the filter on `tags`. No
+  mark is needed. The API follows the same naming: every `<x>_translated` that holds keywords per language gives
+  `<x>` the keywords in the language of the request, at any depth (`tags_translated` of the dataset,
+  `keyword_translated` of an access service).
+- A field that holds a list and has no repeating subfields has its JSON text decoded to a list. `decode:
+  false` leaves it as it is, for a field that another plugin reads as text while indexing: this plugin runs
+  before ckanext-dataset-series, which does `json.loads` on `in_series`.
+
+A pack states these next to the field it defines, so a pack that redefines a field (see `redefines`) states
+them again; the pack listed first wins as for any other key. The series schemas carry them too. A field
+without a mark is indexed as before: under its own name when it has a value, and as `extras_*` text.
 - `sync` runs from the start scripts after the generator: it compares `schema.xml` plus the derived
   fields with the running core and applies the difference through the Solr Schema API (`add-field`,
-  `replace-field`, dynamic and copy fields). It never deletes a field and never stops CKAN when Solr
-  does not answer. A core is created once from the Solr image and lives in a volume, so a changed
+  `replace-field`, dynamic and copy fields) and removes the fields nothing describes any more. It never stops
+  CKAN when Solr does not answer. A core is created once from the Solr image and lives in a volume, so a changed
   `schema.xml` or a new profile would never reach an existing core without it.
 
 ```
-python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --dataset-schema /srv/app/generated/dataset.yaml [--dry-run]
+python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --ckan-ini /srv/app/ckan.ini [--dry-run] [--keep-leftovers]
 ```
+
+The fields come from every schema in `scheming.dataset_schemas` of the ini (the generated `dataset.yaml` and the
+series schema, which has fields the dataset schema lacks, such as `series_order_field`), merged by field name with
+the first definition winning. **A leftover** is an explicit field of the core that is not in `schema.xml` and not
+made from any of those schemas: the fields of a retired profile, the fields of repeating fields an older version
+made explicit, a field that is now covered by a dynamic field of `schema.xml`. The sync deletes the copy fields that
+name it first, then the field, then adds again a copy field that `schema.xml` still declares (its source is the
+dynamic field then). Fields Solr keeps for itself (`_version_`, ...) and dynamic fields are never touched. Removal
+needs every schema, so it only happens with `--ckan-ini`; with `--dataset-schema FILE` alone (repeatable) the
+leftovers are kept and the sync says so, because the fields of the other dataset types would look like leftovers.
+A field removed from the schema leaves its values in the old documents until `ckan search-index rebuild`.
 
 Documents indexed before a change keep their old index: reindex (`ckan search-index rebuild`) after the
 sync reports changes. A field type that the core lacks is reported, not added: recreate the core.
-Fields the plugin builds itself while indexing stay hand-declared in `schema.xml`, and the check above keeps them in line with the plugin.
+The fields that `schema.xml` declares by hand (`publisher_name`, `contact_point_*`, ...) keep their own settings; a new `flatten` key needs no line in `schema.xml`.
+
+## What the API shows: the `translate` and `agent` keys
+
+`package_show`, `package_search` and the other actions of the plugin show the codes of a controlled
+vocabulary with their label, and give every agent one shape. Which fields that concerns is decided by the
+schema, not by a list of names in the plugin (`logic/action/translation_utils.py`; the schema is read through
+`schema_access.py` and `schema_fields.py`):
+
+```yaml
+- field_name: theme
+  translate: true                          # "http://.../data-theme/HEAL" -> {name, display_name, count}
+- field_name: was_generated_by
+  repeating_subfields:
+    - field_name: type
+      translate: true                      # a subfield of a repeating field
+    - field_name: dct_type
+      translate: {label_in: label}         # the value stays, its label goes to the subfield `label`
+    - field_name: wasAssociatedWith
+      agent: true                          # an agent: its identifier is always a list
+```
+
+- `translate: true` shows the value of a field (a list: each value) as `{name, display_name, count}`, with the
+  label in the language of the request, English when there is none. A repeating field needs no mark of its
+  own: it is walked when one of its subfields has one. `translate: {label_in: <subfield>}` leaves the value
+  and writes its label to that sibling subfield, as the discovery API wants for `dct_type`.
+- `agent: true` says the field holds organisations or persons; each of them gets an `identifier` list, an empty
+  one when it has none, whatever the way it was created. It nests: an agent can hold agents.
+- The subfields every agent has (`type`, `publisher_type`, `country`) are marked in the agent snippets, so a
+  pack that uses a snippet has them translated; `hdab_*` snippets are not marked.
+- The multilingual text fields (`fluent_markdown`, `fluent_text`: `provenance`, `version_notes`, the note of
+  a publisher, ...) and every `<field>_translated` show the text of the requested language, then English,
+  then any language. No mark is needed: they are found by their preset.
+- The API answers in English and Dutch, and in every other language of `form_languages` (what the form offers,
+  `GDI_METADATA_FORM_LANGUAGES`, which defaults to the `CKAN__LOCALES_OFFERED` languages); a form limited to English does not take Dutch away.
+- Only `type`, the CKAN core field that is not in the schema, is named in the plugin.
+
+The terms that `package_show` looks up in `term_translation_show` are collected from the same marks, so a
+new marked field needs no other change.
+
+Every field of the dataset schema and of the resource schema is in the answer, also one without a value
+(blank values are not stored, but the API shows the model the schema describes, so a client can count on every
+key): `[]` for a field that holds a list (multiple text or choice, and every field with repeating subfields,
+also `repeating_once`), `null` for any other, and the same inside the rows of a repeating field. A name that is
+not a field of the schema is not made up (`status` of a dataset, `access_rights` of a distribution). The plain
+`package_show` is not changed.
+
+The same list is available to a harvester as the action `gdi_terms_to_translate` (sysadmins, or a call
+without authorisation checks): given a dataset as `{"package": {...}}` it answers `{"terms": [...]}`, the
+values the schema marks. ckanext-fairdatapoint asks it, before a harvested dataset is saved, which
+terms to fetch the labels of, so the labels it stores are the ones this API sends out.
 
 ## Running it
 
@@ -278,3 +408,49 @@ Tests need only PyYAML, SQLAlchemy and pytest, and run on the host:
 ```
 uv run --no-project --with pyyaml --with sqlalchemy --with pytest python -I -m pytest ckanext/gdi_userportal/tests/profile_packs
 ```
+
+### Searching: what Solr does and what to run after a change
+
+CKAN searches one field, `text` (the default `qf` of `package_search` is `name^4 title^4 tags^2 groups^2 text`).
+Everything a user can search for has to end up there, which is what the `text` key above decides per field;
+`schema.xml` has the field and its analyzer and does not change for it. The other fields are for filtering and
+facets: a field marked with `flatten` or kept under its own name is an exact-match string, a list is multi valued.
+
+Solr's schema is kept as it is on purpose (no schemaless mode, no managed guessing of field types): a Solr
+field that is guessed from the first value it sees is typed by accident, and the next dataset with another shape
+fails the import. What is dynamic is the part that follows the dataset schema: `solr_schema.py sync` derives the
+fields from the dataset schema at every start, and the free text from the `text` key, so a new field needs a
+field in a pack and nothing in Solr.
+
+After upgrading to a version that changes what is indexed (this one: free text built from values and labels
+instead of JSON text; the `vocab_<field>_search` fields are gone, nothing read them), restart CKAN (the
+generator and `sync` run at start) and run `ckan search-index rebuild`. Without the rebuild the old documents
+keep their JSON text until they are saved again. When the release also changes the type, `index` or `docValues` of a
+field (the one that moved the dataset fields out of `schema.xml` did: counts and ages are `long` now, more fields
+are indexed), clear the index and reload the core first, as the section above says. A new translation (`ckan gdi-userportal translations migrate`)
+reaches the free text of a dataset when that dataset is reindexed, not before.
+
+## Empty values are not saved
+
+The edit form posts an input for every language and subfield, and the RDF profiles fill every form language with
+an empty text, so datasets used to be stored with `{"en": "", "nl": ""}`, `[]` and `""` as extras. A dataset is
+saved without them now (`blank_values.py`, `logic/action/blank_values.py`):
+
+- `package_create` and `package_update` are chained, so the form, the API, `package_patch` (it hands the merged
+  dataset to `package_update`: a field set to `""` is dropped and so cleared) and every harvester go through it.
+  The fields of the dataset schema (and of its resource fields) that end up as extras are looked at; the
+  columns CKAN has itself (`title`, `notes`, `url`, ...) are not.
+- A value is empty when it holds no text, item or language at any depth, as a list of rows that are all empty
+  is. A flat map loses its empty languages (`{"en": "Title", "nl": ""}` is saved as `{"en": "Title"}`) and a list
+  of texts its empty items. `0` and `false` are values.
+- **A row of a repeating field is never changed from the inside**: the validation of nested subfields (a
+  qualified attribution with an agent) fails for a row that lacks a key it had, and the dataset can then not be
+  indexed. Such a field is saved as it came, or not at all when every row is empty.
+- A required field that is empty is still reported by the validation, as missing. The code that reads a dataset
+  has to cope with a field that is not there; the harvesters pad every form language on purpose, that stays.
+- If dropping fails for any reason the dataset is saved as it came: a save is never stopped by this.
+
+`ckan gdi-userportal clean-blank-values` does the same for what is stored already: a dry run that lists what
+would be removed or rewritten, and with `--apply` (asks for confirmation unless `--yes`) removes it and reindexes
+the datasets. It looks at `package_extra` and the extras of the resources, never at deleted datasets. Take a
+database backup first.
