@@ -6,7 +6,7 @@
 What the indexing writes for the ``solr`` key of a field (indexing.py).
 
 The fields are made here, as small as the case needs. That the packs mark the fields the stack indexes is
-checked by ``test_solr_schema.py`` and by ``test_characterization.py``, which indexes recorded datasets.
+checked by ``test_solr_schema.py`` and by ``test_characterization.py``, which indexes captured datasets.
 """
 
 import json

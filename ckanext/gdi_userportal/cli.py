@@ -271,7 +271,7 @@ def profiles():
 @click.option("--delete", "delete", is_flag=True, help="Remove the orphaned extras. Without it nothing is changed.")
 @click.option("--yes", "-y", is_flag=True, help="With --delete: do not ask for confirmation")
 def prune(delete, yes):
-    """List the dataset extras that belong only to metadata profiles that are no longer enabled.
+    """List the dataset extras that belong only to metadata profiles that are not enabled.
 
     A dry run unless --delete is given. The enabled profiles are read from the CKAN config the
     profile generator wrote at container start, so run it in the same deployment. Extras shared
@@ -362,7 +362,8 @@ def conformance(profile, as_json):
 def clean_blank_values(apply, yes):
     """List the empty values stored with datasets and resources, and with --apply remove them.
 
-    Datasets are saved without empty values now; this cleans up what was saved before: an extra that is
+    Empty values are removed when a dataset is saved (blank_values.py). This cleans up the ones already stored:
+    an extra that is
     empty (``""``, ``[]``, ``{"en": "", "nl": ""}``) is removed, one with empty parts is rewritten without
     them. Only the fields of the dataset schema are looked at. A dry run unless --apply is given.
     """

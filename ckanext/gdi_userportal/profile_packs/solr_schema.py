@@ -335,8 +335,8 @@ def plan(wanted: SolrSchema, live: SolrSchema, remove_leftovers: bool = False) -
         touching = [(source, dest) for source, dest in live.copy_fields if source in gone or dest in gone]
         commands.extend(("delete-copy-field", {"source": source, "dest": dest}) for source, dest in touching)
         commands.extend(("delete-field", {"name": name}) for name in gone)
-        # A copy field that ``schema.xml`` still declares has to be there afterwards: its source is a dynamic
-        # field now (a field made explicit before the dynamic field covered it)
+        # A copy field that ``schema.xml`` still declares is added again after the deletions above: a field it
+        # names may have been removed only because a dynamic field of ``schema.xml`` covers it.
         wanted_copies = set(wanted.copy_fields)
         commands.extend(
             ("add-copy-field", {"source": source, "dest": dest})

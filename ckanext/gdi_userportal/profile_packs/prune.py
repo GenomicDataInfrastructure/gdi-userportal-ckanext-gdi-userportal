@@ -3,11 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-The extras a retired metadata profile leaves behind (ADR 0001, section 7).
+The extras a retired metadata profile leaves behind.
 
 Retiring a profile means removing it from ``GDI_METADATA_PROFILES`` and regenerating. The
 datasets keep the values they had saved for that profile's fields, as extras that no schema
-describes any more. They are harmless, and this finds them and, on request, removes them.
+describes any more. They are harmless, and this finds them and, on request, removes them. The command is a dry run unless asked to
+delete. Only fields that no enabled profile defines are retired, so a value an enabled profile shares is never removed.
 
 Nothing here decides which extras are orphaned: ``generator.retired_fields`` does, and its
 answer is passed in. These functions take a SQLAlchemy session and use plain SQL, so they work on

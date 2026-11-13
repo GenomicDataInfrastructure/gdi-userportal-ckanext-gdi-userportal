@@ -5,45 +5,28 @@ SPDX-License-Identifier: CC-BY-4.0
 -->
 
 [![REUSE status](https://api.reuse.software/badge/github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal)](https://api.reuse.software/info/github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal)
-![example workflow](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/actions/workflows/main.yml/badge.svg)
-![example workflow](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/actions/workflows/release.yml/badge.svg)
-![example workflow](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/actions/workflows/test.yml/badge.svg)
+![main workflow](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/actions/workflows/main.yml/badge.svg)
+![release workflow](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/actions/workflows/release.yml/badge.svg)
+![test workflow](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/actions/workflows/test.yml/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=GenomicDataInfrastructure_gdi-userportal-ckanext-gdi-userportal&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=GenomicDataInfrastructure_gdi-userportal-ckanext-gdi-userportal)
 [![GitHub contributors](https://img.shields.io/github/contributors/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal)](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal/graphs/contributors)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 # ckanext-gdi-userportal
 
-**TODO:** Put a description of your extension here:  What does it do? What features does it have? Consider including some screenshots or embedding a video!
+CKAN extension of the GDI User Portal. It holds the metadata profiles of the catalogue (the portal's own model
+and HealthDCAT-AP Release 8), the dataset schema generated from them, the Solr indexing of datasets, the
+translation of controlled vocabulary codes into labels for the API, and the profile conformance report.
 
+The profiles, the schema and the Solr fields are described in
+[ckanext/gdi_userportal/profile_packs/README.md](ckanext/gdi_userportal/profile_packs/README.md).
 
 ## Requirements
 
-**TODO:** For example, you might want to mention here which versions of CKAN this
-extension works with.
-
-If your extension works across different versions you can add the following table:
-
-Compatibility with core CKAN versions:
-
-| CKAN version    | Compatible?   |
-| --------------- | ------------- |
-| 2.9             | not tested    |
-| 2.10            | yes           |
-
-Suggested values:
-
-* "yes"
-* "not tested" - I can't think of a reason why it wouldn't work
-* "not yet" - there is an intention to get it working
-* "no"
-
+Developed and tested against CKAN 2.11 with the extensions listed in
+`requirements.txt`: ckanext-scheming, ckanext-fluent, ckanext-harvest, ckanext-dataset-series and ckanext-dcat.
 
 ## Installation
-
-**TODO:** Add any additional install steps to the list below.
-   For example installing any non-Python dependencies or adding any required
-   config settings.
 
 To install ckanext-gdi-userportal:
 
@@ -51,49 +34,46 @@ To install ckanext-gdi-userportal:
 
      . /usr/lib/ckan/default/bin/activate
 
-2. Clone the source and install it on the virtualenv
+2. Clone the source and install it into the virtualenv:
 
-    git clone https://github.com/GenomicDataInfrastructure/ckanext-gdi-userportal.git
-    cd ckanext-gdi_userportal
-    pip install -e .
-	pip install -r requirements.txt
+       git clone https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal.git
+       cd gdi-userportal-ckanext-gdi-userportal
+       pip install -e .
+       pip install -r requirements.txt
 
-3. Add `gdi_userportal` to the `ckan.plugins` setting in your CKAN
-   config file (by default the config file is located at
+3. Add `gdi_userportal` to the `ckan.plugins` setting in your CKAN config file (by default
    `/etc/ckan/default/ckan.ini`).
 
 4. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu:
 
-     sudo service apache2 reload
+       sudo service apache2 reload
 
+In the GDI User Portal stack the plugin is installed and configured by
+[gdi-userportal-ckan-docker](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckan-docker); the
+metadata profiles are selected there with `GDI_METADATA_PROFILES`.
 
 ## Config settings
 
-None at present
-
-**TODO:** Document any optional config settings here. For example:
-
-	# The minimum number of hours to wait before re-checking a resource
-	# (optional, default: 24).
-	ckanext.gdi_userportal.some_setting = some_default_value
-
+| Option | Default | Meaning |
+|---|---|---|
+| `ckanext.gdi_userportal.intro_text` | none | Introduction text shown on the portal. Readable without signing in. |
+| `ckanext.gdi_userportal.show_empty_properties` | `false` | Dataset and distribution pages also list the properties that have no value, with a dash. Environment variable: `CKANEXT__GDI_USERPORTAL__SHOW_EMPTY_PROPERTIES`. See the profile packs README, "Empty properties". |
 
 ## Developer installation
 
-To install ckanext-gdi-userportal for development, activate your CKAN virtualenv and
-do:
+To install ckanext-gdi-userportal for development, activate your CKAN virtualenv and do:
 
-    git clone https://github.com/GenomicDataInfrastructure/ckanext-gdi-userportal.git
-    cd ckanext-gdi-userportal
-    python setup.py develop
+    git clone https://github.com/GenomicDataInfrastructure/gdi-userportal-ckanext-gdi-userportal.git
+    cd gdi-userportal-ckanext-gdi-userportal
+    pip install -e .
     pip install -r requirements.txt
     pip install -r dev-requirements.txt
 
-Add needed docker images:
-    
+Needed services, for a local CKAN:
+
 Postgres:
 
-    docker run -d \                                                      
+    docker run -d \
       --name ckan-postgres \
       -e POSTGRES_USER=ckan_default \
       -e POSTGRES_PASSWORD=password \
@@ -102,13 +82,12 @@ Postgres:
       -p 5432:5432 \
       postgres
 
-Solr:
-
-     docker run --name ckan-solr -p 8983:8983 -d ckan/ckan-solr:2.10-solr9
+Solr: build the image from `solr/Dockerfile` in this repository. The core's schema is `solr/schema.xml`; the
+dataset fields are added to it from the profiles when CKAN starts (see the profile packs README, "Solr schema").
 
 Redis:
 
-     docker run --name ckan-redis -p 6379:6379 -d redis:7
+    docker run --name ckan-redis -p 6379:6379 -d redis:7
 
 Add a new ckan.ini in your local repository and add the below values:
 
@@ -116,6 +95,9 @@ Add a new ckan.ini in your local repository and add the below values:
      ckanext.dcat.rdf.profiles = euro_dcat_ap
      ckan.harvest.s3_rdf.aws_access_key = changeme
      ckan.harvest.s3_rdf.aws_secret_key = changeme
+
+Full stack with Docker Compose: see the README of
+[gdi-userportal-ckan-docker](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckan-docker).
 
 ## Configure User login
 
@@ -137,9 +119,10 @@ To clean the db:
 
 ## Term Translation Migrations
 
-This extension includes a versioned migration system for managing term translations in CKAN's `term_translation` table. Migrations run automatically on container startup.
+Versioned migrations load the translations of controlled vocabulary terms into CKAN's `term_translation` table.
+They run on container startup, after the CKAN database upgrade.
 
-For detailed documentation, see [docs/term_translation_migrations.md](docs/term_translation_migrations.md).
+For details, see [docs/term_translation_migrations.md](docs/term_translation_migrations.md).
 
 Quick commands:
 
@@ -151,41 +134,38 @@ docker exec <ckan-container> ckan gdi-userportal translations status
 docker exec <ckan-container> ckan gdi-userportal translations migrate
 ```
 
-## Search Indexing For Translated Vocabulary Values
+## Search indexing
 
-Free-text dataset search indexes translated labels for these vocabulary-backed fields:
+The Solr fields of a dataset and the free-text field are derived from the dataset schema and the `solr` keys of its
+fields. Which fields are searched as free text, how translated labels get into the index and what to run after a
+change are described in the profile packs README, sections "What the indexing writes" and "Searching".
 
-- `conforms_to`
-- `code_values`
-- `coding_system`
-
-At Solr index time, the extension stores both the raw values and all translations available in CKAN's `term_translation` table for these fields into dedicated internal search fields (`vocab_conforms_to_search`, `vocab_code_values_search`, `vocab_coding_system_search`). Terms are collected from dataset extras, resource extras, and access service metadata. This keeps the API response shape unchanged while allowing `package_search` and `enhanced_package_search` free-text queries to match readable labels.
-
-Notes:
-
-- The translated Solr values are internal search fields and are not exposed as new API fields.
-- Search coverage depends on translations already being present in `term_translation`.
-- After deploying changes to this indexing behavior or loading new translations, rebuild the search index:
+After a change to the indexing or to the translations, rebuild the search index:
 
 ```bash
 docker exec <ckan-container> ckan -c /srv/app/ckan.ini search-index rebuild
 ```
+
 ## Tests
 
 To run the tests, do:
 
     pytest --ckan-ini=test.ini
 
+The profile pack tests in `ckanext/gdi_userportal/tests/profile_packs` need only PyYAML, SQLAlchemy and pytest; see
+the profile packs README, "Running it".
 
 ## Releasing a new version of ckanext-gdi-userportal
 
 If ckanext-gdi-userportal should be available on PyPI you can follow these steps to publish a new version:
 
-1. Update the version number in the `setup.py` file. See [PEP 440](http://legacy.python.org/dev/peps/pep-0440/#public-version-identifiers) for how to choose version numbers.
+1. Update the version number in the `setup.py` file. See the
+   [version specifiers of the Python packaging guide](https://packaging.python.org/en/latest/specifications/version-specifiers/)
+   for how to choose version numbers.
 
 2. Make sure you have the latest version of necessary packages:
 
-    pip install --upgrade setuptools wheel twine
+       pip install --upgrade setuptools wheel twine
 
 3. Create a source and binary distributions of the new version:
 

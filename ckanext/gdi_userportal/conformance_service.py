@@ -7,8 +7,8 @@ Conformance of datasets, dataset series and distributions to the enabled metadat
 the dataset, series, distribution and search pages, the report action and the CLI use it.
 
 Everything is computed from the record on every call and stored nowhere, and nothing here touches the Solr schema
-or the index (ADR 0001, section 6). The rules come from the pack manifests; a pack without rules has no mandatory
-properties and is satisfied by every record.
+or the index. Conformance is reported, never enforced: the rules are the mandatory properties of each pack's
+conformance file, and a pack without rules has no mandatory properties and is satisfied by every record.
 
 A record is checked against the profile it comes from: the ``metadata_profile`` of the harvest source that created
 it, the main profile when that source names none, and every enabled profile when no source says (a dataset made by

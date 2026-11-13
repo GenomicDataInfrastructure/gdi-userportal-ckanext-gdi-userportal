@@ -3,12 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Initial vocabulary seed - restore translations from initial_translations.csv
-
-This migration restores the EU vocabulary translations that were removed in PR #158
-(commit 4089575 - "Ckan 211") during the CKAN 2.11 upgrade.
-
-PR #158: https://github.com/GenomicDataInfrastructure/gdi-userportal-ckan-docker/pull/158
+Initial vocabulary seed: the EU vocabulary translations from 001_initial_translations.csv.
 
 Revision ID: 001_initial_seed
 Revises: None (initial migration)
@@ -20,7 +15,7 @@ from typing import Union
 # revision identifiers
 revision: str = "001_initial_seed"
 down_revision: Union[str, None] = None
-description: str = "Restore EU vocabulary translations from initial_translations.csv (removed in PR #158)"
+description: str = "Seed EU vocabulary translations from 001_initial_translations.csv"
 
 
 def upgrade() -> int:

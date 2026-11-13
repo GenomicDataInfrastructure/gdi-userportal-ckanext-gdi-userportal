@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Profile pack registry and dataset schema generator (ADR 0001).
+Profile pack registry and dataset schema generator.
 
 A deployment enables one or more metadata profiles ("packs"). Each pack names the
 schema fragments it needs; this module merges the fragments of the enabled packs
@@ -71,7 +71,7 @@ RDF_PROFILE_ENTRY_POINT_GROUP = "ckan.rdf.profiles"
 # header key (``scheming_version``, ``form_languages``, ...) and merges as a whole.
 FIELD_SECTIONS = ("dataset_fields", "resource_fields")
 
-# Schemas that do not vary per profile and stay static files (ADR 4.2).
+# Schemas that do not vary per profile; they stay static files.
 STATIC_SCHEMAS = ("ckanext.gdi_userportal:scheming/schemas/dataset_series_multilingual.yaml",)
 
 # The generated schema uses these presets, and prerun.py loads it before setup_scheming.sh
