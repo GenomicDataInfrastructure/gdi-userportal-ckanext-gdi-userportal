@@ -43,6 +43,15 @@ def is_multiple(field: Mapping) -> bool:
     return bool(MULTIPLE_VALIDATORS & set(str(field.get("validators", "")).split()))
 
 
+def empty_value(field: Mapping):
+    """What a field without a value looks like in the API: ``[]`` for a field that holds a list, None otherwise.
+
+    A field with repeating subfields is a list of rows in the API also when it has one row at most
+    (``repeating_once``), unlike for the indexing (``is_multiple``).
+    """
+    return [] if field.get("repeating_subfields") or is_multiple(field) else None
+
+
 def solr_options(field: Mapping) -> dict:
     """The ``solr`` key of a field (what its Solr fields look like), an empty mapping when it has none."""
     options = field.get("solr") if isinstance(field, Mapping) else None

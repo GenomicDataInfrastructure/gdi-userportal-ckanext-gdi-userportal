@@ -39,7 +39,7 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
     replace_package,
 )
 from ckanext.gdi_userportal.plugin import GdiUserPortalPlugin
-from ckanext.gdi_userportal.profile_packs import generator
+from ckanext.gdi_userportal.profile_packs import generator, schema_fields
 
 # The profiles the corpus was recorded with, in their order: GDI_METADATA_PROFILES="gdi_current healthdcat_r8".
 PROFILES = ["gdi_current", "healthdcat_r8"]
@@ -102,7 +102,23 @@ def expected_api(record, language):
         for key in RECORDED_RESOURCE_LIST:
             if key in resource and resource[key] is None and key not in resource_names:
                 del resource[key]
+    # the API shows every field of the schema, also one without a value: [] for a list, None for any other
+    _fill(expected, SCHEMAS[record["type"]])
+    for resource in expected.get("resources") or []:
+        _fill(resource, RESOURCE_FIELDS)
     return {**expected, **DELIBERATE_API_CHANGES.get((record["name"], language), {})}
+
+
+def _fill(record, fields):
+    """Give the fields of the schema that the record has no value for their empty value, in repeating rows too."""
+    for field in fields:
+        name = field["field_name"]
+        if record.get(name) is None:
+            record[name] = schema_fields.empty_value(field)
+        rows = record[name] if isinstance(record[name], list) else [record[name]]
+        for row in rows:
+            if isinstance(row, dict) and field.get("repeating_subfields"):
+                _fill(row, field["repeating_subfields"])
 
 # List fields that were indexed as the JSON text CKAN gives (``'["a"]'``) and are decoded to a list now: the
 # fields that hold a list are read from the schema, not from a list of names kept in the plugin.

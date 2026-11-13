@@ -380,9 +380,14 @@ schema, not by a list of names in the plugin (`logic/action/translation_utils.py
 - Only `type`, the CKAN core field that is not in the schema, is named in the plugin.
 
 The terms that `package_show` looks up in `term_translation_show` are collected from the same marks, so a
-new marked field needs no other change. A marked field the dataset has no value for is `null`
-(`[]` for a repeating field of a distribution, `access_services`); a name that is not a field of the schema
-is not made up.
+new marked field needs no other change.
+
+Every field of the dataset schema and of the resource schema is in the answer, also one without a value
+(blank values are not stored, but the API shows the model the schema describes, so a client can count on every
+key): `[]` for a field that holds a list (multiple text or choice, and every field with repeating subfields,
+also `repeating_once`), `null` for any other, and the same inside the rows of a repeating field. A name that is
+not a field of the schema is not made up (`status` of a dataset, `access_rights` of a distribution). The plain
+`package_show` is not changed.
 
 The same list is available to a harvester as the action `gdi_terms_to_translate` (sysadmins, or a call
 without authorisation checks): given a dataset as `{"package": {...}}` it answers `{"terms": [...]}`, the
