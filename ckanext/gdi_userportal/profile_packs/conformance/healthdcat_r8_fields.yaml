@@ -9,7 +9,7 @@
 #
 # A property counts as filled when any of its fields holds a value. Core CKAN fields
 # (title, notes, tags, resources) are listed next to the scheming field that replaces them,
-# because datasets from before the multilingual schema carry only the core one.
+# because a dataset may carry only the core one.
 properties:
   access rights: [access_rights]
   applicable legislation: [applicable_legislation]

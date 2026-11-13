@@ -4,7 +4,7 @@
 
 # HealthDCAT-AP Release 8. It holds the properties of the R8 model and nothing else: what only
 # gdi_current has (dataset_status, trusted_data_holder, the dataset license, the retention period of
-# a distribution, the legacy publisher type and note, the identifier and country of an agent, ...)
+# a distribution, the publisher type and note, the identifier and country of an agent, ...)
 # is left out, and lives in fragments of the gdi_current pack.
 #
 # The shared fields R8 defines differently are listed under redefines below; the README describes
