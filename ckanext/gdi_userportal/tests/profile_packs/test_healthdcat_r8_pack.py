@@ -140,7 +140,7 @@ def test_every_field_and_subfield_has_a_label_or_a_preset_that_supplies_one(gene
 
 @pytest.mark.parametrize("profiles", MODES, ids=" + ".join)
 def test_nothing_is_required(generator, profiles):
-    """Conformance is computed, never enforced (ADR 0001)."""
+    """No field is required in any profile mode: conformance is reported, never enforced."""
     schema = generator.build_schema(profiles).schema
 
     for section in ("dataset_fields", "resource_fields"):
