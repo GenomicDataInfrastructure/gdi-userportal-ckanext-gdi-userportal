@@ -7,7 +7,7 @@
 # a distribution, the publisher type and note, the identifier and country of an agent, ...)
 # is left out, and lives in fragments of the gdi_current pack.
 #
-# The shared fields R8 defines differently are listed under redefines below; the README describes
+# The shared fields R8 defines differently are listed under redefines below; profile_packs/README.md describes
 # them. With both packs enabled the pack listed first decides: list healthdcat_r8 first to get the
 # R8 versions.
 #
