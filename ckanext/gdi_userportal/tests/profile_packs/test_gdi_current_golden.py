@@ -3,16 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Acceptance test for ADR 0001: with only ``gdi_current`` enabled, the generated
-dataset schema is the schema the stack loaded before the generator existed.
+Acceptance test for the single-profile case: with only ``gdi_current`` enabled, the generated dataset schema
+matches ``scheming/schemas/dataset_multilingual.yaml``, the static baseline that stays unchanged in the tree.
 
-``scheming/schemas/dataset_multilingual.yaml`` is that baseline. It stays in the
-tree unchanged, and this test fails when it and the ``gdi_current`` pack drift apart, except for
-the changes listed in ``DELIBERATE_CHANGES``.
+This test fails when the baseline and the ``gdi_current`` pack drift apart, except for the changes listed in
+``DELIBERATE_CHANGES``.
 
-The baseline keeps the order of the form as it was; ``gdi_current`` now orders its fields
-alphabetically (``field_order``), so the tests compare the same fields, each identical, by
-name and not by position.
+The baseline keeps the field order of the form; ``gdi_current`` orders its fields alphabetically (``field_order``),
+so the tests compare the same fields, each identical, by name and not by position.
 """
 
 import copy
@@ -53,8 +51,8 @@ def _names(fields):
     return [field["field_name"] for field in fields]
 
 
-# What the fields say about the Solr indexing and the translation of the API (README.md, "the solr key", "the
-# translate and agent keys"); they were added after the baseline and the form and the display do not read them.
+# The keys that say how a field is indexed and translated (see profile_packs/README.md). The baseline has none of
+# them, and the form and the display do not read them.
 INDEXING_KEYS = ("solr", "translate", "agent")
 
 
