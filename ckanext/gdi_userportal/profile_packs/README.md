@@ -281,14 +281,11 @@ key of the fields in the schema, not by a list of names in the plugin (`indexing
 - `flatten` lists the subfields of a repeating field that get a Solr field each, `<prefix>_<subfield>`. `prefix` is the
   name of the field unless it says otherwise; a path with a dot is joined with `_`. Only what is listed is indexed: a
   geometry or a language map is not a useful filter. `derive_fields` makes the Solr field (a multi valued, stored string).
-- `text` says whether the field is searched as free text. It is, unless the field says `text: false` (for identifiers,
-  links, dates and ids that mean nothing as a search word). Every text in the field goes into Solr's free-text field
-  `text`, in every language and subfield. So does every label that CKAN's `term_translation` table has for a URI or code
-  in it, in every language: a dataset that has `.../authority/place/NLD_UTC` in `spatial_coverage` is found by
-  "Utrecht". The labels of the terms in the distributions (`res_extras_*`) are added the same way. There is no list of
-  fields in the plugin for this. The JSON text CKAN makes of a field (`extras_<field>`) and the objects of a repeating
-  field are dropped from the document, so they are not indexed. A list of plain values (`theme`) stays under its own
-  name, for the filters.
+- `text` says whether the field's values are put in the free text by the indexing. It does, unless the field says
+  `text: false` (for identifiers, links, dates and ids that mean nothing as a search word). The other ways values reach
+  the free text are listed under "What reaches the free text". The JSON text CKAN makes of a field (`extras_<field>`) and
+  the objects of a repeating field are dropped from the document, so they are not indexed. A list of plain values
+  (`theme`) stays under its own name, for the filters.
 - `decode` is set on a list field to keep its JSON text as it is. Without it, a field that holds a list and has no
   repeating subfields gets its JSON text decoded to a list. Use `decode: false` for a field that another plugin reads
   as text while indexing: this plugin runs before ckanext-dataset-series, which does `json.loads` on `in_series`.
@@ -344,6 +341,35 @@ CKAN searches one field, `text`: the default `qf` of `package_search` is `name^4
 default). Everything a user can search for has to end up there, which is what the `text` key above decides per field.
 `schema.xml` has the field and its analyzer and does not change for it. The other fields are for filtering and facets: a
 field marked with `flatten` or kept under its own name is an exact-match string, and a list is multi valued.
+
+#### What reaches the free text
+
+Solr's `text` field gets values in three ways:
+
+1. `indexing.free_text_all`, for every dataset field of the schema that does not say `text: false`: every text of the
+   field, at any depth and in every language, including the texts of its subfields; and for each URI or code that has
+   labels in `term_translation`, the labels in every language. A dataset that has `.../authority/place/NLD_UTC` in
+   `spatial_coverage` is found by "Utrecht".
+2. The `copyField` rules of `solr/schema.xml`, which Solr applies whatever the `text` key says:
+   - `vocab_*`: every Solr field with the `vocab_` prefix, which the indexing writes for `flatten` and `all_values`
+     keys that use that prefix. These are the series of a dataset (`vocab_in_series`, `vocab_in_series_name`,
+     `vocab_in_series_title`, written by `before_dataset_index` in `plugin.py`), `vocab_qualified_attribution_role` and
+     `vocab_qualified_attribution_agent_name`, and `vocab_dcat_type` of the R8 pack.
+   - `urls` (from `url`, `ckan_url`, `download_url` and `res_url`), and CKAN's own `name`, `title`, `notes`, `tags`,
+     `groups`, `organization`, `license`, `res_name`, `res_description`, `maintainer` and `author`.
+   - `extras_*`: the extras that no schema field describes.
+   - `res_extras_*`: every extra of a distribution, with the labels of its terms (see 1). A distribution field that
+     says `text: false` is not left out here; no field of the packs says it today.
+3. `text` is copied into `text` itself.
+
+Consequences of this, as the code does it today:
+
+- `text: false` only keeps a field out of rule 1. The values the indexing writes to a `vocab_*` field reach the free text
+  anyway: the series ids, names and titles of `in_series` (which says `text: false`), and the `dcat_type` of the R8
+  pack (`all_values: vocab_dcat_type`, with `text: false`).
+- Some values are indexed twice: the roles and agent names of `qualified_attribution` (rule 1 and the `vocab_*` copies),
+  and the title and description (rule 1 for the `*_translated` fields, rule 2 for the CKAN fields). This affects
+  scoring, not which datasets match.
 
 Solr's schema is kept as it is on purpose: no schemaless mode, no managed guessing of field types. A Solr field that is
 guessed from the first value it sees is typed by accident, and the next dataset with another shape fails the import. What
