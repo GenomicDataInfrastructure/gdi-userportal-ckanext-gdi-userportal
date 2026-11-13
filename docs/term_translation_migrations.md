@@ -1,137 +1,95 @@
-# Term Translation Migrations
+# Term translation migrations
 
-This module provides an Alembic-like versioned migration system for managing term translations in CKAN's `term_translation` database table.
+Versioned migrations load translations of controlled vocabulary terms into CKAN's `term_translation` table. A term is
+usually a URI or a code; the translation is its label in one language. The labels are what the search index and the
+API show for those terms (see the profile packs README, "What the API shows").
 
-## Background
-
-The original translations were part of the CKAN deployment until [PR #158](https://github.com/GenomicDataInfrastructure/gdi-userportal-ckan-docker/pull/158) (commit 4089575 - "Ckan 211") which removed them during the CKAN 2.11 upgrade. The removed files were:
-
-- `ckan/docker-entrypoint.d/common_vocabulary_tags.csv` (~2400 translations)
-- `ckan/docker-entrypoint.d/upload_vocabulary.sh` (shell script that ran on container startup)
-
-This migration system restores that functionality with improvements:
-
-| Old System | New Migration System |
-|------------|---------------------|
-| Shell script + CSV at container startup | Alembic-style versioned migrations |
-| No version tracking | Tracks applied migrations in DB |
-| Ran on every container start | Runs once per migration, idempotent |
-| Direct psql commands | Uses SQLAlchemy with proper transactions |
-
-## Directory Structure
+The module is `ckanext/gdi_userportal/migrations/`:
 
 ```
 ckanext/gdi_userportal/migrations/
-├── __init__.py                      # Public API exports
-├── runner.py                        # Migration execution engine
-└── versions/                        # Migration files and data
-    ├── __init__.py
-    ├── 001_initial_seed.py          # Migration file
-    ├── 001_initial_translations.csv # Seed data for 001 migration
-    └── term_translation_helpers.py  # Reusable helper functions
+├── runner.py                        # Applies, rolls back and reports migrations
+└── versions/
+    ├── NNN_<name>.py                # One migration per file: revision, upgrade(), downgrade()
+    ├── NNN_<name>.csv               # Optional seed data read by a migration
+    └── term_translation_helpers.py  # load_csv, bulk_insert_translations, delete_translations_by_terms
 ```
 
-## How It Works
+The first migration, `001_initial_seed`, loads about 2,500 EU vocabulary labels from `001_initial_translations.csv`.
 
-### Automatic Execution on Container Startup
+## How it runs
 
-Migrations run **automatically** when the CKAN container starts via:
+Migrations run when the CKAN container starts. `prerun.py` of gdi-userportal-ckan-docker (`run_term_translation_migrations`) runs
+`ckan gdi-userportal translations migrate` after the CKAN database has been initialised or upgraded. It is skipped when
+`gdi_userportal` is not in `CKAN__PLUGINS`.
 
-```
-ckan/docker-entrypoint.d/03_run_translations_migrations.sh
-```
+- If the migration fails because the `term_translation` table does not exist yet, prerun runs `ckan db init` and
+  `ckan db upgrade` and tries again.
+- Otherwise it tries again after 3 seconds. After 10 failed attempts `prerun.py` exits with status 1, so the start
+  fails and the error is in the container log.
 
-**Startup sequence:**
-1. Container starts
-2. `prerun.py` runs (CKAN initialization)
-3. `03_run_translations_migrations.sh` runs → `ckan gdi-userportal translations migrate`
-4. Web server starts
+Migrations are applied in version order, and each one runs once. They can also be run by hand.
 
-**If migrations fail:** The container continues starting (non-blocking). You'll see a warning in logs but the service will be available.
+## Tracking
 
-### Migration Tracking
-
-Applied migrations are tracked in the `gdi_term_translation_migrations` table:
+Applied migrations are recorded in the `gdi_term_translation_migrations` table, which the runner creates:
 
 | Column | Type | Description |
 |--------|------|-------------|
-| version | VARCHAR(255) | Migration version (e.g., "001_initial_seed") - PRIMARY KEY |
-| description | TEXT | Human-readable description |
+| version | VARCHAR(255) | Migration version, for example `001_initial_seed` (primary key) |
+| description | TEXT | Description of the migration |
 | applied_at | TIMESTAMP | When the migration was applied |
-| translations_added | INTEGER | Count of translations added |
+| translations_added | INTEGER | Number of translations the migration wrote |
 
-### Idempotency & Safety
+Writes are upserts: `INSERT ... ON CONFLICT (term, lang_code) DO UPDATE`. Existing rows are updated, not duplicated.
+The runner adds the unique constraint on `term_translation (term, lang_code)` if it is missing.
 
-- **Each migration runs only once** - tracked in the database
-- **UPSERT operations** - existing translations are updated, not duplicated
-- **Unique constraint** on `(term, lang_code)` prevents duplicates
-- **Non-breaking** - if translations already exist, they're updated
-
-## FAQ
-
-### Do I need to run migrations manually?
-
-**No.** Migrations run automatically on container startup. However, you can run them manually:
+## Commands
 
 ```bash
-docker exec gdi-userportal-ckan-docker-ckan-dev-1 ckan gdi-userportal translations migrate
-```
-
-### Do I need to rebuild the container?
-
-**Only if you add new migration files.** The migration code must be in the container for migrations to run.
-
-- **New migrations added?** → Rebuild or restart container
-- **Just deploying existing code?** → Container restart is enough
-
-### Is this a breaking change?
-
-**No.** The migration system is additive and non-breaking:
-
-- If `term_translation` table is empty → translations are inserted
-- If translations already exist → they're updated (UPSERT)
-- If migration already applied → it's skipped
-
-### What happens with an already running service?
-
-When you deploy the new code and restart:
-
-1. Container starts
-2. Migration script runs automatically
-3. Checks `gdi_term_translation_migrations` table
-4. If `001_initial_seed` not applied → runs it (inserts ~2400 translations)
-5. If already applied → skips it
-6. Service continues normally
-
-**No downtime, no data loss.**
-
-## CLI Commands
-
-```bash
-# Check migration status
+# Show which migrations are applied and which are pending
 docker exec <ckan-container> ckan gdi-userportal translations status
 
-# Run all pending migrations
+# Apply all pending migrations (add --force to re-apply applied ones)
 docker exec <ckan-container> ckan gdi-userportal translations migrate
 
-# Show details of a specific migration
+# Show the content of one migration
 docker exec <ckan-container> ckan gdi-userportal translations show 001_initial_seed
 
-# Downgrade a specific migration (removes its translations)
+# Roll one migration back: removes the translations it wrote (asks unless -y is given)
 docker exec <ckan-container> ckan gdi-userportal translations downgrade 001_initial_seed -y
 ```
 
-## Creating New Migrations
+## Deploying a change
 
-### Manual Creation with CSV
+- A new migration file is part of the image. Rebuild the image, or restart the container if the code is mounted.
+- Restarting the container applies pending migrations, so no separate step is needed.
+- Applied migrations are skipped. Changing the content of an already applied migration does not re-run it; use
+  `translations migrate --force` on a test system, or write a new migration.
+- A translation that is loaded reaches the free text of a dataset when that dataset is indexed again, so rebuild the
+  search index after a migration that changes labels (`ckan search-index rebuild`).
 
-For large translation sets, use a CSV file:
+## Creating a migration
 
-1. Create a new file in `versions/` with the next sequence number:
+Create the file with the next free number:
+
+```bash
+docker exec <ckan-container> ckan gdi-userportal translations create "Add terms for XYZ"
+```
+
+This writes `versions/NNN_<name>.py` from a template. Two ways to fill it in:
+
+**Seed data in a CSV file** (for large sets). The file `versions/002_add_new_terms.csv` has the header `term,term_translation,lang_code`:
+
+```csv
+term,term_translation,lang_code
+http://example.org/new-term,New Term,en
+http://example.org/new-term,Nieuwe Term,nl
+```
+
+and `versions/002_add_new_terms.py` loads it:
 
 ```python
-# versions/002_add_new_terms.py
-
 # SPDX-FileCopyrightText: 2024 Stichting Health-RI
 # SPDX-License-Identifier: Apache-2.0
 
@@ -141,42 +99,29 @@ from typing import Union
 
 revision: str = "002_add_new_terms"
 down_revision: Union[str, None] = "001_initial_seed"
-description: str = "Add new vocabulary terms for XYZ"
+description: str = "Add new vocabulary terms"
 
 
 def upgrade() -> int:
     from ckanext.gdi_userportal.migrations.versions.term_translation_helpers import (
         load_csv, bulk_insert_translations
     )
-    translations = load_csv("002_new_terms.csv")
-    return bulk_insert_translations(translations)
+    return bulk_insert_translations(load_csv("002_add_new_terms.csv"))
 
 
 def downgrade() -> int:
     from ckanext.gdi_userportal.migrations.versions.term_translation_helpers import (
         load_csv, delete_translations_by_terms
     )
-    translations = load_csv("002_new_terms.csv")
-    return delete_translations_by_terms(translations)
+    return delete_translations_by_terms(load_csv("002_add_new_terms.csv"))
 ```
 
-2. Add the seed data file in `versions/002_new_terms.csv`:
+Commit both files and restart the container.
 
-```csv
-term,term_translation,lang_code
-http://example.org/new-term,New Term,en
-http://example.org/new-term,Nieuwe Term,nl
-```
-
-3. Commit the files and rebuild/restart the container.
-
-### Manual Creation with Inline Translations
-
-For small translation sets:
+**Inline translations** (for small sets). Put the tuples in the migration file and pass the same list to the helpers
+in `upgrade()` and `downgrade()`:
 
 ```python
-# versions/002_add_new_terms.py
-
 from typing import Union, List, Tuple
 
 revision: str = "002_add_new_terms"
@@ -201,50 +146,32 @@ def downgrade() -> int:
 
 ## Troubleshooting
 
-### Direct Database Access
+| Symptom | Check |
+|---------|-------|
+| Migrations do not run at start | `gdi_userportal` is in `CKAN__PLUGINS`; the container log has the `[prerun]` lines. |
+| Labels are missing from the API or from search | The terms are in `term_translation` for the language; the dataset was indexed after the migration (rebuild the index). |
 
-If CLI commands fail, you can access the database directly:
+Direct database access, when the CLI fails (the database service and the user come from the `.env` of
+gdi-userportal-ckan-docker):
 
 ```bash
-# Connect to database
-docker exec -it gdi-userportal-ckan-docker-db-1 psql -U ckandbuser -d ckandb
+docker exec -it <db-container> psql -U <db-user> -d <db-name>
 
-# Check applied migrations
 SELECT * FROM gdi_term_translation_migrations;
-
-# Count translations
 SELECT COUNT(*) FROM term_translation;
-
-# Clear translations (use with caution!)
-DELETE FROM term_translation;
-DELETE FROM gdi_term_translation_migrations;
 ```
 
-### Common Issues
+Deleting rows by hand is only for a test system: `DELETE FROM term_translation;` removes every translation, and the
+migration table has to be cleared too for the migrations to run again.
 
-| Issue | Solution |
-|-------|----------|
-| "Cannot import 'run_migrations'" | Migration files not in container. Rebuild. |
-| Migrations not running | Check `03_run_translations_migrations.sh` exists and is executable |
-| Translations not showing | Check `term_translation` table has data; verify language codes match |
+## Tables
 
-## Database Schema
-
-### `term_translation` (CKAN Core Table)
+`term_translation` is CKAN's table:
 
 | Column | Type | Description |
 |--------|------|-------------|
-| term | text | The original term (usually a URI) |
-| term_translation | text | The translated value |
-| lang_code | text | Language code (e.g., "en", "nl") |
+| term | text | The term, usually a URI |
+| term_translation | text | The label in `lang_code` |
+| lang_code | text | Language code, for example `en` or `nl` |
 
-**Unique constraint:** `(term, lang_code)`
-
-### `gdi_term_translation_migrations` (Created by this module)
-
-| Column | Type | Description |
-|--------|------|-------------|
-| version | VARCHAR(255) | Migration version identifier (PRIMARY KEY) |
-| description | TEXT | Human-readable description |
-| applied_at | TIMESTAMP | When applied |
-| translations_added | INTEGER | Number of translations added |
+Unique on `(term, lang_code)`.
