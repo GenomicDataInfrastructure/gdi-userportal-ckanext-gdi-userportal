@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dataset_fields:
+  - field_name: population_coverage
+    label: Population coverage
+    preset: fluent_markdown
+    help_text: A definition of the population within the dataset.
+
+  - field_name: retention_period
+    label: Retention period
+    repeating_subfields:
+      - field_name: start
+        label: Start
+        preset: datetime_flex
+
+      - field_name: end
+        label: End
+        preset: datetime_flex
+    help_text: A temporal period which the dataset is available for secondary use.
+

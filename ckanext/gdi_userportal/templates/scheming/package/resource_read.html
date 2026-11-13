@@ -1,0 +1,65 @@
+{#-
+  As scheming's, but a distribution shows what its schema defines and nothing else:
+  - a field without a value gets no row;
+  - the CKAN bookkeeping rows (data last updated, metadata last updated, created) and the license
+    of the dataset are not shown, the schema has the distribution's own dates and license;
+  - the dump of every other key of the resource (id, package_id, position, ...) is left out.
+-#}
+{% extends "package/resource_read.html" %}
+
+{%- set exclude_fields = [
+  'name',
+  'description',
+  'url',
+  ] -%}
+{%- set schema = h.scheming_get_dataset_schema(dataset_type) -%}
+
+{% block resource_additional_information_inner %}
+  {% if res.datastore_active %}
+    {% block resource_data_dictionary %}
+      {{ super() }}
+    {% endblock %}
+  {% endif %}
+
+  <div class="module-content">
+    {%- block additional_info_heading -%}<h2>{{ _('Additional Information') }}</h2>{%- endblock -%}
+    <table class="table table-striped table-bordered table-condensed" data-module="table-toggle-more">
+      {%- block additional_info_table_head -%}
+        <thead>
+          <tr>
+            <th scope="col">{{ _('Field') }}</th>
+            <th scope="col">{{ _('Value') }}</th>
+          </tr>
+        </thead>
+      {%- endblock -%}
+      <tbody>
+        {#- The format is a field of the schema, in the order of the others -#}
+        {%- block resource_format -%}{%- endblock -%}
+        {%- block resource_fields -%}
+          {%- set show_empty = h.gdi_show_empty_properties() -%}
+          {%- for field in schema.resource_fields -%}
+            {%- set blank = h.gdi_is_blank_value(res.get(field.field_name)) -%}
+            {%- if field.field_name not in exclude_fields
+                and field.display_snippet is not none
+                and (show_empty or not blank) -%}
+              <tr>
+                <th scope="row">
+                  {{- h.scheming_language_text(field.label) -}}
+                </th>
+                {%- if blank %}
+                <td class="text-muted">&ndash;</td>
+                {%- else %}
+                <td>
+                  {%- snippet 'scheming/snippets/display_field.html',
+                      field=field, data=res, entity_type='dataset',
+                      object_type=dataset_type -%}
+                </td>
+                {%- endif %}
+              </tr>
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endblock -%}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

@@ -1520,3 +1520,76 @@ class TestBuildTemporalCoverageRanges:
         assert "temporal_coverage_range" not in result
         assert "temporal_coverage_min" not in result
         assert "temporal_coverage_max" not in result
+
+
+def test_before_dataset_index_keeps_one_value_of_the_landing_page_and_type_for_solr():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance.before_dataset_index(
+        {"url": ["http://example.org/p1", "http://example.org/p2"], "dcat_type": ["http://example.org/t1", "http://example.org/t2"]}
+    )
+
+    assert result["url"] == "http://example.org/p1"
+    assert result["dcat_type"] == "http://example.org/t1"
+    assert result["vocab_dcat_type"] == ["http://example.org/t1", "http://example.org/t2"]
+
+
+def test_before_dataset_index_reads_a_json_landing_page_and_leaves_single_values_alone():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance.before_dataset_index({"url": '["http://example.org/p1"]', "dcat_type": "http://example.org/t1"})
+
+    assert result["url"] == "http://example.org/p1"
+    assert result["dcat_type"] == "http://example.org/t1"
+    assert "vocab_dcat_type" not in result
+
+
+def test_before_dataset_index_drops_an_empty_list_of_types():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    assert "dcat_type" not in plugin_instance.before_dataset_index({"dcat_type": []})
+
+
+def test_before_dataset_index_indexes_the_relations_and_roles_of_a_relationship_that_hold_lists():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance.before_dataset_index(
+        {
+            "qualified_relation": [
+                {"uri": "http://example.org/rel", "relation": ["http://example.org/a", "http://example.org/b"], "role": ["http://example.org/r1"]},
+                {"uri": "", "relation": "http://example.org/b", "role": ["http://example.org/r2", "http://example.org/r1"]},
+            ]
+        }
+    )
+
+    assert result["qualified_relation_relation"] == ["http://example.org/a", "http://example.org/b"]
+    assert result["qualified_relation_role"] == ["http://example.org/r1", "http://example.org/r2"]
+    assert result["qualified_relation_uri"] == ["http://example.org/rel"]
+
+
+def test_the_landing_page_and_type_are_flattened_after_the_extras_are_parsed_into_lists():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance.before_dataset_index(
+        {"extras_dcat_type": json.dumps(["http://example.org/t1", "http://example.org/t2"])}
+        if "dcat_type" in plugin_instance._dcatap_fields_to_normalize
+        else {"dcat_type": ["http://example.org/t1", "http://example.org/t2"]}
+    )
+
+    assert result["dcat_type"] == "http://example.org/t1"
+    assert result["vocab_dcat_type"] == ["http://example.org/t1", "http://example.org/t2"]
+
+
+def test_before_dataset_index_expands_lists_that_are_stored_as_json_inside_a_subfield():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+
+    result = plugin_instance.before_dataset_index(
+        {
+            "qualified_relation": [{"uri": "u", "relation": '["http://example.org/a", "http://example.org/b"]', "role": '["http://example.org/r"]'}],
+            "qualified_attribution": [{"agent": [{"name": "Agent"}], "role": '["http://example.org/at-a", "http://example.org/at-b"]'}],
+        }
+    )
+
+    assert result["qualified_relation_relation"] == ["http://example.org/a", "http://example.org/b"]
+    assert result["qualified_relation_role"] == ["http://example.org/r"]
+    assert result["vocab_qualified_attribution_role"] == ["http://example.org/at-a", "http://example.org/at-b"]

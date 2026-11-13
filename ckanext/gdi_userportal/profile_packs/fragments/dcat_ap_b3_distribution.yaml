@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The rest of the distribution fields of dcat_ap_b3, after the checksum.
+resource_fields:
+  - field_name: rights
+    label: Rights
+    preset: fluent_markdown
+    help_text: Some statement about the rights associated with the resource.
+
+  - field_name: availability
+    label: Availability
+    help_text: Indicates how long it is planned to keep the resource available.
+
+  - field_name: status
+    label: Status
+    preset: select
+    choices:
+      - value: http://publications.europa.eu/resource/authority/distribution-status/COMPLETED
+        label: Completed
+      - value: http://publications.europa.eu/resource/authority/distribution-status/DEVELOP
+        label: Under Development
+      - value: http://publications.europa.eu/resource/authority/distribution-status/DEPRECATED
+        label: Deprecated
+      - value: http://publications.europa.eu/resource/authority/distribution-status/WITHDRAWN
+        label: Withdrawn
+    help_text: The status of the resource in the context of maturity lifecycle.
+
+  - field_name: license
+    label: License
+    help_text: License in which the resource is made available. If not provided will be inherited from the dataset.
+
+  # Note: this falls back to the standard resource url field
+  - field_name: access_url
+    label: Access URL
+    display_snippet: link.html
+    help_text: URL that gives access to the dataset (defaults to the standard resource URL).
+
+  # Note: this falls back to the standard resource url field
+  - field_name: download_url
+    label: Download URL
+    display_snippet: link.html
+    help_text: URL that provides a direct link to a downloadable file (defaults to the standard resource URL).
+
+  - field_name: issued
+    label: Release date
+    preset: datetime_flex
+    help_text: Date of publication of the resource.
+
+  - field_name: modified
+    label: Modification date
+    preset: datetime_flex
+    help_text: Most recent date on which the resource was changed, updated or modified.

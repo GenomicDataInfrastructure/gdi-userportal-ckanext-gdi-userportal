@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dataset_fields:
+  - field_name: contact
+    label: Contact points
+    repeating_label: Contact point
+    repeating_subfields:
+      - field_name: uri
+        label: URI
+
+      - field_name: name
+        label: Name
+
+      - field_name: name_translated
+        label: Name (translations)
+        help_text: Name of the contact point in each language.
+
+      - field_name: email
+        label: Email
+        display_snippet: email.html
+
+      - field_name: identifier
+        label: Identifier
+        help_text: Unique identifier for the contact point. Such as a ROR ID.
+
+      - field_name: url
+        label: URL
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+        help_text: URL for more information about the contact point.
+    help_text: Contact information for enquiries about the dataset.
+

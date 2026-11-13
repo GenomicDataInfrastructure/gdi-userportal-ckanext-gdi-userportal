@@ -1,0 +1,79 @@
+{#-
+  As scheming's, but a subfield without a value gets no row and an entry without any value no panel,
+  and:
+  - a field of cardinality one (repeating_once) has no panel number;
+  - a nested panel is indented, so that groups of tables of columns can be told apart;
+  - subfields with the same display_group are shown together under that heading (the contact point
+    of an agent);
+  - a subfield with display_replaces takes the row of that other subfield when it has a value, under
+    its display_label (one or more names per language replace the single name).
+-#}
+{% set fields = data[field.field_name] %}
+{% set depth = depth or 0 %}
+
+{% macro row(subfield, field_data) %}
+  <dt class="dataset-label">
+    {{ h.scheming_language_text(subfield.display_label or subfield.label) }}
+  </dt>
+  <dd>
+  {%- snippet 'scheming/snippets/display_field.html',
+    field=subfield,
+    data=field_data,
+    entity_type=entity_type,
+    object_type=object_type,
+    depth=depth + 1
+  -%}
+  </dd>
+{% endmacro %}
+
+{% block subfield_display %}
+  {% for field_data in fields %}
+    {% if not h.gdi_is_blank_value(field_data) %}
+    {% set replaced = [] %}
+    {% for subfield in field.repeating_subfields %}
+      {% if subfield.display_replaces and not h.gdi_is_blank_value(field_data.get(subfield.field_name)) %}
+        {% set _ = replaced.append(subfield.display_replaces) %}
+      {% endif %}
+    {% endfor %}
+    {% set visible = [] %}
+    {% for subfield in field.repeating_subfields %}
+      {% if not h.gdi_is_blank_value(field_data.get(subfield.field_name))
+          and subfield.field_name not in replaced
+          and (subfield.display_replaces or not h.gdi_is_redundant_translation(subfield.field_name, field_data)) %}
+        {% set _ = visible.append(subfield) %}
+      {% endif %}
+    {% endfor %}
+    <div class="panel panel-default"{% if depth %} style="margin-left: 1.25em; border-left: 3px solid #b9c2cc;"{% endif %}>
+      {% if not field.repeating_once %}
+        <header class="panel-heading">
+          {{ h.scheming_language_text(field.repeating_label or field.label) }} {{ loop.index }}
+        </header>
+      {% endif %}
+      <div class="panel-body">
+        <dl class="scheming-subfield-list">
+          {% set done = [] %}
+          {% for subfield in visible %}
+            {% if not subfield.display_group %}
+              {{ row(subfield, field_data) }}
+            {% elif subfield.display_group not in done %}
+              {% set _ = done.append(subfield.display_group) %}
+              <dt class="dataset-label">{{ h.scheming_language_text(subfield.display_group) }}</dt>
+              <dd>
+                <div class="panel panel-default" style="margin-left: 1.25em; border-left: 3px solid #b9c2cc;">
+                  <div class="panel-body">
+                    <dl class="scheming-subfield-list">
+                      {% for member in visible if member.display_group == subfield.display_group %}
+                        {{ row(member, field_data) }}
+                      {% endfor %}
+                    </dl>
+                  </div>
+                </div>
+              </dd>
+            {% endif %}
+          {% endfor %}
+        </dl>
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}
+{% endblock %}

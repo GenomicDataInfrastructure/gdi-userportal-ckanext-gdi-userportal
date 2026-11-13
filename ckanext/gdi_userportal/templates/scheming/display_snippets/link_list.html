@@ -1,0 +1,8 @@
+{#- A list of URLs, each a link. -#}
+{%- set values = data[field.field_name] -%}
+{%- if values is string -%}{%- set values = [values] -%}{%- endif -%}
+<ul class="list-unstyled">
+{%- for element in values if element %}
+  <li>{{ h.link_to(element, element, rel='noopener noreferrer', target='_blank') }}</li>
+{%- endfor %}
+</ul>

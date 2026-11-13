@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The CKAN license of the dataset. R8 has the license on the distributions only (Dataset has no
+# dct:license), so only gdi_current has it here.
+
+dataset_fields:
+  - field_name: license_id
+    label: License
+    form_snippet: license.html
+    help_text: License definitions and additional information can be found at http://opendefinition.org/.

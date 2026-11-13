@@ -1,0 +1,13 @@
+{#- Every language of a language map, each with its language code: for a property that has one or more values per language. -#}
+{%- set value = data[field.field_name] -%}
+{%- if value is mapping -%}
+  <ul class="list-unstyled">
+  {%- for lang, text in value.items() if text -%}
+    {%- for item in (text if text is sequence and text is not string else [text]) if item %}
+    <li>{{ item }} <span class="text-muted">({{ lang }})</span></li>
+    {%- endfor -%}
+  {%- endfor -%}
+  </ul>
+{%- elif value -%}
+  {{ value }}
+{%- endif -%}

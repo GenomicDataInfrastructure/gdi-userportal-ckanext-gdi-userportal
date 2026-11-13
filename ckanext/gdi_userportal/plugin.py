@@ -10,7 +10,9 @@ from urllib.parse import quote
 from dateutil.parser import isoparse
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+from ckan import model
 from ckanext.gdi_userportal.helpers import get_helpers as get_portal_helpers
+from ckanext.gdi_userportal.languages import fall_back_to_available_languages
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     SEARCH_INDEX_TRANSLATED_FIELDS,
     get_all_translations,
@@ -29,13 +31,17 @@ from ckanext.gdi_userportal.logic.action.get import (
     enhanced_package_search,
     enhanced_package_show,
     gdi_filter_help_texts_show,
+    gdi_metadata_profile_conformance,
 )
 from ckanext.gdi_userportal.logic.auth.get import (
     config_option_show,
     gdi_dataset_help_texts_show as gdi_dataset_help_texts_show_auth,
     gdi_filter_help_texts_show as gdi_filter_help_texts_show_auth,
+    gdi_metadata_profile_conformance as gdi_metadata_profile_conformance_auth,
+    package_show as package_show_auth,
 )
-from ckanext.gdi_userportal.validation import scheming_isodatetime_flex
+from ckanext.gdi_userportal import profile_visibility
+from ckanext.gdi_userportal.validation import gdi_hex_binary, scheming_isodatetime_flex
 
 from opentelemetry import metrics
 from opentelemetry.sdk.metrics import MeterProvider
@@ -179,6 +185,8 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "config_option_show": config_option_show,
             "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show_auth,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show_auth,
+            "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance_auth,
+            "package_show": package_show_auth,
         }
 
     def get_actions(self):
@@ -187,6 +195,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             "enhanced_package_show": enhanced_package_show,
             "gdi_dataset_help_texts_show": gdi_dataset_help_texts_show,
             "gdi_filter_help_texts_show": gdi_filter_help_texts_show,
+            "gdi_metadata_profile_conformance": gdi_metadata_profile_conformance,
         }
 
     def get_helpers(self):
@@ -251,6 +260,12 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         pass
 
     def before_dataset_search(self, search_params):
+        # the datasets of a harvest source whose metadata profile is not enabled are not found
+        enabled = profile_visibility.enabled_profiles(
+            toolkit.config.get(profile_visibility.ENABLED_PROFILES_OPTION)
+        )
+        search_params = profile_visibility.hide_from_search(search_params, model.Session, enabled)
+
         extras = search_params.get("extras") or {}
         raw_min = extras.get(TEMPORAL_MIN_PARAM)
         raw_max = extras.get(TEMPORAL_MAX_PARAM)
@@ -481,17 +496,43 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
             return data_dict
 
         for subfield in subfields:
+            # a subfield holds one value, or a list of them (the relations and roles of an R8 relationship)
             subfield_values = list(
-                {
-                    value.get(subfield)
+                dict.fromkeys(
+                    item
                     for value in values
-                    if isinstance(value, dict) and value.get(subfield)
-                }
+                    if isinstance(value, dict)
+                    for item in self._values_of(value.get(subfield))
+                )
             )
             if subfield_values:
                 data_dict[f"{field}_{subfield}"] = subfield_values
 
         data_dict.pop(field, None)
+        return data_dict
+
+    # R8 gives the landing page and the type of a dataset any number of values, so with the healthdcat_r8
+    # profile they are lists, while their Solr fields hold one value (a change of multiValued needs a
+    # reindex). The first value goes in the field and all the types are kept in vocab_dcat_type.
+    _SINGLE_VALUED_SOLR_FIELDS = ("url", "dcat_type")
+
+    def _flatten_single_valued_solr_fields(self, data_dict):
+        for key in self._SINGLE_VALUED_SOLR_FIELDS:
+            value = data_dict.get(key)
+            if isinstance(value, str) and value.lstrip().startswith("["):
+                try:
+                    value = json.loads(value)
+                except ValueError:
+                    continue
+            if not isinstance(value, (list, tuple)):
+                continue
+            values = [str(item) for item in value if item]
+            if key == "dcat_type" and values:
+                data_dict["vocab_dcat_type"] = list(dict.fromkeys(values))
+            if values:
+                data_dict[key] = values[0]
+            else:
+                data_dict.pop(key, None)
         return data_dict
 
     def _parse_series_ids(self, in_series):
@@ -515,12 +556,24 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         return []
 
+    @staticmethod
+    def _values_of(value):
+        """The values of a subfield: one, a list, or a JSON-encoded list (how a list is stored inside a subfield)."""
+        if isinstance(value, str) and value.lstrip().startswith("["):
+            try:
+                value = json.loads(value)
+            except ValueError:
+                return [value]
+        if isinstance(value, (list, tuple)):
+            return [item for item in value if item]
+        return [value] if value else []
+
     def _extract_string_values(self, value):
         if value is None:
             return []
 
         if isinstance(value, str):
-            return [value]
+            return [item for item in self._values_of(value) if isinstance(item, str)]
 
         if isinstance(value, list):
             extracted = []
@@ -821,6 +874,7 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
 
         data_dict = self._merge_tags_translated_for_indexing(data_dict)
         data_dict = self._add_translated_search_fields(data_dict)
+        data_dict = self._flatten_single_valued_solr_fields(data_dict)
 
         return data_dict
 
@@ -871,13 +925,17 @@ class GdiUserPortalPlugin(plugins.SingletonPlugin):
         return data_dict
 
     def after_dataset_show(self, context, data_dict):
-        return data_dict
+        schema = toolkit.h.scheming_get_dataset_schema(data_dict.get("type", "dataset"))
+        return fall_back_to_available_languages(data_dict, schema)
 
     def update_facet_titles(self, facet_titles):
         return facet_titles
 
     def get_validators(self):
-        return {"scheming_isodatetime_flex": scheming_isodatetime_flex}
+        return {
+            "scheming_isodatetime_flex": scheming_isodatetime_flex,
+            "gdi_hex_binary": gdi_hex_binary,
+        }
 
     # IConfigurable
     def configure(self, config):

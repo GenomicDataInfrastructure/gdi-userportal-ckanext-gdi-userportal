@@ -1,0 +1,148 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# HealthDCAT-AP Release 8. It holds the properties of the R8 model and nothing else: what only
+# gdi_current has (dataset_status, trusted_data_holder, the dataset license, the retention period of
+# a distribution, the legacy publisher type and note, the identifier and country of an agent, ...)
+# is left out, and lives in fragments of the gdi_current pack.
+#
+# The shared fields R8 defines differently are listed under redefines below; the README describes
+# them. With both packs enabled the pack listed first decides: list healthdcat_r8 first to get the
+# R8 versions.
+#
+# conformance holds the properties R8 makes mandatory per access layer, generated from R8's
+# cardinality rules by conformance_build.py. related_resource and source are kept when this
+# pack is retired: the shared RDF mapping reads and writes them as free extras in every profile.
+name: healthdcat_r8
+fragments:
+  - core
+  - r8_contact
+  - r8_publisher
+  - r8_creator
+  - dcat_ap_a2
+  - dcat_ap_b
+  - r8_spatial
+  - dcat_ap_b3
+  - r8_checksum
+  - dcat_ap_b3_distribution
+  - r8_distribution_policy
+  - dcat_ap_b2
+  - health_base_a
+  - health_base_b
+  - r8_hdab
+  - r8_access_services
+  - r8_qualified_relation
+  - r8_activity
+  - r8_attribution
+  - health_base_c2
+  - r8_additions
+rdf_profiles:
+  - euro_health_dcat_ap_r8
+redefines:
+  - dataset_fields.contact
+  - dataset_fields.spatial_coverage
+  - dataset_fields.publisher
+  - dataset_fields.creator
+  - dataset_fields.qualified_attribution
+  - dataset_fields.was_generated_by
+  - dataset_fields.hdab
+  - dataset_fields.qualified_relation
+  - dataset_fields.spatial_resolution_in_meters
+  - dataset_fields.retention_period
+  - resource_fields.spatial_resolution_in_meters
+  - dataset_fields.url
+  - dataset_fields.dcat_type
+  - resource_fields.access_services
+  - resource_fields.name_translated
+  - resource_fields.compress_format
+  - resource_fields.package_format
+  - resource_fields.size
+  - resource_fields.availability
+  - resource_fields.license
+  - resource_fields.conforms_to
+  - resource_fields.access_url
+  - resource_fields.download_url
+  - resource_fields.rights
+  - dataset_fields.in_series
+overrides:
+  # R8 calls the property "spatial resolution" (its IRI is dcat:spatialResolutionInMeters), and a
+  # dataset has at most one retention period.
+  dataset_fields.spatial_resolution_in_meters:
+    label: Spatial resolution
+  resource_fields.spatial_resolution_in_meters:
+    label: Spatial resolution
+  # The names R8 gives the properties of a distribution: title, compression format, packaging
+  # format, byte size, licence and linked schemas.
+  resource_fields.name_translated:
+    label: Title
+  resource_fields.compress_format:
+    label: Compression format
+  resource_fields.package_format:
+    label: Packaging format
+  resource_fields.size:
+    label: Byte size
+  # The availability of a distribution is one concept of the EU planned-availability vocabulary (the
+  # EU Publications Office authority table, which also has OP_DATPRO, used by the Office itself).
+  resource_fields.availability:
+    preset: select
+    choices:
+      - value: http://publications.europa.eu/resource/authority/planned-availability/AVAILABLE
+        label: Available
+      - value: http://publications.europa.eu/resource/authority/planned-availability/EXPERIMENTAL
+        label: Experimental
+      - value: http://publications.europa.eu/resource/authority/planned-availability/STABLE
+        label: Stable
+      - value: http://publications.europa.eu/resource/authority/planned-availability/TEMPORARY
+        label: Temporary
+    help_text: An indication how long it is planned to keep the distribution of the dataset available (dcatap:availability). One concept of the EU planned-availability vocabulary.
+  resource_fields.license:
+    label: Licence
+  resource_fields.conforms_to:
+    label: Linked schemas
+  # The access URL (1..*), the download URL (0..*) and the rights (0..*) of a distribution.
+  resource_fields.access_url:
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    display_snippet: link_list.html
+    help_text: A URL that gives access to the distribution of the dataset (dcat:accessURL). One or more.
+  resource_fields.download_url:
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    display_snippet: link_list.html
+    help_text: A URL that is a direct link to a downloadable file in a given format (dcat:downloadURL). Zero or more.
+  resource_fields.rights:
+    preset: null  # a list of statements, each with its own languages (not one text per language)
+    repeating_label: Rights statement
+    repeating_subfields:
+      - field_name: uri
+        label: URI
+        help_text: IRI of the rights statement, when it has one.
+      - field_name: label_translated
+        label: Statement
+        preset: fluent_text
+        display_snippet: all_languages.html
+        help_text: The rights statement in each language.
+    help_text: Statements that specify the rights associated with the distribution (dct:rights). One or more.
+  # A dataset that is in no series stores nothing: scheming_multiple_choice would store the empty list "[]".
+  dataset_fields.in_series:
+    validators: ignore_empty scheming_multiple_choice series_validator
+  dataset_fields.retention_period:
+    repeating_once: true
+    repeating_label: Retention period
+  # The landing page and the type of a dataset are 0..*.
+  dataset_fields.url:
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    display_snippet: link_list.html
+    help_text: A web page that provides access to the dataset, its distributions and/or additional information, at the original data provider (dcat:landingPage). One or more.
+  dataset_fields.dcat_type:
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: The type of the dataset (dct:type). One or more.
+field_order: alphabetical  # by label, the title and the description first
+conformance: conformance/healthdcat_r8.json
+series_schema: ckanext.gdi_userportal:scheming/schemas/dataset_series_r8.yaml
+keep_extras:
+  - related_resource
+  - source

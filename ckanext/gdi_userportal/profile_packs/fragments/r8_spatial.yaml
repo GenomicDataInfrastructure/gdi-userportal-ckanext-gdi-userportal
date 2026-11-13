@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# dct:Location in R8 has the geometry, the bounding box and the centroid; the location itself is an IRI.
+
+dataset_fields:
+  - field_name: spatial_coverage
+    label: Geographical coverage
+    repeating_subfields:
+      - field_name: uri
+        label: URI
+        help_text: IRI of the location. The EU Vocabularies Name Authority Lists may be used for continents, countries and places in those lists; otherwise a Geonames IRI.
+
+      - field_name: geom
+        label: Geometry
+
+      - field_name: bbox
+        label: Bounding Box
+
+      - field_name: centroid
+        label: Centroid
+    help_text: A geographic region that is covered by the dataset (dct:spatial). Usually an IRI from a vocabulary; a location with a geometry, a bounding box and a centroid is possible too.

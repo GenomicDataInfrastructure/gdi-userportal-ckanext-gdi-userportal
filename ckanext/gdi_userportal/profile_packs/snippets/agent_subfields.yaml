@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- field_name: uri
+  label: URI
+
+- field_name: name
+  label: Name
+
+- field_name: name_translated
+  label: Name (translations)
+  help_text: Name of the entity or person in each language.
+
+- field_name: email
+  label: Email
+  display_snippet: email.html
+
+- field_name: url
+  label: URL
+  display_snippet: link.html
+
+- field_name: type
+  label: Type
+
+- field_name: publisher_note
+  label: Publisher note
+  preset: fluent_markdown
+  help_text: A description of the activities of the agent.
+
+- field_name: publisher_type
+  label: Publisher type
+  preset: multiple_text
+  validators: ignore_missing scheming_multiple_text
+  help_text: Type of organisation of the agent.
+
+- field_name: identifier
+  label: Identifier
+  help_text: Unique identifier for the agent, such as a ROR or ORCID ID.
+
+- field_name: country
+  label: Country
+  help_text: Country of the agent, per the EU Publications Office country authority table.

@@ -1,0 +1,42 @@
+{#- As scheming's, but a field without a value gets no row, unless ckanext.gdi_userportal.show_empty_properties
+    is on: then it gets a row with a dash. -#}
+{% extends "package/snippets/additional_info.html" %}
+
+{%- set exclude_fields = [
+    'id',
+    'title',
+    'name',
+    'notes',
+    'tag_string',
+    'license_id',
+    'owner_org',
+    ] -%}
+
+{% block package_additional_info %}
+  {%- set show_empty = h.gdi_show_empty_properties() -%}
+  {%- for field in schema.dataset_fields -%}
+    {%- set blank = h.gdi_is_blank_value(pkg_dict.get(field.field_name)) -%}
+    {%- if field.field_name not in exclude_fields
+        and field.display_snippet is not none
+        and (show_empty or not blank) -%}
+      <tr>
+        <th scope="row" class="dataset-label">{{
+          h.scheming_language_text(field.label) }}</th>
+        {%- if blank %}
+        <td class="dataset-details text-muted">&ndash;</td>
+        {%- else %}
+        <td class="dataset-details"{%
+          if field.display_property %} property="{{ field.display_property
+          }}"{% endif %}>{%- snippet 'scheming/snippets/display_field.html',
+          field=field, data=pkg_dict, schema=schema -%}</td>
+        {%- endif %}
+      </tr>
+    {%- endif -%}
+  {%- endfor -%}
+  {% if h.check_access('package_update',{'id':pkg_dict.id}) %}
+    <tr>
+      <th scope="row" class="dataset-label">{{ _("State") }}</th>
+      <td class="dataset-details">{{ _(pkg_dict.state) }}</td>
+    </tr>
+  {% endif %}
+{% endblock %}

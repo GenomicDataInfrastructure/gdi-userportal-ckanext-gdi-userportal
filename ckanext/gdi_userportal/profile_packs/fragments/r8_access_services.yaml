@@ -1,0 +1,114 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+resource_fields:
+  - field_name: access_services
+    label: Access services
+    repeating_label: Access service
+    repeating_subfields:
+      - field_name: title
+        label: Title
+        preset: fluent_text
+        display_snippet: all_languages.html
+        help_text: A name given to the data service (dct:title), in each language. One or more.
+
+      - field_name: description
+        label: Description
+        preset: fluent_markdown
+        display_snippet: all_languages.html
+        help_text: A free-text account of the data service (dct:description), in each language.
+
+      - field_name: access_rights
+        label: Access rights
+        validators: ignore_missing unicode_safe
+        help_text: Information regarding access or restrictions based on privacy, security, or other policies.
+
+      - field_name: applicable_legislation
+        label: Applicable legislation
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+        help_text: The legislation that mandates the creation or management of the data service.
+
+      - field_name: conforms_to
+        label: Conforms to
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+
+      - field_name: contact
+        label: Contact point
+        repeating_label: Contact point
+        repeating_once: true
+        repeating_subfields:
+          - field_name: uri
+            label: URI
+
+          - field_name: email
+            label: Email
+            display_snippet: email.html
+
+          - field_name: url
+            label: Contact page
+            display_snippet: link.html
+        help_text: Contact information for enquiries about the data service.
+
+      - field_name: documentation
+        label: Documentation
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+        help_text: A page that documents the data service (foaf:page).
+
+      - field_name: endpoint_description
+        label: Endpoint description
+        preset: fluent_text
+        display_snippet: all_languages.html
+        help_text: A description of the services available via the end-points, including their operations and parameters (dcat:endpointDescription), in each language.
+
+      - field_name: endpoint_url
+        label: Endpoint URL
+        preset: multiple_text
+
+      - field_name: format
+        label: Format
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+
+      - field_name: keyword
+        label: Keywords
+        preset: tag_string_autocomplete
+        form_placeholder: eg. economy, mental health, government
+        help_text: Keywords or tags describing the data service. Use commas to separate multiple values.
+
+      - field_name: keyword_translated
+        label: Keywords (translations)
+        help_text: Keywords describing the data service in each language.
+
+      - field_name: landing_page
+        label: Landing page
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+
+      - field_name: license
+        label: Licence
+        help_text: License in which the data service is made available.
+
+      - field_name: publisher
+        label: Publisher
+        repeating_label: Publisher
+        repeating_once: true
+        repeating_subfields: !snippet agent_basic_subfields_r8
+        help_text: Entity responsible for making the data service available.
+
+      - field_name: serves_dataset
+        label: Serves dataset
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+
+      - field_name: theme
+        label: Theme
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+        help_text: A theme of the access service. An access service may be associated with multiple themes.
+
+      - field_name: uri
+        label: URI
