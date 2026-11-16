@@ -94,7 +94,7 @@ AGENT = {"uri", "name", "name_translated", "type"}
 CONTACT_POINT = {"email", "url", "telephone", "opening_hours", "special_opening_hours"}
 # dct:Location: the location is an IRI, with a geometry, a bounding box and a centroid
 LOCATION = {"uri", "geom", "bbox", "centroid"}
-# dcat:DataService, from the data service table of the R8 gap analysis
+# dcat:DataService: the properties a data service has in R8
 DATA_SERVICE = {
     "uri", "title", "description", "theme", "endpoint_description", "endpoint_url", "serves_dataset",
     "access_rights", "conforms_to", "format", "landing_page", "documentation", "keyword",
