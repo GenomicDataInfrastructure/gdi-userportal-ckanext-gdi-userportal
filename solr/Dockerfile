@@ -74,6 +74,12 @@ RUN cp -R $SOLR_CONFIG_DIR/_default $SOLR_CONFIG_DIR/ckan
 COPY ./schema.xml $SOLR_SCHEMA_FILE
 RUN chmod 644 $SOLR_SCHEMA_FILE
 
+# CVE-2026-114938: disable HotSpot's Base64 intrinsics (heap overflow in the x86-64 AVX-512 decode
+# stub) in the affected Temurin jdk-25.0.5+8. The JVM reads JAVA_TOOL_OPTIONS itself, so this covers
+# Solr and every other java/keytool run in the container. Set after the build's RUN steps so they don't
+# print "Picked up JAVA_TOOL_OPTIONS". Remove once the base image ships a patched JDK.
+ENV JAVA_TOOL_OPTIONS="-XX:-UseBASE64Intrinsics"
+
 USER solr
 
 CMD ["sh", "-c", "solr-precreate ckan $SOLR_CONFIG_DIR/ckan"]
