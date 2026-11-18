@@ -21,6 +21,9 @@ jobs:
     services:
       solr:
         image: ckan/ckan-solr:2.12-solr9
+        env:
+          # ART-31067: this CI image also contains a JVM.
+          JAVA_TOOL_OPTIONS: "-XX:-UseBASE64Intrinsics"
       postgres:
         image: ckan/ckan-postgres-dev:2.12
         env:

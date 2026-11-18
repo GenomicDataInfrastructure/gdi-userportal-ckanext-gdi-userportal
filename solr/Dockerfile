@@ -12,6 +12,8 @@ FROM registry.access.redhat.com/ubi9-minimal:1792742129 AS rhel-ca
 RUN microdnf update -y ca-certificates && microdnf clean all
 
 FROM eclipse-temurin:21.0.12_8-jdk@sha256:92a2a4d7a928d057e7bd999c418d66c26a34eb9a0442f3ab67721c3f88110b2d AS truststore
+# ART-31067: protect keytool in the build-only truststore stage too.
+ENV JAVA_TOOL_OPTIONS="-XX:-UseBASE64Intrinsics"
 COPY --from=rhel-ca /etc/pki/ca-trust/extracted/java/cacerts /tmp/cacerts
 # keytool output goes to a file first, so a keytool failure fails the build
 # instead of being masked by the pipeline (sh has no pipefail).
@@ -35,6 +37,11 @@ RUN set -eu; mkdir /libs; \
     done
 
 FROM docker.io/solr:10.0.0-slim
+# ART-31067 / CVE-2026-114938: temporary mitigation until the bundled JDK is fixed.
+ENV JAVA_TOOL_OPTIONS="-XX:-UseBASE64Intrinsics"
+RUN java -XX:+PrintFlagsFinal -version > /tmp/java-flags.txt 2>&1 \
+ && grep -Eq 'UseBASE64Intrinsics[[:space:]]*=[[:space:]]*false' /tmp/java-flags.txt \
+ && rm /tmp/java-flags.txt
 
 EXPOSE 8983
 
