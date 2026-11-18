@@ -25,7 +25,7 @@ RUN keytool -list -v -keystore /tmp/cacerts -storepass changeit > /tmp/list \
 # Fixed versions of the Jetty, Jackson, Netty and ZooKeeper jars bundled in Solr 10.0.0, downloaded from
 # Maven Central and checked against the SHA-256 pinned in bundled-libs.txt. Stopgap until an official
 # Solr release ships them.
-FROM docker.io/solr:10.0.0-slim AS bundled-libs
+FROM docker.io/solr:10.1.0-slim AS bundled-libs
 USER root
 COPY bundled-libs.txt /tmp/bundled-libs.txt
 RUN set -eu; mkdir /libs; \
@@ -34,7 +34,7 @@ RUN set -eu; mkdir /libs; \
       echo "$sha  /libs/${path##*/}" | sha256sum -c -; \
     done
 
-FROM docker.io/solr:10.0.0-slim
+FROM docker.io/solr:10.1.0-slim
 
 EXPOSE 8983
 
