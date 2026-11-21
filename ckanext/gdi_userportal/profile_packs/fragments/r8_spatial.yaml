@@ -6,9 +6,11 @@
 
 dataset_fields:
   - field_name: spatial_coverage
+    solr: {flatten: [uri]}
     label: Geographical coverage
     repeating_subfields:
       - field_name: uri
+        translate: true
         label: URI
         help_text: IRI of the location. The EU Vocabularies Name Authority Lists may be used for continents, countries and places in those lists; otherwise a Geonames IRI.
 

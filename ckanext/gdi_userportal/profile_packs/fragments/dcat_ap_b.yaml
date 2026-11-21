@@ -9,6 +9,7 @@ dataset_fields:
     help_text: A unique identifier of the dataset.
 
   - field_name: frequency
+    translate: true
     label: Frequency
     help_text: The frequency at which dataset is published.
     filter_help_text:
@@ -22,6 +23,7 @@ dataset_fields:
     help_text: A statement about the lineage of the dataset.
 
   - field_name: dcat_type
+    translate: true
     label: Type
     help_text: The type of the dataset.
     # TODO: controlled vocabulary?

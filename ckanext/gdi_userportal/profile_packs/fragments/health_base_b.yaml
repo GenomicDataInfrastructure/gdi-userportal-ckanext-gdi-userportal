@@ -9,6 +9,7 @@ dataset_fields:
     help_text: A definition of the population within the dataset.
 
   - field_name: retention_period
+    solr: {flatten: [start, end], text: false}
     label: Retention period
     repeating_subfields:
       - field_name: start

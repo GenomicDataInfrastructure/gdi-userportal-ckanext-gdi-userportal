@@ -89,6 +89,7 @@ dataset_fields:
                 help_text: The property the column maps to (csvw:propertyUrl).
 
   - field_name: custodian
+    agent: true
     label: Custodian
     repeating_label: Custodian
     repeating_once: true
@@ -96,6 +97,7 @@ dataset_fields:
     help_text: The organisation that holds and takes care of the data (geodcatap:custodian).
 
   - field_name: hdab_coordinator
+    agent: true
     label: Health data access body coordinator
     repeating_label: Health data access body coordinator
     repeating_once: true

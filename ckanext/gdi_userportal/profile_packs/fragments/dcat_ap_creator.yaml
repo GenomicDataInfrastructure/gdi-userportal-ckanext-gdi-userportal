@@ -4,6 +4,8 @@
 
 dataset_fields:
   - field_name: creator
+    agent: true
+    solr: {flatten: [name, uri, email, url, type, identifier, country]}
     label: Creator
     repeating_label: Creator
     repeating_subfields: !snippet agent_subfields

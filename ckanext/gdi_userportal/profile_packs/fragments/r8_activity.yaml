@@ -20,10 +20,12 @@ dataset_fields:
         help_text: Human-readable label for the activity.
 
       - field_name: type
+        translate: true
         label: Activity type
         help_text: Type of the activity.
 
       - field_name: dct_type
+        translate: {label_in: label}
         label: Type
         help_text: Type of the activity (URI).
     help_text: The activity that generated the dataset (prov:wasGeneratedBy).

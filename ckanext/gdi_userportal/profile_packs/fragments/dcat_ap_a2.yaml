@@ -18,6 +18,7 @@ dataset_fields:
   - field_name: issued
     label: Release date
     preset: datetime_flex
+    solr: {type: date}
     help_text: Date of publication of the dataset.
     filter_help_text:
       en: Use this filter to search datasets by release date.
@@ -28,6 +29,7 @@ dataset_fields:
   - field_name: modified
     label: Modification date
     preset: datetime_flex
+    solr: {type: date}
     help_text: Most recent date on which the dataset was changed, updated or modified.
     filter_help_text:
       en: Use this filter to search datasets by modification date.
@@ -38,6 +40,8 @@ dataset_fields:
     preset: dataset_series_in_series
     # A dataset that is in no series stores nothing: scheming_multiple_choice would store the empty list "[]".
     validators: ignore_empty scheming_multiple_choice series_validator
+    # ckanext-dataset-series runs after this plugin while indexing and reads in_series as the JSON text it is stored as.
+    solr: {decode: false, text: false}
     help_text: Dataset series this dataset belongs to.
 
   - field_name: version

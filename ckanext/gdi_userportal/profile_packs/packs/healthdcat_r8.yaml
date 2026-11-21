@@ -126,16 +126,17 @@ overrides:
   dataset_fields.retention_period:
     repeating_once: true
     repeating_label: Retention period
-  # The landing page and the type of a dataset are 0..*.
   dataset_fields.url:
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
     display_snippet: link_list.html
     help_text: A web page that provides access to the dataset, its distributions and/or additional information, at the original data provider (dcat:landingPage). One or more.
+    solr: {multiple: false}
   dataset_fields.dcat_type:
     preset: multiple_text
     validators: ignore_missing scheming_multiple_text
     help_text: The type of the dataset (dct:type). One or more.
+    solr: {multiple: false, all_values: vocab_dcat_type, text: false}
 field_order: alphabetical  # by label, the title and the description first
 conformance: conformance/healthdcat_r8.json
 series_schema: ckanext.gdi_userportal:scheming/schemas/dataset_series_r8.yaml

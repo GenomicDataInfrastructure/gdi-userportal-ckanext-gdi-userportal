@@ -24,6 +24,7 @@
   display_snippet: link.html
 
 - field_name: type
+  translate: true
   label: Type
 
 - field_name: publisher_note
@@ -32,6 +33,7 @@
   help_text: A description of the activities of the agent.
 
 - field_name: publisher_type
+  translate: true
   label: Publisher type
   preset: multiple_text
   validators: ignore_missing scheming_multiple_text
@@ -42,5 +44,6 @@
   help_text: Unique identifier for the agent, such as a ROR or ORCID ID.
 
 - field_name: country
+  translate: true
   label: Country
   help_text: Country of the agent, per the EU Publications Office country authority table.

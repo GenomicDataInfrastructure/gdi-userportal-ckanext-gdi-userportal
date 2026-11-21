@@ -91,6 +91,10 @@ def test_before_dataset_index_does_not_set_series_vocab_fields_for_empty_in_seri
     assert "vocab_in_series_title" not in result
 
 import ckanext.gdi_userportal.plugin as plugin
+from ckanext.gdi_userportal import indexing
+
+# before_dataset_index reads the dataset schema (the solr key of its fields): the one the packs generate
+pytestmark = pytest.mark.usefixtures("indexing_schema")
 
 
 @pytest.mark.parametrize(
@@ -111,138 +115,6 @@ def test_before_dataset_index_normalizes_multi_value_fields(field, values):
 
     assert result[field] == values
     assert f"extras_{field}" not in result
-
-
-@pytest.mark.parametrize(
-    "field",
-    ["publisher", "creator"],
-)
-def test_parse_agent_name_extracts_identifier_and_country(field):
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {
-        field: [
-            {
-                "name": "Health-RI",
-                "identifier": "https://ror.org/05sk8w809",
-                "country": "http://publications.europa.eu/resource/authority/country/NLD",
-            }
-        ]
-    }
-
-    result = plugin_instance._parse_agent_name(data_dict, field)
-
-    assert result[f"{field}_name"] == ["Health-RI"]
-    assert result[f"{field}_identifier"] == ["https://ror.org/05sk8w809"]
-    assert result[f"{field}_country"] == [
-        "http://publications.europa.eu/resource/authority/country/NLD"
-    ]
-
-
-def test_parse_agent_name_deduplicates_identifier_and_country_values():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {
-        "creator": [
-            {"name": "Org 1", "identifier": "same-id", "country": "same-country"},
-            {"name": "Org 2", "identifier": "same-id", "country": "same-country"},
-        ]
-    }
-
-    result = plugin_instance._parse_agent_name(data_dict, "creator")
-
-    assert result["creator_identifier"] == ["same-id"]
-    assert result["creator_country"] == ["same-country"]
-
-
-def test_parse_agent_name_collects_multiple_distinct_identifier_and_country_values():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {
-        "publisher": [
-            {"name": "Org 1", "identifier": "id-1", "country": "country-1"},
-            {"name": "Org 2", "identifier": "id-2", "country": "country-2"},
-        ]
-    }
-
-    result = plugin_instance._parse_agent_name(data_dict, "publisher")
-
-    assert sorted(result["publisher_identifier"]) == ["id-1", "id-2"]
-    assert sorted(result["publisher_country"]) == ["country-1", "country-2"]
-
-
-def test_parse_agent_name_omits_identifier_and_country_when_absent():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {"publisher": [{"name": "Org without extra fields"}]}
-
-    result = plugin_instance._parse_agent_name(data_dict, "publisher")
-
-    assert result["publisher_name"] == ["Org without extra fields"]
-    assert "publisher_identifier" not in result
-    assert "publisher_country" not in result
-
-
-def test_parse_agent_name_parses_json_string_payload():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {
-        "creator": json.dumps(
-            [
-                {
-                    "name": "Creator Org",
-                    "identifier": "creator-id",
-                    "country": "creator-country",
-                }
-            ]
-        )
-    }
-
-    result = plugin_instance._parse_agent_name(data_dict, "creator")
-
-    assert result["creator_identifier"] == ["creator-id"]
-    assert result["creator_country"] == ["creator-country"]
-
-
-def test_parse_agent_name_falls_back_to_flattened_extras_when_field_already_popped():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {
-        "extras_publisher__name": "Health-RI",
-        "extras_publisher__identifier": "https://ror.org/05sk8w809",
-        "extras_publisher__country": "http://publications.europa.eu/resource/authority/country/NLD",
-    }
-
-    result = plugin_instance._parse_agent_name(data_dict, "publisher")
-
-    assert result["publisher_name"] == ["Health-RI"]
-    assert result["publisher_identifier"] == ["https://ror.org/05sk8w809"]
-    assert result["publisher_country"] == [
-        "http://publications.europa.eu/resource/authority/country/NLD"
-    ]
-
-
-def test_parse_agent_name_fallback_omits_missing_flattened_subfields():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {"extras_creator__name": "Creator Org"}
-
-    result = plugin_instance._parse_agent_name(data_dict, "creator")
-
-    assert result["creator_name"] == ["Creator Org"]
-    assert "creator_identifier" not in result
-    assert "creator_country" not in result
-
-
-def test_parse_agent_name_fallback_reflects_dcats_space_joined_multi_creator_corruption():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {"extras_creator__name": "Org 1 Org 2"}
-
-    result = plugin_instance._parse_agent_name(data_dict, "creator")
-
-    assert result["creator_name"] == ["Org 1 Org 2"]
-
-
-def test_parse_agent_name_returns_data_dict_unchanged_when_nothing_available():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {"unrelated": "value"}
-
-    result = plugin_instance._parse_agent_name(data_dict, "publisher")
-
-    assert result == {"unrelated": "value"}
 
 
 def test_before_dataset_index_indexes_publisher_and_creator_identifier_and_country():
@@ -358,148 +230,6 @@ def test_before_dataset_index_indexes_multiple_contact_points():
     }
 
 
-def test_parse_contact_point_falls_back_to_flattened_extras_when_field_already_popped():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {
-        "extras_contact__name": "Health-RI service desk",
-        "extras_contact__email": "mailto:servicedesk@health-ri.nl",
-    }
-
-    result = plugin_instance._parse_contact_point(data_dict)
-
-    assert result["contact_point_name"] == ["Health-RI service desk"]
-    assert result["contact_point_email"] == ["mailto:servicedesk@health-ri.nl"]
-
-
-def test_parse_contact_point_fallback_reflects_dcats_space_joined_multi_contact_corruption():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {"extras_contact__name": "General enquiries Data access requests"}
-
-    result = plugin_instance._parse_contact_point(data_dict)
-
-    assert result["contact_point_name"] == ["General enquiries Data access requests"]
-
-
-def test_parse_contact_point_parses_non_json_string_payload():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {"contact": "Health-RI service desk"}
-
-    result = plugin_instance._parse_contact_point(data_dict)
-
-    assert result["contact_point_name"] == ["Health-RI service desk"]
-
-
-def test_parse_contact_point_accepts_single_dict_payload():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {
-        "contact": {"name": "Health-RI service desk", "email": "mailto:sd@health-ri.nl"}
-    }
-
-    result = plugin_instance._parse_contact_point(data_dict)
-
-    assert result["contact_point_name"] == ["Health-RI service desk"]
-    assert result["contact_point_email"] == ["mailto:sd@health-ri.nl"]
-
-
-def test_flatten_contact_subfield_value_returns_list_value_as_is():
-    result = plugin.GdiUserPortalPlugin._flatten_contact_subfield_value(
-        ["https://www.example.com/a", "https://www.example.com/b"]
-    )
-
-    assert result == ["https://www.example.com/a", "https://www.example.com/b"]
-
-
-def test_flatten_contact_subfield_value_wraps_malformed_json_looking_string():
-    result = plugin.GdiUserPortalPlugin._flatten_contact_subfield_value("[not-json")
-
-    assert result == ["[not-json"]
-
-
-def test_parse_repeating_field_returns_unchanged_when_field_missing():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {"unrelated": "value"}
-
-    result = plugin_instance._parse_repeating_field(
-        data_dict, "qualified_relation", ("uri", "relation", "role")
-    )
-
-    assert result == {"unrelated": "value"}
-
-
-def test_parse_repeating_field_falls_back_to_flattened_extras_when_field_already_popped():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {
-        "extras_qualified_relation__uri": "https://example.org/relation/1",
-        "extras_qualified_relation__relation": "https://example.org/related-resource/1",
-    }
-
-    result = plugin_instance._parse_repeating_field(
-        data_dict, "qualified_relation", ("uri", "relation", "role")
-    )
-
-    assert result["qualified_relation_uri"] == ["https://example.org/relation/1"]
-    assert result["qualified_relation_relation"] == [
-        "https://example.org/related-resource/1"
-    ]
-    assert "qualified_relation_role" not in result
-
-
-def test_parse_repeating_field_fallback_reflects_dcats_space_joined_multi_entry_corruption():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {
-        "extras_qualified_relation__uri": (
-            "https://example.org/relation/1 https://example.org/relation/2"
-        )
-    }
-
-    result = plugin_instance._parse_repeating_field(
-        data_dict, "qualified_relation", ("uri", "relation", "role")
-    )
-
-    assert result["qualified_relation_uri"] == [
-        "https://example.org/relation/1 https://example.org/relation/2"
-    ]
-
-
-def test_parse_repeating_field_returns_unchanged_for_non_json_string_value():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {"qualified_relation": "not valid json"}
-
-    result = plugin_instance._parse_repeating_field(
-        data_dict, "qualified_relation", ("uri", "relation", "role")
-    )
-
-    assert result == {"qualified_relation": "not valid json"}
-
-
-def test_parse_repeating_field_accepts_single_dict_payload():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {
-        "qualified_relation": {
-            "uri": "https://example.org/relation/1",
-            "relation": "https://example.org/related-resource/1",
-            "role": "http://www.iana.org/assignments/relation/related",
-        }
-    }
-
-    result = plugin_instance._parse_repeating_field(
-        data_dict, "qualified_relation", ("uri", "relation", "role")
-    )
-
-    assert result["qualified_relation_uri"] == ["https://example.org/relation/1"]
-
-
-def test_parse_repeating_field_returns_unchanged_for_non_list_non_dict_value():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-    data_dict = {"qualified_relation": 42}
-
-    result = plugin_instance._parse_repeating_field(
-        data_dict, "qualified_relation", ("uri", "relation", "role")
-    )
-
-    assert result == {"qualified_relation": 42}
-
-
 def test_before_dataset_index_indexes_qualified_relation_single_entry():
     plugin_instance = plugin.GdiUserPortalPlugin()
     input_data = {
@@ -521,6 +251,7 @@ def test_before_dataset_index_indexes_qualified_relation_single_entry():
     assert result["qualified_relation_role"] == [
         "http://www.iana.org/assignments/relation/related"
     ]
+    # text: false: scheming makes no extras_ text of the list
     assert "qualified_relation" not in result
 
 
@@ -634,70 +365,56 @@ def test_before_dataset_index_keeps_non_publications_theme_uris_unchanged():
     ]
 
 
-def test_before_dataset_index_adds_translated_search_fields():
+def _translations(rows):
+    """``before_dataset_index`` with the translations the term_translation_show action would give."""
+    show = MagicMock(return_value=rows)
+    patched = patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        side_effect=lambda action_name: show if action_name == "term_translation_show" else MagicMock(),
+    )
+    return show, patched
+
+
+def _row(term, translation, lang="en"):
+    return {"term": term, "term_translation": translation, "lang_code": lang}
+
+
+def test_before_dataset_index_puts_the_labels_of_the_terms_in_the_free_text():
     plugin_instance = plugin.GdiUserPortalPlugin()
     input_data = {
         "extras_conforms_to": json.dumps(["http://example.org/spec"]),
         "extras_code_values": json.dumps(["http://www.wikidata.org/entity/Q12125"]),
         "extras_coding_system": json.dumps(["https://www.wikidata.org/entity/P494"]),
     }
+    show, patched = _translations(
+        [
+            _row("http://example.org/spec", "Specification"),
+            _row("http://example.org/spec", "Specificatie", "nl"),
+            _row("http://www.wikidata.org/entity/Q12125", "Disease"),
+            _row("https://www.wikidata.org/entity/P494", "ICD-10 identifier"),
+        ]
+    )
 
-    translation_rows = [
-        {
-            "term": "http://example.org/spec",
-            "term_translation": "Specification",
-            "lang_code": "en",
-        },
-        {
-            "term": "http://example.org/spec",
-            "term_translation": "Specificatie",
-            "lang_code": "nl",
-        },
-        {
-            "term": "http://www.wikidata.org/entity/Q12125",
-            "term_translation": "Disease",
-            "lang_code": "en",
-        },
-        {
-            "term": "https://www.wikidata.org/entity/P494",
-            "term_translation": "ICD-10 identifier",
-            "lang_code": "en",
-        },
-    ]
-
-    translation_show = MagicMock(return_value=translation_rows)
-
-    with patch(
-        "ckanext.gdi_userportal.plugin.toolkit.get_action",
-        side_effect=lambda action_name: translation_show
-        if action_name == "term_translation_show"
-        else MagicMock(),
-    ):
+    with patched:
         result = plugin_instance.before_dataset_index(input_data.copy())
 
-    translation_show.assert_called_once_with(
-        {},
-        {
-            "terms": [
-                "http://example.org/spec",
-                "http://www.wikidata.org/entity/Q12125",
-                "https://www.wikidata.org/entity/P494",
-            ]
-        },
-    )
-    assert result["vocab_conforms_to_search"] == [
+    show.assert_called_once()
+    assert set(show.call_args.args[1]["terms"]) == {
+        "http://example.org/spec",
+        "http://www.wikidata.org/entity/Q12125",
+        "https://www.wikidata.org/entity/P494",
+    }
+    assert set(result["text"]) == {
         "http://example.org/spec",
         "Specification",
         "Specificatie",
-    ]
-    assert result["vocab_code_values_search"] == [
         "http://www.wikidata.org/entity/Q12125",
         "Disease",
-    ]
-    assert result["vocab_coding_system_search"] == [
         "https://www.wikidata.org/entity/P494",
         "ICD-10 identifier",
-    ]
+    }
+    assert not any(key.startswith("vocab_") and key.endswith("_search") for key in result)
+    assert not any(key.startswith("extras_") for key in result)  # the JSON text is not indexed
 
 
 def test_before_dataset_index_indexes_qualified_attribution_roles_and_agents():
@@ -722,19 +439,8 @@ def test_before_dataset_index_indexes_qualified_attribution_roles_and_agents():
 
     result = plugin_instance.before_dataset_index(input_data.copy())
 
-    assert result["qualified_attribution"] == [
-        {
-            "role": "http://example.org/role/processor",
-            "agent": [
-                {"name": "Org A"},
-                {"name": "Org B"},
-            ],
-        },
-        {
-            "role": "http://example.org/role/controller",
-            "agent": {"name": "Org C"},
-        },
-    ]
+    assert "qualified_attribution" not in result  # the objects are not indexed, their values are
+    assert {"Org A", "Org B", "Org C", "http://example.org/role/processor"} <= set(result["text"])
     assert result["vocab_qualified_attribution_role"] == [
         "http://example.org/role/processor",
         "http://example.org/role/controller",
@@ -746,218 +452,60 @@ def test_before_dataset_index_indexes_qualified_attribution_roles_and_agents():
     ]
 
 
-def test_extract_nested_string_values_flattens_nested_dicts_and_lists():
-    plugin_instance = plugin.GdiUserPortalPlugin()
-
-    result = plugin_instance._extract_nested_string_values(
-        {
-            "primary": "Org A",
-            "aliases": [
-                "Org B",
-                {"secondary": ["Org C", None]},
-            ],
-            "ignored": 42,
-        }
-    )
-
-    assert result == ["Org A", "Org B", "Org C"]
-
-
-@pytest.mark.parametrize(
-    "agents, expected",
-    [
-        (None, []),
-        (42, []),
-        ("plain-org", ["plain-org"]),
-        ('{"name": ["Org D", {"nested": "Org E"}]}', ["Org D", "Org E"]),
-    ],
-)
-def test_parse_qualified_attribution_agent_names_normalizes_inputs(
-    agents, expected
-):
-    plugin_instance = plugin.GdiUserPortalPlugin()
-
-    result = plugin_instance._parse_qualified_attribution_agent_names(agents)
-
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    "qualified_attribution, expected",
-    [
-        (123, ([], [])),
-        (
-            {
-                "role": "http://example.org/role/owner",
-                "agent": "Org A",
-            },
-            (
-                ["http://example.org/role/owner"],
-                ["Org A"],
-            ),
-        ),
-        (
-            [
-                "skip me",
-                {
-                    "role": "http://example.org/role/controller",
-                    "agent": {
-                        "name": {"primary": "Org B", "aliases": ["Org C"]},
-                    },
-                },
-            ],
-            (
-                ["http://example.org/role/controller"],
-                ["Org B", "Org C"],
-            ),
-        ),
-    ],
-)
-def test_parse_qualified_attribution_handles_mixed_inputs(
-    qualified_attribution, expected
-):
-    plugin_instance = plugin.GdiUserPortalPlugin()
-
-    result = plugin_instance._parse_qualified_attribution(
-        {"qualified_attribution": qualified_attribution}
-    )
-
-    assert result == expected
-
-
 def test_before_dataset_index_keeps_raw_values_when_translations_are_missing():
     plugin_instance = plugin.GdiUserPortalPlugin()
-    input_data = {
-        "extras_code_values": json.dumps(["http://www.wikidata.org/entity/Q12125"]),
-    }
+    input_data = {"extras_code_values": json.dumps(["http://www.wikidata.org/entity/Q12125"])}
+    _, patched = _translations([])
 
-    translation_show = MagicMock(return_value=[])
-
-    with patch(
-        "ckanext.gdi_userportal.plugin.toolkit.get_action",
-        side_effect=lambda action_name: translation_show
-        if action_name == "term_translation_show"
-        else MagicMock(),
-    ):
+    with patched:
         result = plugin_instance.before_dataset_index(input_data.copy())
 
-    assert result["vocab_code_values_search"] == [
-        "http://www.wikidata.org/entity/Q12125"
-    ]
+    assert result["text"] == ["http://www.wikidata.org/entity/Q12125"]
 
 
 def test_before_dataset_index_deduplicates_terms_and_translations():
     plugin_instance = plugin.GdiUserPortalPlugin()
     input_data = {
         "extras_code_values": json.dumps(
-            [
-                "http://www.wikidata.org/entity/Q12125",
-                "http://www.wikidata.org/entity/Q12125",
-            ]
+            ["http://www.wikidata.org/entity/Q12125", "http://www.wikidata.org/entity/Q12125"]
         ),
     }
-
-    translation_show = MagicMock(
-        return_value=[
-            {
-                "term": "http://www.wikidata.org/entity/Q12125",
-                "term_translation": "Disease",
-                "lang_code": "en",
-            },
-            {
-                "term": "http://www.wikidata.org/entity/Q12125",
-                "term_translation": "Disease",
-                "lang_code": "nl",
-            },
-            {
-                "term": 123,  # non-string term, should be ignored
-                "term_translation": "Invalid",
-                "lang_code": "en",
-            },
-            {
-                "term": "http://www.wikidata.org/entity/Q12125",
-                "term_translation": "",  # empty translation, should be ignored
-                "lang_code": "en",
-            },
-            {
-                "term": "http://www.wikidata.org/entity/Q12125",
-                "term_translation": "   ",  # whitespace-only translation, should be ignored
-                "lang_code": "en",
-            },
+    _, patched = _translations(
+        [
+            _row("http://www.wikidata.org/entity/Q12125", "Disease"),
+            _row("http://www.wikidata.org/entity/Q12125", "Disease", "nl"),
+            _row(123, "Invalid"),  # non-string term, should be ignored
+            _row("http://www.wikidata.org/entity/Q12125", ""),  # empty translation, should be ignored
+            _row("http://www.wikidata.org/entity/Q12125", "   "),  # whitespace-only translation, should be ignored
         ]
     )
 
-    with patch(
-        "ckanext.gdi_userportal.plugin.toolkit.get_action",
-        side_effect=lambda action_name: translation_show
-        if action_name == "term_translation_show"
-        else MagicMock(),
-    ):
+    with patched:
         result = plugin_instance.before_dataset_index(input_data.copy())
 
-    assert result["vocab_code_values_search"] == [
-        "http://www.wikidata.org/entity/Q12125",
-        "Disease",
-    ]
+    assert result["text"] == ["http://www.wikidata.org/entity/Q12125", "Disease"]
 
 
-def test_before_dataset_index_indexes_resource_and_access_service_conforms_to():
+def test_before_dataset_index_adds_the_labels_of_the_terms_in_the_distributions():
     plugin_instance = plugin.GdiUserPortalPlugin()
+    # CKAN gives the extras of the distributions as one list per field, a JSON text per distribution
     input_data = {
-        # `extras_*` coverage
         "extras_conforms_to": json.dumps(["http://example.org/spec"]),
-        "extras_code_values": json.dumps(["http://www.wikidata.org/entity/Q12125"]),
-        "extras_coding_system": json.dumps(["https://www.wikidata.org/entity/P494"]),
-        # New coverage for `resources[*].conforms_to` and
-        # `resources[*].access_services[*].conforms_to`
-        "resources": [
-            {
-                "conforms_to": ["http://example.org/resource-spec"],
-                "access_services": [
-                    {
-                        "conforms_to": ["http://example.org/access-service-spec"],
-                    }
-                ],
-            }
-        ],
+        "res_extras_conforms_to": [json.dumps(["http://example.org/resource-spec"])],
+        "res_extras_access_services": [json.dumps([{"conforms_to": ["http://example.org/access-service-spec"]}])],
     }
-
-    translation_show = MagicMock(
-        return_value=[
-            {
-                "term": "http://example.org/spec",
-                "term_translation": "Specification",
-                "lang_code": "en",
-            },
-            {
-                "term": "http://example.org/resource-spec",
-                "term_translation": "Resource specification",
-                "lang_code": "en",
-            },
-            {
-                "term": "http://example.org/access-service-spec",
-                "term_translation": "Access service specification",
-                "lang_code": "en",
-            },
+    _, patched = _translations(
+        [
+            _row("http://example.org/spec", "Specification"),
+            _row("http://example.org/resource-spec", "Resource specification"),
+            _row("http://example.org/access-service-spec", "Access service specification"),
         ]
     )
 
-    with patch(
-        "ckanext.gdi_userportal.plugin.toolkit.get_action",
-        side_effect=lambda action_name: translation_show
-        if action_name == "term_translation_show"
-        else MagicMock(),
-    ):
+    with patched:
         result = plugin_instance.before_dataset_index(input_data.copy())
 
-    assert result["vocab_conforms_to_search"] == [
-        "http://example.org/spec",
-        "Specification",
-        "http://example.org/resource-spec",
-        "Resource specification",
-        "http://example.org/access-service-spec",
-        "Access service specification",
-    ]
+    assert {"Specification", "Resource specification", "Access service specification"} <= set(result["text"])
 
 
 def test_before_dataset_index_handles_malformed_resource_access_services():
@@ -966,30 +514,27 @@ def test_before_dataset_index_handles_malformed_resource_access_services():
         "extras_conforms_to": "http://example.org/spec",
         "res_extras_access_services": "not-json",
     }
+    _, patched = _translations([_row("http://example.org/spec", "Specification")])
 
-    translation_show = MagicMock(
-        return_value=[
-            {
-                "term": "http://example.org/spec",
-                "term_translation": "Specification",
-                "lang_code": "en",
-            }
-        ]
-    )
-
-    with patch(
-        "ckanext.gdi_userportal.plugin.toolkit.get_action",
-        side_effect=lambda action_name: translation_show
-        if action_name == "term_translation_show"
-        else MagicMock(),
-    ):
+    with patched:
         result = plugin_instance.before_dataset_index(input_data.copy())
 
     assert result["conforms_to"] == "http://example.org/spec"
-    assert result["vocab_conforms_to_search"] == [
-        "http://example.org/spec",
-        "Specification",
-    ]
+    assert {"http://example.org/spec", "Specification"} <= set(result["text"])
+
+
+def test_before_dataset_index_is_not_stopped_by_translations_that_cannot_be_read():
+    plugin_instance = plugin.GdiUserPortalPlugin()
+    show = MagicMock(side_effect=RuntimeError("no database"))
+    patched = patch(
+        "ckanext.gdi_userportal.plugin.toolkit.get_action",
+        side_effect=lambda action_name: show if action_name == "term_translation_show" else MagicMock(),
+    )
+
+    with patched:
+        result = plugin_instance.before_dataset_index({"extras_code_values": json.dumps(["http://x.org/a"])})
+
+    assert result["text"] == ["http://x.org/a"]
 
 
 def test_dataset_facets_include_dataset_series_title():
@@ -1140,22 +685,27 @@ def test_get_commands_returns_cli_commands():
     assert commands[0].name == "gdi-userportal"
 
 
+TAGS_FIELDS = [{"field_name": "tags_translated", "preset": "fluent_tags"}]
+
+
+def _merge(document):
+    return indexing.merge_translated_keywords_all(document, TAGS_FIELDS)
+
+
 class TestMergeTagsTranslatedForIndexing:
-    """Tests for _merge_tags_translated_for_indexing method."""
+    """The keywords of a multilingual keyword field (``fluent_tags``) are added to the field it translates."""
 
     def test_no_tags_translated_returns_unchanged(self):
         """When no tags_translated field exists, data is unchanged."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {"tags": ["existing-tag"], "title": "Test"}
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"] == ["existing-tag"]
         assert result["title"] == "Test"
 
     def test_merges_tags_translated_into_tags(self):
         """Tags from tags_translated are merged into tags field."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": ["harvested-tag"],
             "extras_tags_translated": json.dumps({
@@ -1164,7 +714,7 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert "harvested-tag" in result["tags"]
         assert "manual-tag-en" in result["tags"]
@@ -1172,7 +722,6 @@ class TestMergeTagsTranslatedForIndexing:
 
     def test_removes_duplicates(self):
         """Duplicate tags are not added twice."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": ["same-tag", "unique-tag"],
             "extras_tags_translated": json.dumps({
@@ -1180,7 +729,7 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"].count("same-tag") == 1
         assert "unique-tag" in result["tags"]
@@ -1188,7 +737,6 @@ class TestMergeTagsTranslatedForIndexing:
 
     def test_handles_empty_tags_list(self):
         """Works when existing tags is empty list."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": [],
             "extras_tags_translated": json.dumps({
@@ -1196,50 +744,46 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"] == ["translated-only"]
 
     def test_handles_no_existing_tags(self):
         """Works when tags field doesn't exist."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "extras_tags_translated": json.dumps({
                 "en": ["new-tag"]
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"] == ["new-tag"]
 
     def test_handles_invalid_json(self):
         """Invalid JSON in tags_translated returns unchanged."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": ["existing"],
             "extras_tags_translated": "not valid json"
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"] == ["existing"]
 
     def test_handles_non_dict_tags_translated(self):
         """Non-dict tags_translated returns unchanged."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": ["existing"],
             "extras_tags_translated": json.dumps(["not", "a", "dict"])
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert result["tags"] == ["existing"]
 
     def test_filters_blank_tags(self):
         """Blank and whitespace-only tags are filtered out."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": ["valid"],
             "extras_tags_translated": json.dumps({
@@ -1247,7 +791,7 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert "" not in result["tags"]
         assert "  " not in result["tags"]
@@ -1256,7 +800,6 @@ class TestMergeTagsTranslatedForIndexing:
 
     def test_trims_whitespace(self):
         """Whitespace around tags is trimmed."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": [],
             "extras_tags_translated": json.dumps({
@@ -1264,14 +807,13 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert "spaced tag" in result["tags"]
         assert "  spaced tag  " not in result["tags"]
 
     def test_handles_tags_as_string(self):
         """Works when existing tags is a string instead of list."""
-        plugin_instance = plugin.GdiUserPortalPlugin()
         input_data = {
             "tags": "single-tag",
             "extras_tags_translated": json.dumps({
@@ -1279,9 +821,38 @@ class TestMergeTagsTranslatedForIndexing:
             })
         }
 
-        result = plugin_instance._merge_tags_translated_for_indexing(input_data.copy())
+        result = _merge(input_data.copy())
 
         assert "single-tag" in result["tags"]
+
+    def test_every_multilingual_keyword_field_of_the_schema_is_merged(self):
+        """The fields come from the schema: a keyword field of another name merges into its own base field."""
+        fields = [{"field_name": "keyword_translated", "preset": "fluent_tags"}]
+        document = {"keyword": ["a"], "extras_keyword_translated": json.dumps({"en": ["b"]})}
+
+        result = indexing.merge_translated_keywords_all(document, fields)
+
+        assert result["keyword"] == ["a", "b"]
+
+    def test_a_field_that_is_not_a_multilingual_keyword_field_is_left_alone(self):
+        """No preset, or a name that is not ``<x>_translated``: nothing to merge into."""
+        fields = [
+            {"field_name": "tags_translated"},
+            {"field_name": "tags", "preset": "fluent_tags"},
+            {"field_name": "title_translated", "preset": "fluent_text"},
+        ]
+        document = {
+            "tags": ["a"],
+            "extras_tags_translated": json.dumps({"en": ["b"]}),
+            "extras_title_translated": json.dumps({"en": ["c"]}),
+        }
+
+        assert indexing.merge_translated_keywords_all(dict(document), fields) == document
+
+    def test_a_schema_that_cannot_be_read_leaves_the_document_alone(self):
+        document = {"tags": ["a"], "extras_tags_translated": json.dumps({"en": ["b"]})}
+
+        assert indexing.merge_translated_keywords_all(dict(document), []) == document
 
 
 class TestBeforeDatasetSearchTemporalCoverage:
@@ -1522,7 +1093,7 @@ class TestBuildTemporalCoverageRanges:
         assert "temporal_coverage_max" not in result
 
 
-def test_before_dataset_index_keeps_one_value_of_the_landing_page_and_type_for_solr():
+def test_before_dataset_index_keeps_one_value_of_the_landing_page_and_type_for_solr(r8_indexing_schema):
     plugin_instance = plugin.GdiUserPortalPlugin()
 
     result = plugin_instance.before_dataset_index(
@@ -1534,7 +1105,7 @@ def test_before_dataset_index_keeps_one_value_of_the_landing_page_and_type_for_s
     assert result["vocab_dcat_type"] == ["http://example.org/t1", "http://example.org/t2"]
 
 
-def test_before_dataset_index_reads_a_json_landing_page_and_leaves_single_values_alone():
+def test_before_dataset_index_reads_a_json_landing_page_and_leaves_single_values_alone(r8_indexing_schema):
     plugin_instance = plugin.GdiUserPortalPlugin()
 
     result = plugin_instance.before_dataset_index({"url": '["http://example.org/p1"]', "dcat_type": "http://example.org/t1"})
@@ -1544,7 +1115,7 @@ def test_before_dataset_index_reads_a_json_landing_page_and_leaves_single_values
     assert "vocab_dcat_type" not in result
 
 
-def test_before_dataset_index_drops_an_empty_list_of_types():
+def test_before_dataset_index_drops_an_empty_list_of_types(r8_indexing_schema):
     plugin_instance = plugin.GdiUserPortalPlugin()
 
     assert "dcat_type" not in plugin_instance.before_dataset_index({"dcat_type": []})
@@ -1567,13 +1138,11 @@ def test_before_dataset_index_indexes_the_relations_and_roles_of_a_relationship_
     assert result["qualified_relation_uri"] == ["http://example.org/rel"]
 
 
-def test_the_landing_page_and_type_are_flattened_after_the_extras_are_parsed_into_lists():
+def test_the_landing_page_and_type_are_flattened_after_the_extras_are_parsed_into_lists(r8_indexing_schema):
     plugin_instance = plugin.GdiUserPortalPlugin()
 
     result = plugin_instance.before_dataset_index(
         {"extras_dcat_type": json.dumps(["http://example.org/t1", "http://example.org/t2"])}
-        if "dcat_type" in plugin_instance._dcatap_fields_to_normalize
-        else {"dcat_type": ["http://example.org/t1", "http://example.org/t2"]}
     )
 
     assert result["dcat_type"] == "http://example.org/t1"

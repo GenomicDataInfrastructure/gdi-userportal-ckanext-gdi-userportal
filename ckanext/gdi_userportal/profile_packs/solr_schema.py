@@ -5,13 +5,16 @@
 """
 The Solr schema that follows the generated dataset schema: ``derive_fields`` makes a Solr field of
 every dataset field that ``schema.xml`` does not declare, ``sync`` applies the difference to the
-running core through the Solr Schema API (it never deletes a field), and ``check`` is the drift test.
+running core through the Solr Schema API (it removes the fields nothing describes any more, see
+``leftovers``), and ``check`` is the drift test.
 The rules, including the ``solr`` key that overrides a derived field, are in ``README.md``, section
 "Solr schema".
 
-It runs from the container start scripts and imports nothing but the standard library and PyYAML::
+It runs from the container start scripts and imports nothing but the standard library and PyYAML. The
+fields come from every schema in ``scheming.dataset_schemas`` of the CKAN ini (the generated dataset schema
+and the series schema), so that a field of one dataset type is not taken for a leftover of another::
 
-    python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --dataset-schema DIR/dataset.yaml
+    python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --ckan-ini /srv/app/ckan.ini
 """
 
 from __future__ import annotations
@@ -23,39 +26,44 @@ import os
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
+import configparser
+import importlib.util
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
 import yaml
 
+from ckanext.gdi_userportal.profile_packs.schema_fields import (
+    FLUENT_TEXT_PRESETS,
+    by_name,
+    flatten_paths,
+    flattened_solr_fields,
+    is_multiple,
+    solr_options,
+    subfields,
+)
+
 DEFAULT_SCHEMA_XML = Path(__file__).resolve().parents[3] / "solr" / "schema.xml"
 ENV_SOLR_URL = "CKAN_SOLR_URL"
 CATCH_ALL = "*"
 
-# Fields the plugin flattens to one value before indexing (plugin._flatten_single_valued_solr_fields);
-# their Solr field is single valued although the scheming field is a list.
-SINGLE_VALUED_SOLR_FIELDS = ("url", "dcat_type")
-
-# The fields the plugin builds itself while indexing (plugin.before_dataset_index), from the values
-# of a field that holds agents, a contact point or repeated subfields. The plugin reads these
-# constants, so the Solr fields they produce can be checked against schema.xml.
-AGENT_FIELDS = ("publisher", "creator")
-AGENT_SUBFIELDS = ("uri", "email", "url", "type", "identifier", "country")
-CONTACT_SUBFIELDS = ("uri", "name", "email", "identifier", "url")
-REPEATING_FLATTENED = {
-    "qualified_relation": ("uri", "relation", "role"),
-    "quality_annotation": ("body", "target", "motivated_by"),
-    "retention_period": ("start", "end"),
-}
-
 # A validator that fixes the type of the values; the Solr type it maps to.
 INFERRED_TYPES = {"int_validator": "long", "boolean_validator": "boolean"}
 
-# dataset_series_in_series and series_validator: ckanext-dataset-series keeps in_series as a list of series ids
-MULTIPLE_PRESETS = {"multiple_text", "multiple_select", "multiple_checkbox", "dataset_series_in_series"}
-MULTIPLE_VALIDATORS = {"scheming_multiple_choice", "scheming_multiple_text", "series_validator"}
+# What a field gets when its ``solr`` key says nothing: stored (the Solr UI shows the value; it costs disk, CKAN
+# itself does not need it), indexed, and for a number or a date ``docValues``, which sorting, range filters and
+# range facets need.
+DEFAULT_STORED = True
+DOC_VALUES_TYPES = {"int", "long", "float", "double", "pint", "plong", "pfloat", "pdouble", "date", "pdate", "boolean"}
+
+# The fields CKAN indexes itself, whatever the dataset schema says: they stay declared in ``schema.xml``.
+CKAN_OWN_FIELDS = frozenset(
+    {"id", "name", "title", "notes", "url", "version", "license_id", "author", "author_email", "maintainer",
+     "maintainer_email", "state", "owner_org", "private", "type"}
+)
 
 # Attributes of a field that are compared, with the value Solr uses when the attribute is absent.
 ATTRIBUTES = {"type": None, "multiValued": False, "indexed": True, "stored": True, "docValues": None}
@@ -105,15 +113,6 @@ def parse_schema_xml(path) -> SolrSchema:
     return schema
 
 
-def is_multivalued(field: dict) -> bool:
-    """Whether a scheming field holds a list: repeating subfields (more than one), multiple text or choice."""
-    if field.get("repeating_subfields"):
-        return not field.get("repeating_once")
-    if field.get("preset") in MULTIPLE_PRESETS:
-        return True
-    return bool(MULTIPLE_VALIDATORS & set(str(field.get("validators", "")).split()))
-
-
 def matching_dynamic_field(name: str, dynamic_fields: Iterable[str]) -> Optional[str]:
     """The dynamic field (other than the catch-all) that Solr applies to a field name, if any."""
     for pattern in dynamic_fields:
@@ -124,17 +123,6 @@ def matching_dynamic_field(name: str, dynamic_fields: Iterable[str]) -> Optional
         ):
             return pattern
     return None
-
-
-def flattened_field_names() -> List[str]:
-    """The Solr fields the plugin fills while indexing agents, the contact point and repeated subfields."""
-    names = []
-    for agent in AGENT_FIELDS:
-        names += ["%s_%s" % (agent, sub) for sub in ("name",) + AGENT_SUBFIELDS]
-    names += ["contact_point_%s" % sub for sub in CONTACT_SUBFIELDS]
-    for field, subfields in REPEATING_FLATTENED.items():
-        names += ["%s_%s" % (field, sub) for sub in subfields]
-    return names
 
 
 def inferred_type(field: dict) -> str:
@@ -148,23 +136,44 @@ def inferred_type(field: dict) -> str:
 def solr_settings(field: dict) -> dict:
     """The Solr field a scheming field gets: what follows from the field, overridden by its ``solr`` key."""
     override = field.get("solr") or {}
-    return {
+    settings = {
         "name": field["field_name"],
         "type": override.get("type", inferred_type(field)),
         "indexed": bool(override.get("index", True)),
-        "stored": bool(override.get("store", False)),
-        "multiValued": bool(override.get("multiple", is_multivalued(field))),
+        "stored": bool(override.get("store", DEFAULT_STORED)),
+        "multiValued": bool(override.get("multiple", is_multiple(field))),
     }
+    if settings["type"] in DOC_VALUES_TYPES:
+        settings["docValues"] = True
+    return settings
+
+
+def _is_row_field(field: dict) -> bool:
+    """A field that holds objects: a repeating field (rows) or a text per language (a map). The indexing writes
+    the values of its subfields (``solr: {flatten}``) and the free text, never the objects, so it has no Solr
+    field of its own."""
+    return bool(subfields(field)) or field.get("preset") in FLUENT_TEXT_PRESETS
 
 
 def derive_fields(dataset_fields: Iterable[dict], base: SolrSchema) -> List[dict]:
-    """The Solr fields for the dataset fields that ``schema.xml`` does not declare, in schema order."""
+    """The Solr fields for the dataset fields that ``schema.xml`` does not declare, in schema order.
+
+    A field of objects gets none (see ``_is_row_field``). The fields the indexing fills from it
+    (``solr: {flatten: ...}``) follow the dataset fields: a multi valued string, indexed and stored.
+    """
+    dataset_fields = list(dataset_fields)
     derived = []
     for field in dataset_fields:
         name = field["field_name"]
-        if name in base.fields or matching_dynamic_field(name, base.dynamic_fields):
+        if _is_row_field(field) or name in base.fields or matching_dynamic_field(name, base.dynamic_fields):
             continue
         derived.append(solr_settings(field))
+    known = {spec["name"] for spec in derived}
+    for name in flattened_solr_fields(dataset_fields):
+        if name in known or name in base.fields or matching_dynamic_field(name, base.dynamic_fields):
+            continue
+        known.add(name)
+        derived.append({"name": name, "type": "string", "indexed": True, "stored": DEFAULT_STORED, "multiValued": True})
     return derived
 
 
@@ -181,35 +190,86 @@ def wanted_schema(base: SolrSchema, dataset_fields: Iterable[dict]) -> SolrSchem
     return wanted
 
 
-def check(base: SolrSchema, dataset_fields: Iterable[dict]) -> List[str]:
-    """The dataset fields whose Solr field is single valued while the scheming field holds a list."""
-    dataset_fields = list(dataset_fields)
-    wanted = wanted_schema(base, dataset_fields)
+def _has_subfield(field: dict, path: Tuple[str, ...]) -> bool:
+    """Whether ``path`` (names of subfields, each inside the one before) exists below ``field``."""
+    named = by_name(subfields(field))
+    return path[0] in named and (len(path) == 1 or _has_subfield(named[path[0]], path[1:]))
+
+
+def _solr_field(wanted: SolrSchema, name: str) -> Optional[dict]:
+    """The field Solr would index ``name`` into: the declared or derived field, else a dynamic field."""
+    spec = wanted.fields.get(name)
+    if spec is None:
+        pattern = matching_dynamic_field(name, wanted.dynamic_fields)
+        spec = wanted.dynamic_fields.get(pattern) if pattern else None
+    return spec
+
+
+def _flatten_problems(wanted: SolrSchema, dataset_fields: List[dict]) -> List[str]:
+    problems = [
+        "dataset_fields.%s flattens '%s', which the field has no subfield for" % (field["field_name"], ".".join(path))
+        for field in dataset_fields
+        for path in flatten_paths(field)
+        if not _has_subfield(field, path)
+    ]
+    for name in flattened_solr_fields(dataset_fields):
+        spec = _solr_field(wanted, name)
+        if spec is not None and not spec.get("multiValued", False):
+            problems.append("the indexing fills the Solr field %s with a list but it is single valued" % name)
+    return problems
+
+
+def _type_problems(base: SolrSchema, dataset_fields: List[dict]) -> List[str]:
+    return [
+        "dataset_fields.%s asks for the Solr type '%s', which solr/schema.xml does not define"
+        % (field["field_name"], solr_options(field)["type"])
+        for field in dataset_fields
+        if solr_options(field).get("type") and solr_options(field)["type"] not in base.field_types
+    ]
+
+
+def _list_problems(wanted: SolrSchema, dataset_fields: List[dict]) -> List[str]:
     problems = []
-    for name in flattened_field_names():
-        spec = wanted.fields.get(name)
-        if spec is None:
-            problems.append("the plugin fills the Solr field %s while indexing but solr/schema.xml does not declare it" % name)
-        elif not spec.get("multiValued", False):
-            problems.append("the plugin fills the Solr field %s with a list but it is single valued" % name)
     for field in dataset_fields:
-        override = (field.get("solr") or {}).get("type")
-        if override and override not in base.field_types:
-            problems.append("dataset_fields.%s asks for the Solr type '%s', which solr/schema.xml does not define" % (field["field_name"], override))
-    for field in dataset_fields:
-        name = field["field_name"]
-        if name in SINGLE_VALUED_SOLR_FIELDS or not is_multivalued(field):
+        # solr: {multiple: false}: the indexing keeps one value of the list; a field of objects is not indexed itself
+        if solr_options(field).get("multiple") is False or not is_multiple(field) or _is_row_field(field):
             continue
-        spec = wanted.fields.get(name)
-        if spec is None:
-            pattern = matching_dynamic_field(name, wanted.dynamic_fields)
-            spec = wanted.dynamic_fields.get(pattern) if pattern else None
+        spec = _solr_field(wanted, field["field_name"])
         if spec is not None and not spec.get("multiValued", False):
             problems.append(
                 "dataset_fields.%s is a list in the schema but its Solr field is single valued; "
-                "make it multiValued in solr/schema.xml, or flatten it before indexing" % name
+                "make it multiValued in solr/schema.xml, or flatten it before indexing" % field["field_name"]
             )
     return problems
+
+
+def _duplicate_problems(base: SolrSchema, dataset_fields: List[dict]) -> List[str]:
+    """A dataset field (or a field made of one) that ``schema.xml`` declares as well: the declaration in
+    ``schema.xml`` wins, so the ``solr`` key of the field would silently do nothing."""
+    names = [field["field_name"] for field in dataset_fields] + list(flattened_solr_fields(dataset_fields))
+    return [
+        "%s is declared in solr/schema.xml and made from the dataset schema: remove it from schema.xml "
+        "(describe it with the 'solr' key of the field when it is not a plain stored string)" % name
+        for name in dict.fromkeys(names)
+        if name in base.fields and name not in CKAN_OWN_FIELDS
+    ]
+
+
+def check(base: SolrSchema, dataset_fields: Iterable[dict]) -> List[str]:
+    """The dataset fields that ``schema.xml`` declares as well as the dataset schema, and those whose Solr field
+    is single valued while the scheming field holds a list.
+
+    And the flattened fields (``solr: {flatten: ...}``): they must name subfields the field has, and the
+    Solr field they are written to must be multi valued.
+    """
+    dataset_fields = list(dataset_fields)
+    wanted = wanted_schema(base, dataset_fields)
+    return (
+        _duplicate_problems(base, dataset_fields)
+        + _flatten_problems(wanted, dataset_fields)
+        + _type_problems(base, dataset_fields)
+        + _list_problems(wanted, dataset_fields)
+    )
 
 
 # -- compare the wanted schema with the running core ----------------------------------------------
@@ -226,8 +286,22 @@ def _differs(wanted: dict, live: dict) -> bool:
     return any(wanted[key] != live[key] for key in ATTRIBUTES if wanted[key] is not None)
 
 
-def plan(wanted: SolrSchema, live: SolrSchema) -> Tuple[List[Command], List[str]]:
-    """The Schema API commands that bring the core to the wanted schema, and the problems that need more."""
+def leftovers(wanted: SolrSchema, live: SolrSchema) -> List[str]:
+    """The fields of the core that nothing describes any more: not in ``schema.xml``, not made from a dataset schema.
+
+    A field Solr keeps for itself (``_version_``, ``_root_``, ...) is never one. Dynamic fields are not looked at:
+    they are written by hand in ``schema.xml``.
+    """
+    return sorted(name for name in live.fields if name not in wanted.fields and not name.startswith("_"))
+
+
+def plan(wanted: SolrSchema, live: SolrSchema, remove_leftovers: bool = False) -> Tuple[List[Command], List[str]]:
+    """The Schema API commands that bring the core to the wanted schema, and the problems that need more.
+
+    With ``remove_leftovers`` the fields in ``leftovers`` are deleted too, after the copy fields that name them
+    (Solr refuses to delete a field a copy field uses); a copy field the wanted schema still has is added again. Only a caller that knows every schema of the stack asks
+    for it: with a part of them, the fields of the others would be removed.
+    """
     commands: List[Command] = []
     problems: List[str] = []
 
@@ -255,6 +329,20 @@ def plan(wanted: SolrSchema, live: SolrSchema) -> Tuple[List[Command], List[str]
     for source, dest in wanted.copy_fields:
         if (source, dest) not in live_copies:
             commands.append(("add-copy-field", {"source": source, "dest": dest}))
+
+    if remove_leftovers:
+        gone = leftovers(wanted, live)
+        touching = [(source, dest) for source, dest in live.copy_fields if source in gone or dest in gone]
+        commands.extend(("delete-copy-field", {"source": source, "dest": dest}) for source, dest in touching)
+        commands.extend(("delete-field", {"name": name}) for name in gone)
+        # A copy field that ``schema.xml`` still declares has to be there afterwards: its source is a dynamic
+        # field now (a field made explicit before the dynamic field covered it)
+        wanted_copies = set(wanted.copy_fields)
+        commands.extend(
+            ("add-copy-field", {"source": source, "dest": dest})
+            for source, dest in touching
+            if (source, dest) in wanted_copies and dest not in gone
+        )
 
     return commands, problems
 
@@ -311,6 +399,8 @@ def describe(command: Command) -> str:
     name, spec = command
     if name.endswith("copy-field"):
         return "%s %s -> %s" % (name, spec["source"], spec["dest"])
+    if name == "delete-field":
+        return "%s %s" % (name, spec["name"])
     flags = ", ".join("%s=%s" % (key, spec[key]) for key in ("type", "multiValued", "indexed", "stored") if key in spec)
     return "%s %s (%s)" % (name, spec["name"], flags)
 
@@ -320,21 +410,77 @@ def describe(command: Command) -> str:
 
 def _load_dataset_fields(path) -> List[dict]:
     with open(str(path), encoding="utf-8") as handle:
-        return yaml.safe_load(handle)["dataset_fields"]
+        return (yaml.safe_load(handle) or {}).get("dataset_fields") or []
+
+
+def merge_fields(field_lists: Iterable[List[dict]]) -> List[dict]:
+    """The fields of every dataset type in one list; the first definition of a name wins (the dataset type comes first)."""
+    merged: Dict[str, dict] = {}
+    for fields in field_lists:
+        for field in fields:
+            if isinstance(field, dict) and field.get("field_name"):
+                merged.setdefault(field["field_name"], field)
+    return list(merged.values())
+
+
+def _schema_path(reference: str) -> Path:
+    """The file a ``scheming.dataset_schemas`` entry names: a ``file://`` URI or ``module:path/inside/it.yaml``."""
+    if reference.startswith("file://"):
+        return Path(urllib.request.url2pathname(urllib.parse.urlparse(reference).path))
+    module, _, relative = reference.partition(":")
+    spec = importlib.util.find_spec(module) if module and relative else None
+    if spec is None or not spec.submodule_search_locations:
+        raise SolrSchemaError("cannot find the dataset schema '%s'" % reference)
+    return Path(next(iter(spec.submodule_search_locations))) / relative
+
+
+def schema_files_from_ini(ini_path) -> List[Path]:
+    """The schema files of ``scheming.dataset_schemas`` in the CKAN ini; an error when one cannot be found."""
+    parser = configparser.RawConfigParser(strict=False)
+    parser.read(str(ini_path), encoding="utf-8")
+    value = parser.get("app:main", "scheming.dataset_schemas", fallback="")
+    references = value.split()
+    if not references:
+        raise SolrSchemaError("%s has no scheming.dataset_schemas" % ini_path)
+    paths = [_schema_path(reference) for reference in references]
+    missing = [str(path) for path in paths if not path.is_file()]
+    if missing:
+        raise SolrSchemaError("dataset schema file not found: %s" % ", ".join(missing))
+    return paths
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("action", choices=["sync", "check"])
-    parser.add_argument("--dataset-schema", required=True, help="the generated dataset.yaml")
+    parser.add_argument(
+        "--dataset-schema", action="append", default=[], help="a dataset schema file (repeatable), e.g. the generated dataset.yaml"
+    )
+    parser.add_argument(
+        "--ckan-ini",
+        help="the CKAN ini: every schema of scheming.dataset_schemas is read, and with them all known, leftover fields are removed",
+    )
+    parser.add_argument(
+        "--keep-leftovers", action="store_true", help="sync: do not remove the fields that nothing describes any more"
+    )
     parser.add_argument("--schema-xml", default=str(DEFAULT_SCHEMA_XML))
     parser.add_argument("--solr-url", default=os.environ.get(ENV_SOLR_URL))
     parser.add_argument("--dry-run", action="store_true", help="sync: print the changes, apply nothing")
     parser.add_argument("--wait", type=int, default=60, help="sync: seconds to wait for Solr to answer")
     args = parser.parse_args(argv)
 
+    try:
+        files = [Path(path) for path in args.dataset_schema]
+        if args.ckan_ini:
+            files += [path for path in schema_files_from_ini(args.ckan_ini) if path not in files]
+        if not files:
+            raise SolrSchemaError("no dataset schema: pass --ckan-ini or --dataset-schema")
+        dataset_fields = merge_fields(_load_dataset_fields(path) for path in files)
+    except (SolrSchemaError, OSError, yaml.YAMLError) as error:
+        print("solr-schema: %s" % error, file=sys.stderr)
+        return 1
     base = parse_schema_xml(args.schema_xml)
-    dataset_fields = _load_dataset_fields(args.dataset_schema)
+    # Only with every schema of the stack is a field that none describes really a leftover
+    remove_leftovers = bool(args.ckan_ini) and not args.keep_leftovers
 
     if args.action == "check":
         problems = check(base, dataset_fields)
@@ -349,7 +495,11 @@ def main(argv=None) -> int:
         print("solr-schema: Solr does not answer at %s" % args.solr_url, file=sys.stderr)
         return 1
 
-    commands, problems = plan(wanted_schema(base, dataset_fields), read_live_schema(args.solr_url))
+    if not args.keep_leftovers and not args.ckan_ini:
+        print("solr-schema: leftover fields are kept: pass --ckan-ini so that every dataset schema is known")
+    commands, problems = plan(
+        wanted_schema(base, dataset_fields), read_live_schema(args.solr_url), remove_leftovers=remove_leftovers
+    )
     for problem in problems:
         print("solr-schema: " + problem, file=sys.stderr)
     for command in commands:

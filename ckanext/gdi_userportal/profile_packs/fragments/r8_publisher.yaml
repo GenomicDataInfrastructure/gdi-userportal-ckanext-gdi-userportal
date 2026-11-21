@@ -4,6 +4,8 @@
 
 dataset_fields:
   - field_name: publisher
+    agent: true
+    solr: {flatten: [name, uri, email, url, type]}
     label: Publisher
     repeating_label: Publisher
     repeating_once: true

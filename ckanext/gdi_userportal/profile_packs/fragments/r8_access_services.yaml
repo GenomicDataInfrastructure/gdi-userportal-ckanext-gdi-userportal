@@ -20,17 +20,20 @@ resource_fields:
         help_text: A free-text account of the data service (dct:description), in each language.
 
       - field_name: access_rights
+        translate: true
         label: Access rights
         validators: ignore_missing unicode_safe
         help_text: Information regarding access or restrictions based on privacy, security, or other policies.
 
       - field_name: applicable_legislation
+        translate: true
         label: Applicable legislation
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text
         help_text: The legislation that mandates the creation or management of the data service.
 
       - field_name: conforms_to
+        translate: true
         label: Conforms to
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text
@@ -69,6 +72,7 @@ resource_fields:
         preset: multiple_text
 
       - field_name: format
+        translate: true
         label: Format
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text
@@ -89,10 +93,12 @@ resource_fields:
         validators: ignore_missing scheming_multiple_text
 
       - field_name: license
+        translate: true
         label: Licence
         help_text: License in which the data service is made available.
 
       - field_name: publisher
+        agent: true
         label: Publisher
         repeating_label: Publisher
         repeating_once: true
@@ -105,6 +111,7 @@ resource_fields:
         validators: ignore_missing scheming_multiple_text
 
       - field_name: theme
+        translate: true
         label: Theme
         preset: multiple_text
         validators: ignore_missing scheming_multiple_text
