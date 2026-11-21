@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The agent of an attribution is a plain foaf:Agent in R8: a name and a type. A prov:Attribution has
+# one or more dcat:hadRole.
+
+dataset_fields:
+  - field_name: qualified_attribution
+    label: Qualified attribution
+    repeating_label: Attribution
+    repeating_subfields:
+      - field_name: agent
+        label: Agent
+        repeating_label: Agent
+        repeating_once: true
+        repeating_subfields: !snippet agent_basic_subfields_r8
+
+      - field_name: role
+        label: Role
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+        help_text: Roles of the agent with respect to the dataset (dcat:hadRole), one or more.
+    help_text: Structured qualified attribution information including agent and role.

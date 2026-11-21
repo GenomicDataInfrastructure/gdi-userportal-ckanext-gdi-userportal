@@ -81,6 +81,27 @@ def mock_save_gather_error_patch():
 
 class TestS3RDFHarvesterGatherStage:
 
+    @patch.object(S3RDFHarvester, '_get_s3_client_info')
+    def test_gather_stage_reports_a_metadata_profile_that_is_not_enabled(
+            self, mock_get_s3_client_info, s3_rdf_harvester, mock_harvest_job
+    ):
+        # No fallback to the main profile: the job reports the error and harvests nothing
+        mock_harvest_job.source.config = '{"metadata_profile": "retired_profile"}'
+        mock_get_s3_client_info.return_value = ("my-bucket", MagicMock())
+
+        with patch.object(S3RDFHarvester, "_save_gather_error") as mock_save, \
+                patch("ckanext.dcat.harvesters.rdf.p.toolkit.config", {
+                    "ckanext.dcat.metadata_profiles": "gdi_current",
+                    "ckanext.dcat.metadata_profiles.main": "gdi_current",
+                    "ckanext.dcat.metadata_profiles.gdi_current.rdf_profiles": "euro_dcat_ap_nl",
+                }):
+            object_ids = s3_rdf_harvester.gather_stage(mock_harvest_job)
+
+        assert object_ids == []
+        message = mock_save.call_args[0][0]
+        assert "test-harvest-source-id" in message and "retired_profile" in message
+
+
     @pytest.mark.usefixtures("mock_harvestobject_patch",
                              "mock_harvestsource_patch",
                              "mock_mark_deletion_patch",

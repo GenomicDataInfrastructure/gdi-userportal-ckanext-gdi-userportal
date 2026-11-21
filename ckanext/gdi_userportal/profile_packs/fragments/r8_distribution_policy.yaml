@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# odrl:hasPolicy of a distribution (0..1): the IRI of the policy that expresses the rights on it.
+
+resource_fields:
+  - field_name: has_policy
+    label: Has policy
+    display_snippet: link.html
+    help_text: IRI of the policy (odrl:hasPolicy) that expresses the rights associated with the distribution, one at most.

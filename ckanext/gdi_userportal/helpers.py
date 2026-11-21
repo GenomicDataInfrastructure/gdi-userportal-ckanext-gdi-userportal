@@ -72,6 +72,25 @@ def _is_missing_value(value: Any) -> bool:
     return False
 
 
+def is_redundant_translation(field_name: str, entry: dict[str, Any] | None) -> bool:
+    """Whether ``<name>_translated`` only repeats the plain ``<name>`` of the same entry.
+
+    The display shows both for a language map; with one language that equals the plain value
+    the second row says nothing new.
+    """
+    suffix = "_translated"
+    if not isinstance(entry, dict) or not field_name.endswith(suffix):
+        return False
+
+    translated = entry.get(field_name)
+    plain = entry.get(field_name[: -len(suffix)])
+    if not isinstance(translated, dict) or not isinstance(plain, str) or not plain.strip():
+        return False
+
+    texts = {v.strip() for v in translated.values() if isinstance(v, str) and v.strip()}
+    return texts <= {plain.strip()}
+
+
 def scheming_missing_required_fields(
     pages: list[dict[str, Any]],
     data: dict[str, Any] | None = None,
@@ -113,5 +132,23 @@ def scheming_missing_required_fields(
     return missing_per_page
 
 
+SHOW_EMPTY_PROPERTIES = "ckanext.gdi_userportal.show_empty_properties"
+
+
+def show_empty_properties() -> bool:
+    """Whether the display templates also list the properties that have no value.
+
+    Off by default: a page lists what the dataset holds. Switched on, every property the schema
+    defines gets a row, with a dash when it is empty, to see what the schema, the form and the
+    harvest can hold.
+    """
+    return tk.asbool(tk.config.get(SHOW_EMPTY_PROPERTIES, False))
+
+
 def get_helpers() -> dict[str, Any]:
-    return {"scheming_missing_required_fields": scheming_missing_required_fields}
+    return {
+        "scheming_missing_required_fields": scheming_missing_required_fields,
+        "gdi_show_empty_properties": show_empty_properties,
+        "gdi_is_blank_value": _is_missing_value,
+        "gdi_is_redundant_translation": is_redundant_translation,
+    }

@@ -7,9 +7,12 @@
 
 # -*- coding: utf-8 -*-
 
+import functools
 import json
 
 from ckan.plugins import toolkit
+from ckanext.gdi_userportal.profile_packs import conformance as profile_conformance
+from ckanext.gdi_userportal.profile_packs import generator as profile_generator
 from ckanext.gdi_userportal.logic.action.translation_utils import (
     collect_search_values_to_translate,
     collect_values_to_translate,
@@ -162,6 +165,40 @@ def enhanced_package_show(context, data_dict) -> dict:
     lang = get_request_language()
     translations = get_translations(values_to_translate, lang=lang)
     return replace_package(result, translations, lang=lang)
+
+
+@functools.lru_cache(maxsize=None)
+def _conformance_rules(profile: str):
+    registry = profile_generator.Registry()
+    return registry.conformance(registry.pack(profile))
+
+
+@toolkit.side_effect_free
+def gdi_metadata_profile_conformance(context, data_dict) -> dict:
+    """
+    Which of the deployment's enabled metadata profiles a dataset satisfies, at its access layer.
+
+    Computed from the dataset on every call and stored nowhere. Missing or malformed values
+    make a profile "not conformant"; they never make this action fail.
+
+    :param id: the id or name of the dataset
+    """
+    dataset_id = (data_dict or {}).get("id")
+    if not dataset_id:
+        raise toolkit.ValidationError({"id": ["Missing value"]})
+
+    dataset = toolkit.get_action("package_show")(dict(context), {"id": dataset_id})
+    if dataset.get("type", "dataset") != "dataset":
+        raise toolkit.ValidationError(
+            {"id": [f"Conformance is only computed for datasets, not for type '{dataset.get('type')}'"]}
+        )
+
+    enabled = profile_generator.parse_profiles(toolkit.config.get(profile_generator.OPTION_PROFILES))
+    main = (toolkit.config.get(profile_generator.OPTION_MAIN_PROFILE) or "").strip() or enabled[0]
+    result = profile_conformance.evaluate(
+        dataset, enabled, {name: _conformance_rules(name) for name in enabled}
+    )
+    return {"id": dataset["id"], "name": dataset.get("name"), "main_profile": main, **result}
 
 
 @toolkit.side_effect_free

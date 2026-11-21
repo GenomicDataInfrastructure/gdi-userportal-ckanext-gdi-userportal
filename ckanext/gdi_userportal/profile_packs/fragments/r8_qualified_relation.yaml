@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# dcat:qualifiedRelation in R8: a dcat:Relationship has one or more dct:relation (the related
+# resource) and one or more dcat:hadRole, so both subfields hold a list.
+
+dataset_fields:
+  - field_name: qualified_relation
+    label: Qualified relation
+    repeating_label: Relationship
+    repeating_subfields:
+      - field_name: uri
+        label: URI
+
+      - field_name: relation
+        label: Relation
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+        help_text: The resources related to the source resource (dct:relation), one or more.
+
+      - field_name: role
+        label: Role
+        preset: multiple_text
+        validators: ignore_missing scheming_multiple_text
+        help_text: The functions of an entity or agent with respect to another entity or resource (dcat:hadRole), one or more.
+    help_text: A description of a relationship with another resource.

@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dataset_fields:
+  - field_name: hdab
+    label: Health data access body
+    repeating_label: Health data access body
+    repeating_once: true
+    repeating_subfields: !snippet hdab_subfields
+    help_text: Health Data Access Body supporting access to data in the Member State.
+

@@ -1,0 +1,103 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Fields HealthDCAT-AP Release 8 adds to the dataset. They are profile-neutral:
+# no other pack defines them, and an unused field costs nothing.
+
+dataset_fields:
+  - field_name: alternative_title
+    label: Alternative title
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: Another name by which the dataset is known (dct:alternative).
+
+  - field_name: related_resource
+    label: Related resource
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: A related resource, such as a publication or a methodology document (dct:relation).
+
+  - field_name: source
+    label: Source
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: A related resource from which this dataset is derived (dct:source).
+
+  - field_name: has_structured_data
+    label: Has structured data
+    preset: select
+    choices:
+      - value: false
+        label: "false"
+      - value: true
+        label: "true"
+    validators: ignore_missing boolean_validator
+    output_validators: boolean_validator
+    help_text: Whether the dataset holds structured data, an xsd:boolean (healthdcatap:hasStructuredData). When it does, describe its variables.
+
+  - field_name: variables
+    label: Variables
+    repeating_label: Variable group
+    help_text: The variables of a structured dataset, as a CSVW table group (healthdcatap:hasVariables).
+    repeating_subfields:
+      - field_name: title_translated
+        label: Title
+        help_text: Title of the variable group in each language.
+
+      - field_name: tables
+        label: Tables
+        repeating_label: Table
+        repeating_subfields:
+          - field_name: title_translated
+            label: Title
+            help_text: Title of the table in each language.
+
+          - field_name: keyword
+            label: Keywords
+            preset: multiple_text
+            validators: ignore_missing scheming_multiple_text
+
+          - field_name: url
+            label: URL
+            display_snippet: link.html
+            help_text: Location of the table (csvw:url).
+
+          - field_name: columns
+            label: Columns
+            repeating_label: Column
+            repeating_subfields:
+              - field_name: name
+                label: Name
+                help_text: Name of the column (csvw:name).
+
+              - field_name: title_translated
+                label: Title
+                help_text: Title of the column in each language.
+
+              - field_name: description_translated
+                label: Description
+                help_text: Description of the column in each language.
+
+              - field_name: datatype
+                label: Datatype
+                help_text: Datatype of the column values (csvw:datatype).
+
+              - field_name: property_url
+                label: Property URL
+                display_snippet: link.html
+                help_text: The property the column maps to (csvw:propertyUrl).
+
+  - field_name: custodian
+    label: Custodian
+    repeating_label: Custodian
+    repeating_once: true
+    repeating_subfields: !snippet hdab_subfields_r8
+    help_text: The organisation that holds and takes care of the data (geodcatap:custodian).
+
+  - field_name: hdab_coordinator
+    label: Health data access body coordinator
+    repeating_label: Health data access body coordinator
+    repeating_once: true
+    repeating_subfields: !snippet hdab_subfields_r8
+    help_text: The coordinator of the health data access bodies (healthdcatap:hdabCoordinator).

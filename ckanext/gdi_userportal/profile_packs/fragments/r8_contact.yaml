@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The contact point of a dataset is a vcard:Kind: at most one email and one contact page, nothing else.
+
+dataset_fields:
+  - field_name: contact
+    label: Contact points
+    repeating_label: Contact point
+    repeating_subfields:
+      - field_name: uri
+        label: URI
+
+      - field_name: email
+        label: Email
+        display_snippet: email.html
+        help_text: Email of the contact point (vcard:hasEmail).
+
+      - field_name: url
+        label: Contact page
+        display_snippet: link.html
+        help_text: Contact page of the contact point (vcard:hasURL), one at most.
+    help_text: Contact information for enquiries about the dataset.

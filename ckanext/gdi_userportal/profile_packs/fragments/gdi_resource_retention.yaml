@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The retention period of a distribution. R8 has it on the dataset only (Distribution has no
+# healthdcatap:retentionPeriod), so only gdi_current has it here.
+
+resource_fields:
+  - field_name: retention_period
+    label: Retention period
+    repeating_subfields:
+      - field_name: start
+        label: Start
+        preset: datetime_flex
+
+      - field_name: end
+        label: End
+        preset: datetime_flex
+    help_text: Temporal period during which the resource remains available for use.

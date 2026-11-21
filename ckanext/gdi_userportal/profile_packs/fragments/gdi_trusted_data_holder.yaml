@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+dataset_fields:
+  - field_name: trusted_data_holder
+    label: Trusted Data Holder
+    preset: select
+    choices:
+      - value: false
+        label: "No"
+      - value: true
+        label: "Yes"
+    validators: ignore_missing boolean_validator
+    help_text: Indicates whether the dataset is held by a trusted data holder.
+    output_validators: boolean_validator

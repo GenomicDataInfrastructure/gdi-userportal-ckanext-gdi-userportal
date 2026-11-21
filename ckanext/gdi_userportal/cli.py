@@ -261,6 +261,73 @@ def show(version):
         click.echo("\n(Migration loads translations dynamically)")
 
 
+@gdi_userportal.group()
+def profiles():
+    """Metadata profile commands."""
+    pass
+
+
+@profiles.command("prune")
+@click.option("--delete", "delete", is_flag=True, help="Remove the orphaned extras. Without it nothing is changed.")
+@click.option("--yes", "-y", is_flag=True, help="With --delete: do not ask for confirmation")
+def prune(delete, yes):
+    """List the dataset extras that belong only to metadata profiles that are no longer enabled.
+
+    A dry run unless --delete is given. The enabled profiles are read from the CKAN config the
+    profile generator wrote at container start, so run it in the same deployment. Extras shared
+    with an enabled profile are never listed, and neither are related_resource and source,
+    which every profile keeps. Harvest sources that name a retired profile are listed, not changed.
+    """
+    import ckan.model as model
+    from ckan.lib import search
+    from ckan.plugins import toolkit
+    from ckanext.gdi_userportal.profile_packs import generator
+    from ckanext.gdi_userportal.profile_packs import prune as profile_prune
+
+    raw_profiles = toolkit.config.get(generator.OPTION_PROFILES)
+    if not (raw_profiles or "").strip():
+        raise click.ClickException(
+            f"{generator.OPTION_PROFILES} is not set, so the enabled profiles are unknown. "
+            "Start CKAN once so the profile generator writes it. Nothing was changed."
+        )
+    try:
+        enabled = generator.parse_profiles(raw_profiles)
+        retired = generator.retired_fields(enabled)
+    except generator.ProfileError as error:
+        raise click.ClickException(f"{error}. Nothing was changed.")
+
+    session = model.Session
+    orphans = profile_prune.find_orphaned_extras(session, set(retired["dataset_fields"]))
+    sources = profile_prune.find_sources_with_retired_profile(session, enabled)
+    for line in profile_prune.format_report(enabled, retired, orphans, sources, deleting=delete):
+        click.echo(line)
+
+    if not delete or not orphans:
+        return
+    if not yes:
+        click.confirm(f"Delete these extras from {len(orphans)} dataset(s)? This cannot be undone.", abort=True)
+
+    try:
+        deleted = profile_prune.delete_orphaned_extras(session, orphans)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    click.echo(click.style(f"Deleted {deleted} extra(s) from {len(orphans)} dataset(s).", fg="green"))
+
+    failed = []
+    for orphan in orphans:
+        try:
+            search.rebuild(package_id=orphan.package_id)
+        except Exception as error:  # the data is already pruned; say which documents are stale
+            failed.append(orphan.name)
+            click.echo(click.style(f"  could not reindex {orphan.name}: {error}", fg="yellow"))
+    if failed:
+        click.echo(click.style("Run `ckan search-index rebuild` to refresh the index.", fg="yellow"))
+    else:
+        click.echo(f"Reindexed {len(orphans)} dataset(s).")
+
+
 def get_commands():
     """Return CLI commands for this extension."""
     return [gdi_userportal]

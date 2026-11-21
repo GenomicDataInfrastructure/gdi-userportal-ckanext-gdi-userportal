@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 Stichting Health-RI
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Which CKAN fields carry each HealthDCAT-AP R8 property that R8's cardinality rules make
+# mandatory in some access layer. The keys are the property labels of
+# healthdcat-cardinality-rules.json; conformance_build.py fails when a mandatory label has no
+# entry here, or an entry here is not a mandatory label, so the file cannot drift from the rules.
+#
+# A property counts as filled when any of its fields holds a value. Core CKAN fields
+# (title, notes, tags, resources) are listed next to the scheming field that replaces them,
+# because datasets from before the multilingual schema carry only the core one.
+properties:
+  access rights: [access_rights]
+  applicable legislation: [applicable_legislation]
+  dataset distribution: [resources]
+  description: [notes_translated, notes]
+  health category: [health_category]
+  health data access body: [hdab]
+  identifier: [identifier]
+  structured data: [has_structured_data]
+  theme: [theme]
+  title: [title_translated, title]
+  contact point: [contact]
+  keyword: [tags_translated, tags]
+  provenance: [provenance]
+  type: [dcat_type]

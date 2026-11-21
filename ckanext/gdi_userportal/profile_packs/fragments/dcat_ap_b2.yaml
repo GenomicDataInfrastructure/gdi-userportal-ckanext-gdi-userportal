@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+resource_fields:
+  - field_name: temporal_resolution
+    label: Temporal resolution
+    help_text: Minimum time period resolvable in the distribution.
+
+  - field_name: spatial_resolution_in_meters
+    label: Spatial resolution in meters
+    help_text: Minimum spatial separation resolvable in the distribution, measured in meters.
+
+  - field_name: language
+    label: Language
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: Language or languages of the resource.
+
+  - field_name: documentation
+    label: Documentation
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: A page or document about this resource.
+
+  - field_name: conforms_to
+    label: Conforms to
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: An established schema to which the described resource conforms.
+
+  - field_name: applicable_legislation
+    label: Applicable legislation
+    preset: multiple_text
+    validators: ignore_missing scheming_multiple_text
+    help_text: The legislation that mandates the creation or management of the resource.

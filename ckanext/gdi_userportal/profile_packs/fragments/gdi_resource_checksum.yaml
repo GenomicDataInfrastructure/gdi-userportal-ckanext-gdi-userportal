@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2024 PNED G.I.E.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# The checksum of a distribution as two plain fields. R8 has the checksum entity (r8_checksum).
+resource_fields:
+  - field_name: hash
+    label: Hash
+    help_text: Checksum of the downloaded file.
+
+  - field_name: hash_algorithm
+    label: Hash Algorithm
+    help_text: Algorithm used to calculate to checksum.
