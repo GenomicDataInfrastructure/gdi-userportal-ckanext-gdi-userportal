@@ -3,10 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Characterization tests: what the plugin does with real datasets, recorded before the indexing and the
-translation were made to follow the generated schema.
+Characterization tests: what the plugin does with real datasets.
 
-``fixtures/index_and_api_corpus.json`` was recorded from a running stack with ``fixtures/capture_corpus.py``
+``fixtures/index_and_api_corpus.json`` was captured from a running stack with ``fixtures/capture_corpus.py``
 (nothing is written to Solr or the database). For each dataset it holds
 
 * what ``before_dataset_index`` received and returned, with the two lookups it makes (the series a dataset is in,
@@ -41,7 +40,7 @@ from ckanext.gdi_userportal.logic.action.translation_utils import (
 from ckanext.gdi_userportal.plugin import GdiUserPortalPlugin
 from ckanext.gdi_userportal.profile_packs import generator, schema_fields
 
-# The profiles the corpus was recorded with, in their order: GDI_METADATA_PROFILES="gdi_current healthdcat_r8".
+# The profiles the corpus was captured with, in their order: GDI_METADATA_PROFILES="gdi_current healthdcat_r8".
 PROFILES = ["gdi_current", "healthdcat_r8"]
 _GENERATED = generator.build_schema(PROFILES).schema
 SCHEMAS = {
@@ -57,8 +56,8 @@ SCHEMAS = {
 RESOURCE_FIELDS = _GENERATED["resource_fields"]
 # CKAN core fields that are not in the schema and are shown as {name, display_name} all the same
 CORE_TRANSLATED_FIELDS = ("type",)
-# The names the plugin listed when the corpus was recorded: a listed field the dataset had no value for was given
-# as None.
+# Keys of the captured API output that are None when the dataset has no value. expected_api drops those that
+# are not fields of the schema.
 RECORDED_PACKAGE_LIST = (
     "access_rights applicable_legislation code_values coding_system creator conforms_to dataset_status dcat_type "
     "has_version health_category health_theme frequency language legal_basis personal_data was_generated_by "
@@ -74,20 +73,19 @@ CORPUS = json.loads((Path(__file__).parent / "fixtures" / "index_and_api_corpus.
 DATASETS = CORPUS["datasets"]
 NAMES = [record["name"] for record in DATASETS]
 
-# {(dataset name, language): {api key: expected value}}: what the API serves now and did not when it was recorded.
+# {(dataset name, language): {api key: expected value}}: intended differences from the captured API output.
 DELIBERATE_API_CHANGES: dict = {}
 
 
 def expected_api(record, language):
-    """The recorded dataset as the API serves it now.
+    """The captured dataset as the API is expected to serve it.
 
-    The fields that are shown as ``{name, display_name}`` are the ones the schema marks ``translate`` (they used to
-    be a list of names in the plugin). A listed field the dataset had no value for was given as None, and so was a
-    listed name that is not a field of the schema at all (``status`` of a dataset, ``access_rights`` of a
-    distribution): those are not made up any more.
+    The fields shown as ``{name, display_name}`` are the ones the schema marks ``translate``. A listed field the
+    dataset has no value for is None, and so is a listed name that is not a field of the schema (``status`` of a
+    dataset, ``access_rights`` of a distribution); those are not made up.
     """
     expected = deepcopy(record["api_output"][language])
-    # custodian and hdab_coordinator are marked ``agent: true`` now (r8_additions.yaml, like publisher and hdab):
+    # custodian and hdab_coordinator are marked ``agent: true`` (r8_additions.yaml, like publisher and hdab):
     # their agents get the identifier list that every agent has, empty when the record has none
     for key in ("custodian", "hdab_coordinator"):
         for agent in expected.get(key) or []:
@@ -120,8 +118,8 @@ def _fill(record, fields):
             if isinstance(row, dict) and field.get("repeating_subfields"):
                 _fill(row, field["repeating_subfields"])
 
-# List fields that were indexed as the JSON text CKAN gives (``'["a"]'``) and are decoded to a list now: the
-# fields that hold a list are read from the schema, not from a list of names kept in the plugin.
+# List fields that are indexed from the JSON text CKAN gives (``'["a"]'``) and decoded to a list: the fields
+# that hold a list are read from the schema, not from a list of names kept in the plugin.
 NOW_DECODED = ("alternative_title", "analytics", "distribution", "related_resource", "sample", "source")
 
 
@@ -139,18 +137,18 @@ def _canonical(value):
 
 
 def expected_document(record):
-    """The recorded document with what indexing does differently now: what changed on purpose."""
+    """The captured document with the intended differences of the indexing."""
     expected = dict(record["index_output"])
     for key in NOW_DECODED:
         if isinstance(expected.get(key), str):
             expected[key] = json.loads(expected[key])
-    # the locations of a dataset are a filter now: one Solr value per location (solr: {flatten: [uri]})
+    # the locations of a dataset are a filter: one Solr value per location (solr: {flatten: [uri]})
     locations = record["index_input"].get("spatial_coverage") or []
     uris = [location["uri"] for location in locations if isinstance(location, dict) and location.get("uri")]
     if uris:
         expected["spatial_coverage_uri"] = uris
-    # the labels of the terms were a Solr field of their own (vocab_<field>_search, three fields named in the
-    # plugin); they are part of the free text now, with what every field says (test below)
+    # the labels of the terms are part of the free text, with what every field says (test below), not in
+    # vocab_<field>_search fields
     for key in [key for key in expected if key.startswith("vocab_") and key.endswith("_search")]:
         del expected[key]
     # the JSON text and the objects of the fields of the schema are not indexed: their texts are in the free text

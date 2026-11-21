@@ -217,7 +217,6 @@ dataset_fields:
   - field_name: dcat_type
     label: Type
     help_text: The type of the dataset.
-    # TODO: controlled vocabulary?
 
   - field_name: temporal_coverage
     label: Temporal coverage
@@ -300,7 +299,6 @@ dataset_fields:
       en: Use this filter to search datasets by language.
       nl: Gebruik deze filter om datasets op taal te zoeken.
     facet_key: language
-    # TODO: language form snippet / validator / graph
 
   - field_name: documentation
     label: Documentation
@@ -726,7 +724,7 @@ resource_fields:
 
   - field_name: hash_algorithm
     label: Hash Algorithm
-    help_text: Algorithm used to calculate to checksum.
+    help_text: Algorithm used to calculate the checksum.
 
   - field_name: rights
     label: Rights

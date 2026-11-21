@@ -16,15 +16,7 @@
  limitations under the License.
 -->
 
-<!--
-     NB Please copy changes to this file into the multilingual schema:
-        ckanext/multilingual/solr/schema.xml
--->
-
-<!-- We update the version when there is a backward-incompatible change to this
-schema. We used to use the `version` attribute for this but this is an internal
-attribute that should not be used so starting from CKAN 2.10 we use the `name`
-attribute with the form `ckan-X.Y` -->
+<!-- The name carries the CKAN version (ckan-X.Y). Change it when the schema changes in a backward-incompatible way. -->
 <schema name="ckan-2.10" version="1.6">
 
     <types>
@@ -240,6 +232,8 @@ attribute with the form `ckan-X.Y` -->
     <copyField source="ckan_url" dest="urls" />
     <copyField source="download_url" dest="urls" />
     <copyField source="res_url" dest="urls" />
+    <!-- CKAN copies every extra to extras_<key>. The indexing removes those of the dataset schema fields
+         (indexing.py, free_text_all); the copy here covers the extras that no schema field describes. -->
     <copyField source="extras_*" dest="text" />
     <copyField source="res_extras_*" dest="text" />
     <copyField source="vocab_*" dest="text" />
