@@ -13,6 +13,7 @@ These need CKAN and this extension importable, but no database and no running CK
 Without CKAN the module is skipped. The prune command runs against SQLite.
 """
 
+import json
 from types import SimpleNamespace
 from unittest import mock
 
@@ -22,12 +23,13 @@ pytest.importorskip("ckan")
 pytest.importorskip("sqlalchemy")
 
 from click.testing import CliRunner  # noqa: E402
-from ckan.logic import ValidationError  # noqa: E402
+from ckan.logic import NotAuthorized, ValidationError  # noqa: E402
 from sqlalchemy import create_engine, text  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
-from ckanext.gdi_userportal import cli  # noqa: E402
+from ckanext.gdi_userportal import cli, conformance_service  # noqa: E402
 from ckanext.gdi_userportal.logic.action import get as get_module  # noqa: E402
+from ckanext.gdi_userportal.logic.auth import get as auth_module  # noqa: E402
 
 from test_conformance import NON_PUBLIC, non_public_dataset  # noqa: E402
 
@@ -67,9 +69,54 @@ def test_the_action_reads_the_dataset_through_package_show_with_a_copy_of_the_co
     assert passed is not context  # package_show writes into the context it is given
 
 
-def test_a_dataset_series_is_rejected():
-    with pytest.raises(ValidationError, match="only computed for datasets"):
-        run_action(dataset(type="dataset_series"), BOTH, {"id": "one"})
+def test_a_record_that_is_neither_a_dataset_nor_a_series_is_rejected():
+    with pytest.raises(ValidationError, match="only computed for datasets and dataset series"):
+        run_action(dataset(type="showcase"), BOTH, {"id": "one"})
+
+
+def test_a_dataset_series_is_judged_on_its_applicable_legislation_and_has_no_access_layer():
+    ok, _ = run_action(dataset(type="dataset_series", applicable_legislation=["http://data.europa.eu/eli/reg/2025/327/oj"]), BOTH, {"id": "one"})
+    bad, _ = run_action(dataset(type="dataset_series"), BOTH, {"id": "one"})
+
+    assert (ok["type"], ok["access_layer"], ok["distributions"]) == ("dataset_series", None, [])
+    assert ok["conformant_profiles"] == ["healthdcat_r8", "gdi_current"]
+    assert bad["conformant_profiles"] == ["gdi_current"]
+    assert bad["profiles"]["healthdcat_r8"]["missing"][0]["property"] == "applicable legislation"
+
+
+def test_the_action_judges_every_distribution_samples_and_analytics_included():
+    record = dataset(
+        sample=["https://example.org/s"],
+        resources=[
+            {"id": "r1", "url": "https://example.org/p", "uri": "https://example.org/p"},
+            {"id": "r2", "url": "https://example.org/s", "uri": "https://example.org/s"},
+        ],
+    )
+
+    result, _ = run_action(record, BOTH, {"id": "one"})
+
+    assert [(item["id"], item["kind"], item["conformant_profiles"]) for item in result["distributions"]] == [
+        ("r1", "distribution", ["gdi_current"]),
+        ("r2", "sample", ["gdi_current"]),
+    ]
+
+
+def test_without_a_harvest_source_every_enabled_profile_applies():
+    result, _ = run_action(dataset(), BOTH, {"id": "one"})
+
+    assert result["applicable_profiles"] == ["healthdcat_r8", "gdi_current"]
+    assert (result["basis"], result["source_profile"]) == ("enabled", None)
+
+
+def test_the_profile_of_the_harvest_source_is_the_one_that_applies():
+    record = dataset(extras=[{"key": "harvest_source_id", "value": "s1"}])
+
+    with mock.patch.object(get_module, "_source_profiles", lambda ids: {"s1": "gdi_current"}):
+        result, _ = run_action(record, BOTH, {"id": "one"})
+
+    assert result["applicable_profiles"] == ["gdi_current"]
+    assert (result["basis"], result["source_profile"]) == ("source", "gdi_current")
+    assert set(result["profiles"]) == {"healthdcat_r8", "gdi_current"}  # the answer for every profile stays complete
 
 
 def test_the_action_answers_for_every_enabled_profile_and_names_the_main_one():
@@ -103,11 +150,168 @@ def test_a_deployment_without_generated_config_is_gdi_current_only(config):
     assert result["main_profile"] == "gdi_current"
 
 
-def test_the_rules_of_a_profile_are_loaded_once():
-    get_module._conformance_rules.cache_clear()
+# --- the report action and its command ---------------------------------------------------
 
-    assert get_module._conformance_rules("healthdcat_r8") is get_module._conformance_rules("healthdcat_r8")
-    assert get_module._conformance_rules.cache_info().misses == 1
+
+def report_datasets():
+    return [
+        {"id": "d1", "name": "one", "title": "One", "type": "dataset", **non_public_dataset()},
+        {"id": "d2", "name": "two", "title": "Two", "type": "dataset"},
+    ]
+
+
+def search_result(query):
+    """What package_search answers: the datasets for a dataset query, nothing for a series query."""
+    records = report_datasets() if query["fq"].endswith(":dataset") else []
+    return {"count": len(records), "results": records}
+
+
+def run_report(config, data_dict=None, context=None, check_access=None):
+    package_search = mock.MagicMock(side_effect=lambda ctx, query: search_result(query))
+    toolkit = SimpleNamespace(
+        get_action=mock.MagicMock(return_value=package_search),
+        check_access=check_access or mock.MagicMock(),
+        config=config,
+        ValidationError=ValidationError,
+    )
+    with mock.patch.object(get_module, "toolkit", toolkit):
+        result = get_module.gdi_metadata_profile_conformance_report(
+            context if context is not None else {"user": "u"}, data_dict
+        )
+    return result, toolkit, package_search
+
+
+def test_the_report_checks_access_before_it_searches():
+    context = {"user": "u"}
+    _, toolkit, _ = run_report(BOTH, {"profile": ""}, context)
+
+    toolkit.check_access.assert_called_once_with("gdi_metadata_profile_conformance_report", context, {"profile": ""})
+
+
+def test_a_user_who_may_not_read_the_report_gets_no_search_and_no_data():
+    denied = mock.MagicMock(side_effect=NotAuthorized("sysadmins only"))
+
+    with pytest.raises(NotAuthorized):
+        run_report(BOTH, None, None, denied)
+
+    denied.assert_called_once()
+
+
+def test_the_report_action_lists_what_does_not_conform():
+    result, toolkit, _ = run_report(BOTH)
+
+    assert (result["checked"], result["checked_series"], result["checked_distributions"]) == (2, 0, 1)
+    assert result["profiles"]["gdi_current"]["datasets"]["non_conformant"] == 0
+    (entry,) = result["profiles"]["healthdcat_r8"]["datasets"]["items"]
+    assert entry["name"] == "two"
+    assert "access rights is missing" in entry["reason"]
+    (distribution,) = result["profiles"]["healthdcat_r8"]["distributions"]["items"]
+    assert (distribution["dataset"], distribution["missing"]) == ("one", ["applicable legislation"])
+    toolkit.get_action.assert_called_once_with("package_search")
+
+
+def test_the_report_action_checks_each_record_against_the_profile_of_its_source():
+    sources = {"s-gdi": "gdi_current"}
+    datasets = [
+        {"id": "d1", "name": "one", "type": "dataset", "extras": [{"key": "harvest_source_id", "value": "s-gdi"}]},
+        {"id": "d2", "name": "two", "type": "dataset"},
+    ]
+    toolkit = SimpleNamespace(
+        get_action=mock.MagicMock(
+            return_value=lambda ctx, query: {"count": 2, "results": datasets} if query["fq"].endswith(":dataset") else {"count": 0, "results": []}
+        ),
+        check_access=mock.MagicMock(),
+        config=BOTH,
+        ValidationError=ValidationError,
+    )
+
+    with mock.patch.object(get_module, "toolkit", toolkit), mock.patch.object(get_module, "_source_profiles", lambda ids: sources):
+        result = get_module.gdi_metadata_profile_conformance_report({"user": "u"}, None)
+
+    assert result["profiles"]["healthdcat_r8"]["datasets"]["checked"] == 1  # the one made by hand
+    assert result["profiles"]["gdi_current"]["datasets"]["checked"] == 2
+
+
+def test_the_report_action_searches_with_a_copy_of_the_context():
+    context = {"user": "u", "keep": "me"}
+    _, _, package_search = run_report(BOTH, None, context)
+
+    (passed, _), _ = package_search.call_args
+    assert passed == context
+    assert passed is not context  # package_search writes into the context it is given
+
+
+def test_the_report_action_can_be_limited_to_an_enabled_profile():
+    result, _, _ = run_report(BOTH, {"profile": " gdi_current "})
+
+    assert list(result["profiles"]) == ["gdi_current"]
+
+
+def test_the_report_action_rejects_a_profile_that_is_not_enabled():
+    with pytest.raises(ValidationError, match="not enabled"):
+        run_report({"ckanext.dcat.metadata_profiles": "gdi_current"}, {"profile": "healthdcat_r8"})
+
+
+def test_only_sysadmins_pass_the_report_auth_function():
+    with mock.patch.object(auth_module, "toolkit", SimpleNamespace(_=lambda text: text)):
+        outcome = auth_module.gdi_metadata_profile_conformance_report({}, {})
+
+    assert outcome["success"] is False
+
+
+def conformance_command(args, error=None):
+    """Run ``profiles conformance`` with the report action replaced; returns the result and the calls."""
+    calls = []
+
+    def get_action(name):
+        if name == "get_site_user":
+            return lambda context, data_dict: {"name": "site-user"}
+        assert name == "gdi_metadata_profile_conformance_report"
+
+        def report(context, data_dict):
+            calls.append((context, data_dict))
+            if error:
+                raise error
+            return conformance_service.conformance_report(
+                search_result, BOTH, data_dict.get("profile") and [data_dict["profile"]]
+            )
+
+        return report
+
+    with mock.patch("ckan.plugins.toolkit.get_action", get_action, create=True):
+        result = CliRunner().invoke(cli.gdi_userportal, ["profiles", "conformance", *args])
+    return result, calls
+
+
+def test_the_command_prints_what_does_not_conform():
+    result, calls = conformance_command([])
+
+    assert result.exit_code == 0
+    assert "Checked 2 dataset(s), 0 series and 1 distribution(s)" in result.output
+    assert "healthdcat_r8: 1 of 2 dataset(s) do not conform; 1 of 1 distribution(s) do not conform" in result.output
+    assert "  one / " in result.output  # the distribution, under its dataset
+    assert "gdi_current: all conform (2 dataset(s), 0 series, 1 distribution(s))" in result.output
+    assert calls == [({"user": "site-user"}, {})]
+
+
+def test_the_command_can_print_json_for_one_profile():
+    result, calls = conformance_command(["--profile", "gdi_current", "--json"])
+
+    assert result.exit_code == 0
+    profiles = json.loads(result.output)["profiles"]
+    assert list(profiles) == ["gdi_current"]
+    assert profiles["gdi_current"]["datasets"] == {"checked": 2, "non_conformant": 0, "items": []}
+    assert calls == [({"user": "site-user"}, {"profile": "gdi_current"})]
+
+
+def test_the_command_reports_a_profile_that_is_not_enabled_without_a_traceback():
+    error = ValidationError({"profile": ["Metadata profile 'x' is not enabled. Enabled: gdi_current"]})
+
+    result, _ = conformance_command(["--profile", "x"], error)
+
+    assert result.exit_code == 1
+    assert "not enabled" in result.output
+    assert "Traceback" not in result.output
 
 
 # --- the prune command -------------------------------------------------------------------

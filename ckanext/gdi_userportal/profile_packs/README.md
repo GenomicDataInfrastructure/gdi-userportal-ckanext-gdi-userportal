@@ -110,11 +110,13 @@ schema by label (a label per language is read in English, ignoring case), with t
 description first (`title_translated`, `notes_translated` and `name_translated`,
 `description_translated`). It is the order of the edit form and of the display of a dataset and of a
 distribution. Without it the order is that of the fragments. With several packs enabled the pack listed
-first decides. `healthdcat_r8` is alphabetical, `gdi_current` keeps the order of its fragments; the
-static series schema of the R8 pack, `dataset_series_r8.yaml`, is kept in the same order by hand (a test
-checks it). The subfields of a field keep their own order, which follows the model, except those of a data
-service (`access_services` in the R8 pack): they are in the same alphabetical order, title and description
-first, kept by hand in `r8_access_services.yaml` and checked by a test.
+first decides. Both `healthdcat_r8` and `gdi_current` are alphabetical; the static series schemas,
+`dataset_series_r8.yaml` and `dataset_series_multilingual.yaml`, are kept in the same order by hand (a
+test checks them). The subfields of a field keep their own order, which follows the model, except those of
+a data service (`access_services`): they are in the same alphabetical order, title and description first,
+kept by hand in `r8_access_services.yaml` and `health_access_services.yaml` and checked by a test.
+`scheming/schemas/dataset_multilingual.yaml` keeps the original field order; the acceptance test compares
+it with `gdi_current` field by field, by name.
 
 **Dataset series.** A series is not generated from fragments: each pack that has a model for it
 ships a static schema and names it with `series_schema`. With several packs enabled the one listed
@@ -126,7 +128,7 @@ contact page. The prune command does not look at series fields.
 
 **Display keys.** Scheming passes keys it does not know through, and the display templates of this
 extension use some on a subfield: `display_group` shows the subfields with the same value together
-under that heading (the contact point of an R8 agent); `display_replaces: <subfield>` makes the
+under that heading (the contact point of an agent: the email and URL in `gdi_current`, more in R8); `display_replaces: <subfield>` makes the
 subfield take the row of that other one when it has a value, under its `display_label` (one or more
 names per language replace the single name). A field with `repeating_once` is shown without a number,
 and nested lists (variables, tables, columns) are indented.
@@ -139,7 +141,10 @@ of `gdi-userportal-ckan-docker`.
 `ckanext.gdi_userportal.show_empty_properties = true` (the environment variable
 `CKANEXT__GDI_USERPORTAL__SHOW_EMPTY_PROPERTIES=true`) they list every property the schema defines, with
 a dash for those without a value, to see what the schema, the edit form and a harvest can hold. It is
-off by default.
+off by default. The generated schema holds the fields of every enabled profile, so a dataset gets a dash
+only for the fields of the profile of its harvest source (`conformance_service.empty_property_scope`, from
+the fields each pack defines); a dataset no source says anything about gets all of them, and a field with a
+value is always shown.
 
 **Language fallback.** The edit form stores an empty value for a form language left blank
 (`{"en": "Title", "nl": ""}`), and scheming and CKAN only fall back to another language when the key
@@ -167,15 +172,34 @@ and an empty core field (`title`, `notes`) takes the first language that has a v
 ## Conformance
 
 `conformance.py` (standard library only) says which enabled packs a dataset satisfies at its
-access layer; the API action `gdi_metadata_profile_conformance` and the harvest-log warning of
-ckanext-fairdatapoint use it. A pack with no `conformance` file has no mandatory properties.
+access layer (`evaluate`), and which a distribution or a dataset series satisfies (`evaluate_class`, no
+layer). `conformance_service.py` (one level up) wraps both for the API action
+`gdi_metadata_profile_conformance`, the sysadmin report action `gdi_metadata_profile_conformance_report`
+and the `profiles conformance` command, and for the page helpers `h.gdi_profile_conformance` (dataset and
+series pages, `package/read.html`, and the lists, `snippets/package_item.html`) and
+`h.gdi_resource_conformance` (the distribution list, `package/snippets/resource_item.html`, and the
+distribution page). The harvest-log warning of ckanext-fairdatapoint calls the action. Everything is computed
+on demand; nothing is stored and the Solr schema and the index are not involved. A pack with no
+`conformance` file has no mandatory properties.
+
+A record is checked against the profile it comes from: the `metadata_profile` of its harvest source, the
+main profile when the source names none, every enabled profile when no source created it
+(`applicable_profiles`; the source lookup is `profile_visibility.source_profiles`). A sample
+(`adms:sample`) and an analytics distribution (`healthdcatap:analytics`) are stored as resources and are
+distributions: they are checked like any other and labelled by `resource_kind`.
 
 The file of `healthdcat_r8` is **generated** from R8's cardinality rules, never edited by hand:
 
 ```
-conformance/healthdcat_r8_fields.yaml     R8 property label -> the CKAN fields that carry it (hand-written)
-conformance/healthdcat_r8.json            generated: the properties that are Mandatory per layer
+conformance/healthdcat_r8_fields.yaml     R8 property label -> the CKAN fields that carry it (hand-written),
+                                          and `classes`: what R8's SHACL shapes make mandatory on a
+                                          distribution and a dataset series (applicable legislation)
+conformance/healthdcat_r8.json            generated: the properties that are Mandatory per layer, and `classes`
 ```
+
+R8's cardinality rules cover the dataset only. The distribution and series rules come from
+`:Distribution_Shape` and `:DatasetSeries_Shape` of the R8 SHACL files, which are identical in the public,
+restricted and non-public shapes, so they have no layer. The build copies them as they are.
 
 ```
 python3 profile_packs/conformance_build.py --rules path/to/healthdcat-cardinality-rules.json [--check]
@@ -194,6 +218,51 @@ command `ckan gdi-userportal profiles prune` (a dry run unless `--delete`) uses 
 extras to remove; see `prune.py`. A field a pack lists under `keep_extras` is never retired: use it
 for a field whose key the shared RDF code also keeps as a free extra in every profile
 (`related_resource` and `source` in `healthdcat_r8`).
+
+## Solr schema
+
+`solr/schema.xml` is written by hand: field types, CKAN's own fields and the fields the plugin builds
+while indexing (agents, contact point, `vocab_*`). The dataset fields of the enabled profiles are not
+in it. Solr gives a field it does not know the catch-all `*` (not stored, **single valued**), so a
+profile field with several values fails the import ("multiple values encountered for non
+multiValued field"). `solr_schema.py` closes that:
+
+- `derive_fields` makes a Solr field of every dataset field that `schema.xml` does not declare (and no
+  dynamic field other than `*` covers). Its type follows from the validators of the scheming field
+  (`int_validator` is a `long`, `boolean_validator` a `boolean`, anything else a `string`: a partial
+  date such as `2020` is not a Solr date, and a language map is stored as JSON text). It is multi valued
+  when the scheming field is a list (repeating subfields, `multiple_text`/`multiple_select`/
+  `multiple_checkbox`, `scheming_multiple_choice`/`scheming_multiple_text`, `dataset_series_in_series`,
+  `series_validator`), indexed and not stored. A `solr` key on the field overrides each of these:
+
+  ```yaml
+  - field_name: issued
+    solr: {type: date, index: true, store: false, multiple: false}   # every key is optional
+  ```
+
+  *Indexed* means Solr can search, filter, facet and sort on the field. *Stored* means Solr can return
+  the original value in a query; CKAN does not need that, it serves a dataset from the JSON in
+  `validated_data_dict`. `type` must be a field type of `schema.xml`; `check` reports one that is not.
+- `check` (the drift test, `tests/profile_packs/test_solr_schema.py`, for every pack and pack pair)
+  fails when a list field would land in a single valued Solr field, and when a Solr field the plugin
+  fills while indexing (`flattened_field_names`: the agents, the contact point, `qualified_relation`,
+  `quality_annotation`, `retention_period`; the plugin reads the same constants) is not declared
+  `multiValued` in `schema.xml`. `url` and `dcat_type` are exempt:
+  the plugin flattens them to one value before indexing (`SINGLE_VALUED_SOLR_FIELDS`). Fix a failure by
+  making the field `multiValued` in `schema.xml`, or by flattening it in `before_dataset_index`.
+- `sync` runs from the start scripts after the generator: it compares `schema.xml` plus the derived
+  fields with the running core and applies the difference through the Solr Schema API (`add-field`,
+  `replace-field`, dynamic and copy fields). It never deletes a field and never stops CKAN when Solr
+  does not answer. A core is created once from the Solr image and lives in a volume, so a changed
+  `schema.xml` or a new profile would never reach an existing core without it.
+
+```
+python3 -m ckanext.gdi_userportal.profile_packs.solr_schema sync --dataset-schema /srv/app/generated/dataset.yaml [--dry-run]
+```
+
+Documents indexed before a change keep their old index: reindex (`ckan search-index rebuild`) after the
+sync reports changes. A field type that the core lacks is reported, not added: recreate the core.
+Fields the plugin builds itself while indexing stay hand-declared in `schema.xml`, and the check above keeps them in line with the plugin.
 
 ## Running it
 

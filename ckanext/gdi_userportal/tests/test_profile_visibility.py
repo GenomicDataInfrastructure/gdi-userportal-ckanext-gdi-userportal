@@ -121,3 +121,39 @@ def test_the_search_is_unchanged_when_nothing_is_hidden(session):
 def test_the_exclusion_lists_every_hidden_source():
     assert visibility.search_exclusion(["a", "b"]) == '-harvest_source_id:("a" OR "b")'
     assert visibility.search_exclusion([]) is None
+
+
+# --- the profile a source names ----------------------------------------------------------------
+
+
+def test_the_profile_each_source_names_is_read_from_its_config(session):
+    profiles = visibility.source_profiles(session, [R8_SOURCE, GDI_SOURCE, PLAIN_SOURCE, OTHER_SOURCE])
+
+    assert profiles == {R8_SOURCE: "healthdcat_r8", GDI_SOURCE: "gdi_current", PLAIN_SOURCE: None, OTHER_SOURCE: None}
+
+
+def test_a_source_that_does_not_exist_is_left_out_of_the_answer(session):
+    assert visibility.source_profiles(session, [R8_SOURCE, "vanished"]) == {R8_SOURCE: "healthdcat_r8"}
+
+
+def test_a_source_asked_for_twice_is_answered_once(session):
+    assert visibility.source_profiles(session, [GDI_SOURCE, GDI_SOURCE]) == {GDI_SOURCE: "gdi_current"}
+
+
+@pytest.mark.parametrize("ids", [[], [None], ["", None]])
+def test_without_a_source_id_nothing_is_asked_of_the_database(ids):
+    assert visibility.source_profiles(object(), ids) == {}
+
+
+def test_a_deployment_without_the_harvest_tables_has_no_source_profiles():
+    with Session(create_engine("sqlite://")) as empty:
+        assert visibility.source_profiles(empty, ["anything"]) == {}
+
+
+@pytest.mark.parametrize("config", [None, "", "[]", '{"metadata_profile": ""}', '{"metadata_profile": 5}', '{"metadata_profile": "  "}'])
+def test_a_config_that_names_no_usable_profile_maps_to_none(config):
+    assert visibility._named_profile(config) is None  # noqa: SLF001
+
+
+def test_the_profile_name_is_trimmed():
+    assert visibility._named_profile('{"metadata_profile": " healthdcat_r8 "}') == "healthdcat_r8"  # noqa: SLF001

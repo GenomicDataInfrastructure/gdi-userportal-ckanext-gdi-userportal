@@ -14,10 +14,12 @@
 
 - field_name: email
   label: Email
+  display_group: Contact point
   display_snippet: email.html
 
 - field_name: url
   label: URL
+  display_group: Contact point
   display_snippet: link.html
 
 - field_name: type

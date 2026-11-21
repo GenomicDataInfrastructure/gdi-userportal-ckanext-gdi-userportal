@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# The metadata model the portal has always used. Its schema is the fragments below, in
-# order, which together equal scheming/schemas/dataset_multilingual.yaml.
+# The portal's original metadata model. Its schema is the fragments below, which
+# together hold the same fields as scheming/schemas/dataset_multilingual.yaml; the generator
+# orders them by label, the title and the description first (field_order).
 name: gdi_current
 fragments:
   - core
@@ -34,4 +35,5 @@ rdf_profiles:
   - fairdatapoint_dcat_ap
   - euro_dcat_ap_nl
 redefines: []
+field_order: alphabetical  # by label, the title and the description first
 series_schema: ckanext.gdi_userportal:scheming/schemas/dataset_series_multilingual.yaml
