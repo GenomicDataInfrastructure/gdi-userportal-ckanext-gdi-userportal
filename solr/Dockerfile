@@ -8,7 +8,7 @@
 # Temurin build is published, replace it with the patched RHEL store
 # (ca-certificates from RHSA-2026:88459) and fail the build if either distrusted
 # root is present. The Temurin stage is only used for keytool.
-FROM registry.access.redhat.com/ubi9-minimal:1792742129 AS rhel-ca
+FROM registry.access.redhat.com/ubi9-minimal:1795198241 AS rhel-ca
 RUN microdnf update -y ca-certificates && microdnf clean all
 
 FROM eclipse-temurin:21.0.13_9-jdk@sha256:db5cc6341a1d7bc40cdb51e1f0d9824f3bb2cc8107d29da421dc4df7d11f05f1 AS truststore
